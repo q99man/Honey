@@ -11,14 +11,14 @@ The goal is:
 
 ## 0. Project Setup
 
-- [ ] Initialize Spring Boot project
-- [ ] Configure Gradle dependencies
-- [ ] Set up package structure (domain-based)
-- [ ] Configure application.yml (dev / prod)
-- [ ] Configure database connection (MySQL)
+- [x] Initialize Spring Boot project
+- [x] Configure Gradle dependencies
+- [x] Set up package structure (domain-based)
+- [x] Configure application.yml (dev / prod)
+- [x] Configure database connection (MySQL)
 - [ ] Configure Redis connection
-- [ ] Add global exception handler
-- [ ] Add base response format (success/error)
+- [x] Add global exception handler
+- [x] Add base response format (success/error)
 - [ ] Configure logging
 
 ---
@@ -26,43 +26,45 @@ The goal is:
 ## 1. Authentication System
 
 ### Core Auth
-- [ ] Implement signup API
-- [ ] Implement login API
+- [x] Implement signup API
+- [x] Implement login API
 - [ ] Implement OAuth login (Kakao, Naver, Google)
-- [ ] Implement JWT authentication (access + refresh)
-- [ ] Implement logout
-- [ ] Implement token refresh
+- [x] Implement JWT authentication (access + refresh)
+- [x] Implement logout
+- [x] Implement token refresh
 
 ### Phone Verification
-- [ ] Send verification code API
-- [ ] Verify code API
-- [ ] Store verification state
+- [x] Send verification code API
+- [x] Verify code API
+- [x] Store verification state
 - [ ] Enforce phone verification in core actions
 
 ---
 
 ## 2. User System
 
-- [ ] Create user entity
-- [ ] Create user_auth entity
-- [ ] Create user_trust entity
-- [ ] Create user_level entity
-- [ ] Implement get my profile API
-- [ ] Implement update profile API
-- [ ] Implement get user status API
-- [ ] Implement user activity summary
+- [x] Create user entity
+- [x] Create user_auth entity
+- [x] Create user_trust entity
+- [x] Create user_level entity
+- [x] Implement get my profile API
+- [x] Implement update profile API
+- [x] Implement get user status API
+- [x] Implement user activity summary
 
 ---
 
 ## 3. Region System
 
-- [ ] Create region_city / district / dong tables
-- [ ] Seed region data
-- [ ] Implement region lookup APIs
-- [ ] Implement GPS-based region verification
-- [ ] Implement primary region assignment
-- [ ] Implement region change API
-- [ ] Implement region change policy validation
+- [x] Create region_city / district / dong tables
+- [x] Add region seed CSV import path
+- [x] Add full Korean administrative dong seed data
+- [x] Implement region lookup APIs
+- [x] Implement GPS-based region verification
+- [x] Verify GPS-based region flow with live Kakao smoke test
+- [x] Implement primary region assignment
+- [x] Implement region change API
+- [x] Implement region change policy validation
 
 ---
 
@@ -151,8 +153,8 @@ The goal is:
 
 ## 10. Policy System (Very Important)
 
-- [ ] Create system_policies table
-- [ ] Implement policy loading service
+- [x] Create system_policies table
+- [x] Implement policy loading service
 - [ ] Implement policy cache (Redis)
 - [ ] Replace hardcoded values with policy values
 
@@ -162,7 +164,7 @@ The goal is:
 - [ ] visit cooldown
 - [ ] ranking weights
 - [ ] trust weights
-- [ ] region change cooldown
+- [x] region change cooldown
 - [ ] place registration limit
 
 ---

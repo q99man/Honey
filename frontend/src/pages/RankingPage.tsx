@@ -5,6 +5,7 @@ import { mockSpaces } from "../data/mockSpaces";
 
 export default function RankingPage() {
   const rankedSpaces = [...mockSpaces].sort((a, b) => b.rating - a.rating);
+  const topSpace = rankedSpaces[0];
 
   return (
     <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
@@ -14,13 +15,15 @@ export default function RankingPage() {
           지금 가장 인기 있는 꿀스팟을 확인해보세요.
         </p>
 
-        <section className="mt-6 rounded-2xl bg-yellow-300 p-5 shadow-sm">
-          <p className="text-sm font-semibold">오늘의 1위</p>
-          <h2 className="mt-2 text-xl font-bold">{rankedSpaces[0].title}</h2>
-          <p className="mt-2 text-sm text-gray-700">
-            ⭐ {rankedSpaces[0].rating} · 리뷰 {rankedSpaces[0].reviewCount}개
-          </p>
-        </section>
+        {topSpace && (
+          <section className="mt-6 rounded-2xl bg-yellow-300 p-5 text-left shadow-sm">
+            <p className="text-sm font-semibold">오늘의 1위</p>
+            <h2 className="mt-2 text-xl font-bold">{topSpace.title}</h2>
+            <p className="mt-2 text-sm text-gray-700">
+              별 {topSpace.rating} · 리뷰 {topSpace.reviewCount}개
+            </p>
+          </section>
+        )}
 
         <section className="mt-6">
           <h2 className="mb-4 text-lg font-bold">전체 랭킹</h2>

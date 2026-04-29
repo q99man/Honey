@@ -16,8 +16,8 @@
   "auth.hideToday": "오늘 하루 보지 않기",
 
   "place.recommend": "추천하기",
-  "place.visitVerify": "방문 인증하고 꿀 따기",
-  "place.comment": "한줄 코멘트",
+  "place.visitVerify": "방문 인증하고 꿀 얻기",
+  "place.comment": "짧은 댓글",
   "place.register": "꽃 등록하기",
 
   "ranking.title": "지역 랭킹",
@@ -26,8 +26,8 @@
   "ranking.city": "시 랭킹",
 
   "mypage.title": "마이페이지",
-  "mypage.level": "내 레벨",
-  "mypage.trust": "내 신뢰도",
+  "mypage.level": "꿀벌 레벨",
+  "mypage.trust": "신뢰도",
 
   "error.phoneVerificationRequired": "전화 인증 후 이용할 수 있습니다.",
   "error.regionVerificationRequired": "동네 인증 후 이용할 수 있습니다.",

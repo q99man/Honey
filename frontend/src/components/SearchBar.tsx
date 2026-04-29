@@ -1,11 +1,11 @@
 export default function SearchBar() {
   return (
-    <div className="px-6 mt-4">
-      <div className="flex items-center gap-2 h-[48px] rounded-full border border-yellow-400 px-4 bg-white">
-        <span>🔍</span>
+    <div className="mt-4 px-6">
+      <div className="flex h-[48px] items-center gap-2 rounded-full border border-yellow-400 bg-white px-4">
+        <span aria-hidden="true">⌕</span>
         <input
           placeholder="어디로 갈까요?"
-          className="flex-1 outline-none text-sm bg-transparent"
+          className="flex-1 bg-transparent text-sm outline-none"
         />
       </div>
     </div>

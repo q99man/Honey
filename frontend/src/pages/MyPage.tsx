@@ -6,21 +6,23 @@ export default function MyPage() {
       <main className="px-6 pt-8">
         <h1 className="text-2xl font-bold">마이페이지</h1>
 
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow-sm">
+        <section className="mt-6 rounded-2xl bg-white p-5 text-left shadow-sm">
           <div className="flex items-center gap-4">
             <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-300 text-2xl">
-              🐝
+              꿀
             </div>
 
             <div>
-              <h2 className="text-lg font-bold">허니통 유저</h2>
-              <p className="text-sm text-gray-500">오늘도 맛있는 하루 보내세요.</p>
+              <h2 className="text-lg font-bold">허니 탐험가</h2>
+              <p className="text-sm text-gray-500">
+                오늘도 맛있는 하루 보내세요.
+              </p>
             </div>
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="text-lg font-bold">내 활동</h2>
+        <section className="mt-5 rounded-2xl bg-white p-5 text-left shadow-sm">
+          <h2 className="text-lg font-bold">나의 활동</h2>
 
           <div className="mt-4 flex justify-between text-center">
             <div>
@@ -38,13 +40,19 @@ export default function MyPage() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl bg-white p-5 shadow-sm">
+        <section className="mt-5 rounded-2xl bg-white p-5 text-left shadow-sm">
           <h2 className="text-lg font-bold">설정</h2>
 
           <div className="mt-4 flex flex-col gap-4 text-sm">
-            <button className="text-left">프로필 수정</button>
-            <button className="text-left">알림 설정</button>
-            <button className="text-left">고객센터</button>
+            <button type="button" className="text-left">
+              프로필 수정
+            </button>
+            <button type="button" className="text-left">
+              알림 설정
+            </button>
+            <button type="button" className="text-left">
+              고객센터
+            </button>
           </div>
         </section>
       </main>

@@ -48,6 +48,14 @@ Core priorities:
 - Update progress.md after work
 - Update decisions.md if logic changes
 - Sync db-schema.md and api-spec.md if changed
+- After finishing work, include the next recommended task and the appropriate reasoning level for that task.
+
+## Reasoning level guide
+
+- low: simple documentation, formatting, text, or isolated UI copy changes
+- medium: ordinary feature implementation, CRUD/API wiring, frontend state, or focused refactoring
+- high: authentication, authorization, policy validation, ranking, data model, security, or cross-domain logic
+- xhigh: major architecture changes, complex migration, large refactoring, or difficult production incident analysis
 
 ## Implementation priority
 

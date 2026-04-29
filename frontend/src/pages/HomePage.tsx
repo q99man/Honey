@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
-import SpaceCard from "../components/SpaceCard";
 import BottomNav from "../components/BottomNav";
-import SearchBar from "../components/SearchBar";
 import CategoryTabs from "../components/CategoryTabs";
+import SearchBar from "../components/SearchBar";
+import SpaceCard from "../components/SpaceCard";
 import type { Place } from "../types/place";
 
 type Props = {
@@ -12,18 +12,18 @@ type Props = {
 
 export default function HomePage({ spaces, onToggleWish }: Props) {
   return (
-    <div className="bg-[#FFFBEB] min-h-screen pb-[100px]">
+    <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
       <SearchBar />
       <CategoryTabs />
 
-      <div className="px-6 mt-4">
-        <div className="h-[240px] bg-[#d8b7ae] rounded-xl flex items-center justify-center text-gray-600 font-medium">
+      <div className="mt-4 px-6">
+        <div className="flex h-[240px] items-center justify-center rounded-xl bg-[#d8b7ae] font-medium text-gray-600">
           지도 미리보기
         </div>
       </div>
 
-      <div className="px-6 mt-8">
-        <h2 className="text-lg font-bold mb-4">오늘의 핫스팟</h2>
+      <div className="mt-8 px-6">
+        <h2 className="mb-4 text-lg font-bold">오늘의 꿀스팟</h2>
 
         <div className="flex flex-col gap-4">
           {spaces.map((space) => (

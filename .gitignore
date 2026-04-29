@@ -32,6 +32,7 @@ Thumbs.db
 # Java / Gradle
 .gradle/
 backend/.gradle/
+backend/.gradle-user-home/
 *.class
 
 # Codex / temporary

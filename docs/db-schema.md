@@ -9,6 +9,7 @@ The schema is designed for:
 - future ranking and analytics expansion
 
 The database is based on MySQL.
+The local development schema name is `honey`.
 
 ---
 
@@ -108,6 +109,26 @@ CREATE TABLE region_dong (
     FOREIGN KEY (district_id) REFERENCES region_district(id)
 );
 
+Notes
+code should store the Kakao administrative dong code when Kakao Local API is used for GPS verification
+region seed data can be imported from a UTF-8 CSV file using the backend region seed importer
+city and district codes are used for hierarchy import and lookup consistency
+
+2.4 Region Seed Import
+
+The backend supports an opt-in UTF-8 CSV import for region reference data.
+
+CSV columns:
+
+city_code,city_name_ko,district_code,district_name_ko,dong_code,dong_name_ko
+
+Rules:
+- import is disabled by default
+- set REGION_SEED_ENABLED=true to run import on backend startup
+- set REGION_SEED_LOCATION to a classpath or file resource
+- dong_code must match the Kakao administrative dong code used by coord2regioncode
+- `backend/src/main/resources/region/region-seed.csv` is generated from the Korean administrative dong source workbook
+
 3. User Tables
 
 3.1 users
@@ -159,6 +180,50 @@ CREATE TABLE user_auth (
 Notes
 provider values can be LOCAL, KAKAO, NAVER, GOOGLE
 password_hash is used only for LOCAL login
+
+3.2.1 refresh_tokens
+
+Stores refresh tokens for access token renewal and logout.
+
+CREATE TABLE refresh_tokens (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  token_hash VARCHAR(100) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  revoked BOOLEAN NOT NULL DEFAULT FALSE,
+  revoked_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  CONSTRAINT fk_refresh_tokens_user
+    FOREIGN KEY (user_id) REFERENCES users(id),
+  UNIQUE KEY uk_refresh_tokens_hash (token_hash)
+);
+Notes
+raw refresh tokens must never be stored
+refresh tokens are rotated on refresh and revoked on logout
+
+3.2.2 phone_verification_codes
+
+Stores phone verification codes for authenticated users.
+
+CREATE TABLE phone_verification_codes (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  phone VARCHAR(30) NOT NULL,
+  code_hash VARCHAR(255) NOT NULL,
+  expires_at DATETIME NOT NULL,
+  attempt_count INT NOT NULL DEFAULT 0,
+  verified BOOLEAN NOT NULL DEFAULT FALSE,
+  verified_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  CONSTRAINT fk_phone_verification_codes_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+);
+Notes
+raw verification codes must never be stored
+code length, expiry, and max attempts are configurable
+production SMS sending requires an external SMS provider
 
 3.3 user_region
 
@@ -663,6 +728,7 @@ ranking.comment_weight = 0.5
 Notes
 this table is critical for admin-driven operation
 do not hardcode these values in application logic
+the region change API requires `policy_group = region` and `policy_key = change_cooldown_day`
 
 10. Logging Tables
 
@@ -696,6 +762,8 @@ region_district
 region_dong
 users
 user_auth
+refresh_tokens
+phone_verification_codes
 user_region
 user_trust
 user_level
@@ -733,6 +801,11 @@ index on (region_city_id, exposure_status)
 recommendations
 unique index on (user_id, place_id)
 index on (place_id, status)
+refresh_tokens
+unique index on (token_hash)
+index on (user_id, revoked, expires_at)
+phone_verification_codes
+index on (user_id, phone, verified, created_at)
 visits
 index on (place_id, created_at)
 index on (user_id, place_id, created_at)

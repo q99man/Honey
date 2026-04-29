@@ -1,0 +1,47 @@
+spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+  application:
+    name: honeytong-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/honey?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+
+server:
+  port: ${SERVER_PORT:8080}
+
+app:
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-honeytong-jwt-secret-key-must-be-replaced}
+      access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:15}
+      refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:14}
+    phone-verification:
+      code-length: ${PHONE_VERIFICATION_CODE_LENGTH:6}
+      code-ttl-minutes: ${PHONE_VERIFICATION_CODE_TTL_MINUTES:5}
+      max-attempts: ${PHONE_VERIFICATION_MAX_ATTEMPTS:5}
+  growth:
+    base-next-level-exp: ${GROWTH_BASE_NEXT_LEVEL_EXP:100}
+  maps:
+    provider: ${MAP_PROVIDER:kakao}
+    kakao:
+      rest-api-key: ${KAKAO_REST_API_KEY:}
+      javascript-key: ${KAKAO_JAVASCRIPT_KEY:}
+      local-base-url: ${KAKAO_LOCAL_BASE_URL:https://dapi.kakao.com}
+  regions:
+    seed:
+      enabled: ${REGION_SEED_ENABLED:false}
+      location: ${REGION_SEED_LOCATION:classpath:region/region-seed.csv}

@@ -15,7 +15,7 @@ export default function WishlistPage({ spaces }: Props) {
       <main className="px-6 pt-8">
         <h1 className="text-2xl font-bold">찜</h1>
         <p className="mt-2 text-sm text-gray-500">
-          저장해둔 꿀스팟을 모아봤어요.
+          저장해 둔 꿀스팟을 모아보세요.
         </p>
 
         <section className="mt-6 flex flex-col gap-4">

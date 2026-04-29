@@ -248,6 +248,120 @@ Admin APIs must be separated from user APIs.
 
 ---
 
+## 16.1 Access Token and Refresh Token Structure
+
+### Decision
+Use short-lived JWT access tokens and server-managed refresh tokens.
+
+### Rules
+- store only hashed refresh tokens
+- rotate refresh tokens on every successful refresh
+- revoke refresh tokens on logout
+- keep token durations in configuration, not code
+
+### Reason
+- access tokens keep normal API requests stateless
+- refresh tokens can be revoked when sessions must end
+- rotation reduces damage from leaked refresh tokens
+
+---
+
+## 16.2 Phone Verification Delivery
+
+### Decision
+Use a sender interface for phone verification code delivery.
+
+### Current Implementation
+- development sender logs verification codes
+- verification codes are stored as hashes
+- code length, expiry, and max attempts are configurable
+- core actions can use the server-side `@RequirePhoneVerified` guard
+
+### Future Plan
+- replace development sender with a production SMS provider adapter
+- required external values will include provider access key, secret key, sender number, and message template settings
+
+### Reason
+- backend validation can be built before choosing the SMS provider
+- production credentials do not need to be committed to the repository
+- sender implementation can change without changing controller or service logic
+
+---
+
+## 16.3 Region GPS Resolver Boundary
+
+### Decision
+Separate GPS-to-administrative-dong resolution behind a `RegionCoordinateResolver` interface.
+
+### Current Implementation
+- region lookup APIs read from `region_city`, `region_district`, and `region_dong`
+- GPS region verification flow saves the resolved dong as the user's primary region
+- Kakao Local API `coord2regioncode` is used when `app.maps.provider=kakao`
+- Kakao administrative region documents (`region_type = H`) are preferred
+- Kakao region codes are matched against `region_dong.code`
+
+### Reason
+- administrative dong mapping requires reliable region boundary data or provider integration
+- hardcoding coordinate-to-region rules would be inaccurate and difficult to maintain
+- region verification must remain server-side and replaceable
+
+---
+
+## 16.4 Map Provider for MVP
+
+### Decision
+Use Kakao Map and Kakao Local API as the MVP map provider.
+
+### Current Preparation
+- API keys are loaded from local environment variables
+- `.env` is ignored by Git and `.env.example` documents required variable names
+- backend reads `KAKAO_REST_API_KEY`, `KAKAO_JAVASCRIPT_KEY`, and `KAKAO_LOCAL_BASE_URL`
+- frontend can read `VITE_KAKAO_JAVASCRIPT_KEY`
+
+### Reason
+- Kakao Local API directly supports coordinate-to-region-code conversion
+- Kakao Local API also supports keyword/category place search with coordinates and radius
+- this fits region verification and nearby place discovery before the place domain is implemented
+
+---
+
+## 16.5 Region Seed Import
+
+### Decision
+Use an opt-in CSV import path for region seed data.
+
+### Current Implementation
+- import is disabled by default
+- `REGION_SEED_ENABLED=true` enables import on backend startup
+- `REGION_SEED_LOCATION` points to a UTF-8 CSV file
+- CSV rows use city, district, and administrative dong codes
+- `region_dong.code` must match Kakao administrative dong codes returned by `coord2regioncode`
+- the full seed CSV is generated from `KIKcd_H.20260325.xlsx` using `scripts/convert_korean_region_seed.py`
+
+### Reason
+- region data is operational reference data and should not change accidentally on every development run
+- the Kakao resolver needs stable administrative dong codes in DB
+- the import path lets the project add a complete national seed file later without changing service logic
+
+---
+
+## 16.6 Region Change Policy
+
+### Decision
+Region change cooldown must be read from `system_policies`.
+
+### Current Implementation
+- `PATCH /api/regions/me` changes the user's primary region by `dongId`
+- `GET /api/regions/me/change-policy` returns cooldown availability
+- the required policy key is `region.change_cooldown_day`
+- if the policy is missing or invalid, the server rejects region change
+
+### Reason
+- region change is a business policy and must remain admin-adjustable
+- place registration, recommendation, visit, and ranking depend on stable primary region behavior
+
+---
+
 ## 17. Server-Side Validation Only
 
 ### Decision

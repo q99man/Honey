@@ -3,8 +3,8 @@ import type { Place } from "../types/place";
 export const mockSpaces: Place[] = [
   {
     id: 1,
-    title: "JMT 순대 국밥",
-    desc: "조용하고 혼밥하기 좋은 밥집",
+    title: "골목 순대국",
+    desc: "든든한 국물과 동네 단골 분위기가 좋은 밥집",
     distance: "도보 8분",
     rating: 4.8,
     price: 8000,
@@ -15,8 +15,8 @@ export const mockSpaces: Place[] = [
   },
   {
     id: 2,
-    title: "꿀카페 스터디존",
-    desc: "조용히 공부하기 좋은 카페",
+    title: "꿀카페 스테이션",
+    desc: "조용히 쉬어가기 좋은 골목 카페",
     distance: "도보 5분",
     rating: 4.7,
     price: 6500,

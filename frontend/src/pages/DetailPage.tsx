@@ -14,7 +14,7 @@ export default function DetailPage({ spaces }: Props) {
 
   if (!space) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center">
         존재하지 않는 장소입니다.
       </div>
     );
@@ -22,25 +22,25 @@ export default function DetailPage({ spaces }: Props) {
 
   return (
     <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
-      <div className="relative h-[320px] bg-[#d8b7ae] flex items-center justify-center">
+      <div className="relative flex h-[320px] items-center justify-center bg-[#d8b7ae]">
         <button
+          type="button"
           onClick={() => navigate(-1)}
           className="absolute left-5 top-5 h-10 w-10 rounded-full bg-white shadow-sm"
+          aria-label="뒤로"
         >
           ←
         </button>
 
-        <span className="text-gray-600 font-medium">
-          이미지 영역 #{space.id}
-        </span>
+        <span className="font-medium text-gray-600">이미지 영역 #{space.id}</span>
       </div>
 
       <main className="px-6 pt-6">
-        <section className="bg-white rounded-2xl p-5 shadow-sm">
+        <section className="rounded-2xl bg-white p-5 text-left shadow-sm">
           <h1 className="text-2xl font-bold">{space.title}</h1>
 
           <p className="mt-2 text-sm text-gray-500">
-            {space.distance} · ⭐ {space.rating} · 리뷰 {space.reviewCount}개
+            {space.distance} · 별 {space.rating} · 리뷰 {space.reviewCount}개
           </p>
 
           <p className="mt-4 text-xl font-bold">
@@ -48,11 +48,9 @@ export default function DetailPage({ spaces }: Props) {
           </p>
         </section>
 
-        <section className="mt-5 bg-white rounded-2xl p-5 shadow-sm">
+        <section className="mt-5 rounded-2xl bg-white p-5 text-left shadow-sm">
           <h2 className="text-lg font-bold">소개</h2>
-          <p className="mt-3 text-sm text-gray-600">
-            {space.desc}
-          </p>
+          <p className="mt-3 text-sm text-gray-600">{space.desc}</p>
         </section>
       </main>
 

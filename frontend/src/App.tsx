@@ -13,7 +13,11 @@ function App() {
     const saved = localStorage.getItem("honeytong-spaces");
 
     if (saved) {
-      return JSON.parse(saved) as Place[];
+      try {
+        return JSON.parse(saved) as Place[];
+      } catch {
+        localStorage.removeItem("honeytong-spaces");
+      }
     }
 
     return mockSpaces;

@@ -112,19 +112,47 @@ POST /api/auth/logout
 
 Invalidate current session or refresh token.
 
+Request:
+
+{
+  "refreshToken": "jwt-refresh-token"
+}
+
+Response:
+
+{
+  "success": true,
+  "data": null,
+  "message": "Logout completed"
+}
+
 1.5 Refresh Token
 POST /api/auth/refresh
 
 Reissue access token using refresh token.
+The refresh token is rotated on each successful refresh.
+The server stores only a hash of the refresh token.
 
 Request:
 
 {
   "refreshToken": "jwt-refresh-token"
 }
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "accessToken": "jwt-access-token",
+    "refreshToken": "new-refresh-token"
+  },
+  "message": "Token refreshed"
+}
 2. Phone Verification API
 
 These APIs handle phone verification for core actions.
+These APIs require a valid access token.
 
 2.1 Send Verification Code
 POST /api/auth/phone/send-code
@@ -279,12 +307,24 @@ These APIs support region lookup, region verification, and primary region manage
 
 5.1 Get Cities
 GET /api/regions/cities
+
+This lookup API is public.
+
 5.2 Get Districts by City
 GET /api/regions/cities/{cityId}/districts
+
+This lookup API is public.
+
 5.3 Get Dongs by District
 GET /api/regions/districts/{districtId}/dongs
+
+This lookup API is public.
+
 5.4 Verify Region by GPS
 POST /api/regions/verify
+
+This API requires a valid access token.
+The GPS-to-administrative-dong resolver is an implementation boundary and requires region mapping data.
 
 Request:
 
@@ -310,6 +350,25 @@ Response:
 }
 5.5 Get My Primary Region
 GET /api/regions/me
+
+This API requires a valid access token.
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "cityId": 1,
+    "districtId": 12,
+    "dongId": 123,
+    "cityName": "서울특별시",
+    "districtName": "마포구",
+    "dongName": "서교동",
+    "verified": true
+  },
+  "message": "OK"
+}
+
 5.6 Change My Primary Region
 PATCH /api/regions/me
 
@@ -323,6 +382,24 @@ Note:
 
 cooldown and eligibility must be checked on server side
 region change policy must be policy-driven
+the current policy key is region.change_cooldown_day in system_policies
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "cityId": 1,
+    "districtId": 12,
+    "dongId": 123,
+    "cityName": "서울특별시",
+    "districtName": "마포구",
+    "dongName": "서교동",
+    "verified": true
+  },
+  "message": "Region changed"
+}
+
 5.7 Get Region Change Policy
 GET /api/regions/me/change-policy
 
