@@ -1,0 +1,40 @@
+import type { Place } from "../types/place";
+
+export const mockSpaces: Place[] = [
+  {
+    id: 1,
+    title: "JMT 순대 국밥",
+    desc: "조용하고 혼밥하기 좋은 밥집",
+    distance: "도보 8분",
+    rating: 4.8,
+    price: 8000,
+    reviewCount: 128,
+    category: "한식",
+    address: "서울시 마포구 어딘가",
+    isWished: true,
+  },
+  {
+    id: 2,
+    title: "꿀카페 스터디존",
+    desc: "조용히 공부하기 좋은 카페",
+    distance: "도보 5분",
+    rating: 4.7,
+    price: 6500,
+    reviewCount: 84,
+    category: "카페",
+    address: "서울시 강남구 어딘가",
+    isWished: true,
+  },
+  {
+    id: 3,
+    title: "혼밥 라멘 하우스",
+    desc: "혼자 먹기 편한 바 테이블 맛집",
+    distance: "도보 12분",
+    rating: 4.6,
+    price: 9000,
+    reviewCount: 61,
+    category: "일식",
+    address: "서울시 종로구 어딘가",
+    isWished: false,
+  },
+];

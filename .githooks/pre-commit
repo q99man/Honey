@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -e
+
+./scripts/format-check.sh
+./scripts/verify-doc-sync.sh
+./scripts/check-korean-encoding.sh
+./scripts/verify-ui-language.sh

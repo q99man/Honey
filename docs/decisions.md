@@ -1,0 +1,395 @@
+# 🧠 Architectural Decisions
+
+This document records key decisions made during the design of Honeytong.
+
+Its purpose is to:
+- explain WHY decisions were made
+- prevent inconsistent changes later
+- provide context for future development
+- guide refactoring and scaling
+
+---
+
+## 1. Monolithic Architecture (MVP)
+
+### Decision
+Use Spring Boot monolithic architecture.
+
+### Reason
+- faster MVP development
+- simpler deployment
+- easier coordination of policies and business rules
+
+### Trade-off
+- less scalable than microservices
+
+### Future Plan
+- separate batch processing if needed
+- split domains only when complexity increases
+
+---
+
+## 2. Domain-Oriented Structure
+
+### Decision
+Organize code by domain, not by technical layer.
+
+### Reason
+- improves maintainability
+- aligns with business logic
+- easier to scale features independently
+
+---
+
+## 3. Policy-Driven System
+
+### Decision
+All critical values must be stored in DB policies.
+
+### Examples
+- recommendation limits
+- visit radius
+- cooldown durations
+- ranking weights
+
+### Reason
+- admin must control system behavior without code changes
+- enables fast iteration and tuning
+
+### Trade-off
+- increased complexity in implementation
+
+---
+
+## 4. Aggregation-Based Ranking
+
+### Decision
+Ranking is NOT calculated in real-time.
+
+### Instead
+- store activity events
+- aggregate scores periodically
+- read from precomputed tables
+
+### Reason
+- performance optimization
+- predictable ranking results
+- easier admin control
+
+---
+
+## 5. Trust-Based Influence System
+
+### Decision
+User actions are weighted by trust.
+
+### Reason
+- prevent abuse
+- reward active and reliable users
+- maintain ranking quality
+
+### Trade-off
+- requires additional tracking and calculation
+
+---
+
+## 6. Visit Verification with GPS
+
+### Decision
+Visits require GPS-based validation.
+
+### Reason
+- ensure real-world interaction
+- increase credibility of recommendations
+
+### Trade-off
+- GPS spoofing risk
+- device dependency
+
+### Mitigation
+- cooldown limits
+- anomaly detection (future)
+
+---
+
+## 7. One Action Per User Rule
+
+### Decision
+- one recommendation per user per place
+- one comment per user per place
+
+### Reason
+- prevent spam
+- simplify logic
+- maintain fairness
+
+---
+
+## 8. Cooldown-Based Controls
+
+### Decision
+Use cooldown instead of unlimited actions.
+
+### Examples
+- visit cooldown (24h)
+- region change cooldown
+- daily recommendation limit
+
+### Reason
+- control abuse
+- encourage natural usage patterns
+
+---
+
+## 9. Region-Based System (Hyperlocal)
+
+### Decision
+System is built around:
+- city
+- district
+- dong
+
+### Reason
+- hyperlocal discovery is core value
+- aligns with Korean user behavior (당근 스타일)
+
+---
+
+## 10. Place Registration Limitation
+
+### Decision
+Users have limited place registration capacity.
+
+### Reason
+- prevent spam content
+- increase quality of entries
+- encourage thoughtful contribution
+
+---
+
+## 11. Franchise Restriction Policy
+
+### Decision
+Franchise places are restricted.
+
+### Reason
+- maintain "local hidden gem" concept
+- differentiate from generic review platforms
+
+### Trade-off
+- requires moderation
+- potential ambiguity
+
+---
+
+## 12. Admin-Centric Control System
+
+### Decision
+Admin has strong control over:
+- users
+- places
+- reports
+- policies
+- rankings
+
+### Reason
+- early-stage system needs manual intervention
+- abuse must be controllable
+
+---
+
+## 13. Mobile-First Design
+
+### Decision
+System is designed primarily for mobile.
+
+### Reason
+- location-based behavior
+- real-time interaction
+- map-based UX
+
+---
+
+## 14. Web as Secondary Platform
+
+### Decision
+Web supports browsing and admin usage.
+
+### Reason
+- mobile is primary usage
+- admin tools require larger interface
+
+---
+
+## 15. Redis for Runtime Control
+
+### Decision
+Use Redis for:
+- cooldown
+- daily limits
+- temporary states
+- caching
+
+### Reason
+- fast access
+- reduces DB load
+
+---
+
+## 16. Separation of User and Admin APIs
+
+### Decision
+Admin APIs must be separated from user APIs.
+
+### Reason
+- security
+- clarity
+- easier permission control
+
+---
+
+## 17. Server-Side Validation Only
+
+### Decision
+All critical validation must be done on server.
+
+### Reason
+- frontend cannot be trusted
+- prevents abuse
+
+---
+
+## 18. No Hardcoded Business Rules
+
+### Decision
+Business rules must not be hardcoded.
+
+### Reason
+- flexibility
+- easier tuning
+- admin control
+
+---
+
+## 19. Event-Driven Data Collection
+
+### Decision
+Record user actions as events.
+
+### Examples
+- recommendation
+- visit
+- comment
+
+### Reason
+- enables analytics
+- supports ranking aggregation
+
+---
+
+## 20. Simple MVP, Expandable Structure
+
+### Decision
+Keep MVP simple but structure scalable.
+
+### Reason
+- reduce initial complexity
+- allow future expansion without redesign
+
+---
+
+## 21. Ranking Priority Design
+
+### Decision
+visit > recommendation > comment
+
+### Reason
+- real-world action is most valuable
+- recommendation is secondary signal
+- comments are supportive signals
+
+---
+
+## 22. Audience Tag System (Future-Ready)
+
+### Decision
+Design system to support demographic-based tags.
+
+### Examples
+- "Popular among men in their 30s"
+- "Popular among women in their 20s"
+
+### Reason
+- enhances discovery
+- adds insight beyond simple ranking
+
+---
+
+## 23. Season-Based Ranking System
+
+### Decision
+Ranking is calculated per season.
+
+### Reason
+- freshness
+- competition
+- historical tracking
+
+---
+
+## 24. Logging for Critical Actions
+
+### Decision
+Log:
+- user actions
+- admin actions
+
+### Reason
+- debugging
+- monitoring
+- abuse detection
+
+---
+
+## 25. Growth System (Level & EXP)
+
+### Decision
+Users gain EXP and level up.
+
+### Reason
+- gamification
+- increase engagement
+
+---
+
+## 26. Soft Control Before Hard Restriction
+
+### Decision
+Start with flexible policies, tighten later.
+
+### Reason
+- early-stage needs data
+- avoid blocking growth
+
+---
+
+## 27. Final Principle
+
+The system is designed to:
+
+- encourage exploration
+- reward trust
+- prevent abuse
+- allow admin control
+- remain flexible
+
+---
+
+## Final Note
+
+Every new feature must respect these decisions.
+
+If a change conflicts with a decision:
+- document it here
+- explain the reason
+- update related systems accordingly

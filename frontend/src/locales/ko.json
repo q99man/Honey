@@ -1,0 +1,36 @@
+{
+  "common.confirm": "확인",
+  "common.cancel": "취소",
+  "common.save": "저장",
+  "common.delete": "삭제",
+  "common.edit": "수정",
+  "common.next": "다음",
+  "common.back": "뒤로",
+  "common.search": "검색",
+  "common.filter": "필터",
+
+  "auth.login": "로그인",
+  "auth.signup": "회원가입",
+  "auth.phoneVerificationRequired": "활동을 위해 전화 인증이 필요합니다.",
+  "auth.goToVerify": "인증하러 가기",
+  "auth.hideToday": "오늘 하루 보지 않기",
+
+  "place.recommend": "추천하기",
+  "place.visitVerify": "방문 인증하고 꿀 따기",
+  "place.comment": "한줄 코멘트",
+  "place.register": "꽃 등록하기",
+
+  "ranking.title": "지역 랭킹",
+  "ranking.dong": "동 랭킹",
+  "ranking.district": "구 랭킹",
+  "ranking.city": "시 랭킹",
+
+  "mypage.title": "마이페이지",
+  "mypage.level": "내 레벨",
+  "mypage.trust": "내 신뢰도",
+
+  "error.phoneVerificationRequired": "전화 인증 후 이용할 수 있습니다.",
+  "error.regionVerificationRequired": "동네 인증 후 이용할 수 있습니다.",
+  "error.visitOutOfRange": "매장 근처에서 다시 시도해 주세요.",
+  "error.visitCooldown": "오늘은 이미 방문한 꽃이에요."
+}
