@@ -1,0 +1,10 @@
+policy_group,policy_key,policy_value,value_type,description
+region,change_cooldown_day,7,INTEGER,지역 변경 쿨다운 일수
+region,registration_scope,DISTRICT,STRING,장소 등록 허용 지역 범위
+place,registration_limit,5,INTEGER,사용자별 장소 등록 가능 횟수
+recommend,daily_limit,20,INTEGER,일일 추천 가능 횟수
+visit,radius_meter,70,INTEGER,방문 인증 허용 반경 미터
+visit,cooldown_hour,24,INTEGER,장소별 방문 인증 쿨다운 시간
+ranking,recommend_weight,1.0,DECIMAL,추천 점수 가중치
+ranking,visit_weight,2.0,DECIMAL,방문 점수 가중치
+ranking,comment_weight,0.5,DECIMAL,댓글 점수 가중치

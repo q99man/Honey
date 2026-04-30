@@ -12,12 +12,11 @@ It is used to:
 
 ## 1. Current Phase
 
-Phase: PRE-DEVELOPMENT  
-Status: Architecture & Design Completed
+Phase: BACKEND MVP DEVELOPMENT
+Status: Core auth, user, region, policy, admin policy, and place foundation in progress
 
-The system design, API structure, database schema, and rules are fully defined.
-
-Development has NOT started yet.
+The system design, API structure, database schema, and rules are defined.
+Backend MVP implementation is progressing in small API increments.
 
 ---
 
@@ -104,26 +103,82 @@ All documents are consistent with each other.
 - [x] `system_policies` entity and repository implemented
 - [x] Required integer policy loader implemented
 - [x] Region change cooldown wired to policy service
-- [ ] Admin policy management API pending
+- [x] Required string policy loader implemented
+- [x] Admin policy list/update API implemented at `/api/admin/policies`
+- [x] Admin region policy API implemented at `/api/admin/policies/region`
+- [x] Opt-in policy seed import path added with `POLICY_SEED_ENABLED`
 - [ ] Redis policy cache pending
 
 ### Place System
-- [ ] Not started
+- [x] `places`, `place_images`, and `place_stats` entities/repositories implemented
+- [x] Place creation API implemented at `POST /api/places`
+- [x] Place creation requires phone verification via `@RequirePhoneVerified`
+- [x] Place creation validates primary region and registration scope policy
+- [x] Place registration limit reads `system_policies.place.registration_limit`
+- [x] Place registration scope reads `system_policies.region.registration_scope`
+- [x] Place detail API implemented at `GET /api/places/{placeId}`
+- [x] Region-filtered place list API implemented at `GET /api/places`
+- [x] Nearby place list API implemented at `GET /api/places/nearby`
+- [x] Place search API implemented at `GET /api/places/search`
+- [x] Place registration policy API implemented at `GET /api/places/registration-policy`
+- [x] Frontend mock place list removed and connected to real `/api/places`
+- [ ] Update/delete APIs pending
 
 ### Recommendation System
-- [ ] Not started
+- [x] `recommendations` entity and repository implemented
+- [x] Recommend API implemented at `POST /api/places/{placeId}/recommend`
+- [x] Cancel recommendation API implemented at `DELETE /api/places/{placeId}/recommend`
+- [x] Recommendation policy API implemented at `GET /api/places/{placeId}/recommend-policy`
+- [x] My recommendations API implemented at `GET /api/users/me/recommendations`
+- [x] Recommendation requires phone verification via `@RequirePhoneVerified`
+- [x] One active recommendation per user/place is enforced
+- [x] Daily recommendation limit reads `system_policies.recommend.daily_limit`
+- [x] User trust recommendation weight is applied
+- [x] `place_stats.recommend_count`, `score_total`, and `trust_weighted_score` update on recommend/cancel
 
 ### Visit System
-- [ ] Not started
+- [x] `visits` entity/repository implemented
+- [x] Visit verification API implemented at `POST /api/places/{placeId}/visits`
+- [x] Visit policy API implemented at `GET /api/places/{placeId}/visit-policy`
+- [x] My visits API implemented at `GET /api/users/me/visits`
+- [x] Place visit summary API implemented at `GET /api/places/{placeId}/visits/summary`
+- [x] Visit verification requires phone verification via `@RequirePhoneVerified`
+- [x] GPS distance validation reads `system_policies.visit.radius_meter`
+- [x] Visit cooldown reads `system_policies.visit.cooldown_hour`
+- [x] Valid visits update `place_stats.visit_count`, `score_total`, and `trust_weighted_score`
+- [ ] User trust/level update on visit pending
 
 ### Comment System
-- [ ] Not started
+- [x] `comments` entity/repository implemented
+- [x] Create comment API implemented at `POST /api/places/{placeId}/comments`
+- [x] Update comment API implemented at `PATCH /api/comments/{commentId}`
+- [x] Delete comment API implemented at `DELETE /api/comments/{commentId}`
+- [x] Place comment list API implemented at `GET /api/places/{placeId}/comments`
+- [x] My comments API implemented at `GET /api/users/me/comments`
+- [x] Comment create/update requires phone verification via `@RequirePhoneVerified`
+- [x] One visible comment per user/place is enforced
+- [x] Deleted comments can be restored by writing again without violating the DB unique key
+- [x] Valid visible comments update `place_stats.comment_count`, `score_total`, and `trust_weighted_score`
 
 ### Ranking System
-- [ ] Not started
+- [x] `seasons`, `place_season_scores`, and `place_ranking_history` entities/repositories implemented
+- [x] Place ranking read API implemented at `GET /api/rankings/places`
+- [x] Current season API implemented at `GET /api/rankings/seasons/current`
+- [x] Ranking reads use `place_season_scores` aggregate rows instead of raw recommendation/visit/comment rows
+- [x] Ranking read supports dong/district/city region types and optional `seasonCode`
+- [x] Admin season list/create/update APIs implemented at `/api/admin/seasons`
+- [x] Admin ranking recalculation API implemented at `POST /api/admin/rankings/recalculate`
+- [x] Ranking aggregation writes `place_season_scores` from `place_stats`
+- [x] Ranking aggregation reads `ranking.recommend_weight`, `ranking.visit_weight`, and `ranking.comment_weight`
+- [ ] Automated scheduler for ranking aggregation pending
+- [ ] Ranking exclusion control pending
 
 ### Admin System
-- [ ] Not started
+- [x] Admin API route protection added for `/api/admin/**`
+- [x] Policy updates restricted to `SUPER_ADMIN`
+- [x] Admin policy changes are logged in `admin_action_logs`
+- [x] Disabled-by-default local admin bootstrap/test account flow added
+- [ ] Dashboard/report/user/place admin tools pending
 
 ---
 
@@ -180,10 +235,11 @@ Next implementation order:
 
 Next task:
 
-Continue Policy/Admin Foundation
+Start Report System Foundation
 
-- add admin policy read/update APIs
-- add local policy seed/import path or admin bootstrap flow
+- create report entity and user report APIs
+- keep report handling ready for admin moderation workflow
+- report targets should support place, comment, and user without applying automated sanctions yet
 
 ---
 

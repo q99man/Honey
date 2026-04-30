@@ -4,7 +4,7 @@ export default function CategoryTabs() {
       <Tab active label="전체" />
       <Tab label="한식" />
       <Tab label="카페" />
-      <Tab label="혼밥" />
+      <Tab label="일식" />
     </div>
   );
 }

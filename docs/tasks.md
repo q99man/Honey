@@ -71,17 +71,17 @@ The goal is:
 ## 4. Place System (Core Domain)
 
 ### Basic Structure
-- [ ] Create place entity
-- [ ] Create place_images entity
-- [ ] Create place_stats entity
+- [x] Create place entity
+- [x] Create place_images entity
+- [x] Create place_stats entity
 
 ### Features
-- [ ] Implement place creation API
-- [ ] Validate place registration policy
-- [ ] Implement place detail API
-- [ ] Implement nearby places API
-- [ ] Implement region-based place list
-- [ ] Implement place search API
+- [x] Implement place creation API
+- [x] Validate place registration policy
+- [x] Implement place detail API
+- [x] Implement nearby places API
+- [x] Implement region-based place list
+- [x] Implement place search API
 - [ ] Implement update place API
 - [ ] Implement delete place API
 
@@ -89,54 +89,56 @@ The goal is:
 
 ## 5. Recommendation System
 
-- [ ] Create recommendation entity
-- [ ] Enforce unique (user, place)
-- [ ] Implement recommend API
-- [ ] Implement cancel recommendation API
-- [ ] Validate daily recommendation limit
-- [ ] Apply trust-based weight
-- [ ] Update place_stats on recommendation
-- [ ] Implement recommendation policy API
+- [x] Create recommendation entity
+- [x] Enforce unique (user, place)
+- [x] Implement recommend API
+- [x] Implement cancel recommendation API
+- [x] Validate daily recommendation limit
+- [x] Apply trust-based weight
+- [x] Update place_stats on recommendation
+- [x] Implement recommendation policy API
 
 ---
 
 ## 6. Visit System (Critical)
 
-- [ ] Create visit entity
-- [ ] Implement GPS validation logic
-- [ ] Implement visit API
-- [ ] Enforce visit cooldown (24h default)
-- [ ] Store visit validity
-- [ ] Update place_stats on visit
+- [x] Create visit entity
+- [x] Implement GPS validation logic
+- [x] Implement visit API
+- [x] Enforce visit cooldown
+- [x] Store visit validity
+- [x] Update place_stats on visit
 - [ ] Update user trust/level on visit
-- [ ] Implement visit policy API
+- [x] Implement visit policy API
+- [x] Implement my visits API
+- [x] Implement place visit summary API
 
 ---
 
 ## 7. Comment System
 
-- [ ] Create comment entity
-- [ ] Enforce one comment per user per place
-- [ ] Implement create comment API
-- [ ] Implement update comment API
-- [ ] Implement delete comment API
-- [ ] Implement place comment list API
-- [ ] Implement user comment list API
+- [x] Create comment entity
+- [x] Enforce one comment per user per place
+- [x] Implement create comment API
+- [x] Implement update comment API
+- [x] Implement delete comment API
+- [x] Implement place comment list API
+- [x] Implement user comment list API
 
 ---
 
 ## 8. Ranking System
 
 ### Structure
-- [ ] Create seasons table
-- [ ] Create place_season_scores table
-- [ ] Create ranking history table
+- [x] Create seasons table
+- [x] Create place_season_scores table
+- [x] Create ranking history table
 
 ### Logic
-- [ ] Implement score calculation service
-- [ ] Implement ranking aggregation logic
-- [ ] Implement ranking read API (dong/district/city)
-- [ ] Implement season handling
+- [x] Implement score calculation service
+- [x] Implement ranking aggregation logic
+- [x] Implement ranking read API (dong/district/city)
+- [x] Implement season handling
 
 ---
 
@@ -155,17 +157,19 @@ The goal is:
 
 - [x] Create system_policies table
 - [x] Implement policy loading service
+- [x] Add opt-in policy seed/bootstrap import path
+- [x] Implement admin policy read/update API
 - [ ] Implement policy cache (Redis)
 - [ ] Replace hardcoded values with policy values
 
 ### Policies to Support
-- [ ] daily recommendation limit
-- [ ] visit radius
-- [ ] visit cooldown
-- [ ] ranking weights
+- [x] daily recommendation limit
+- [x] visit radius
+- [x] visit cooldown
+- [x] ranking weights
 - [ ] trust weights
 - [x] region change cooldown
-- [ ] place registration limit
+- [x] place registration limit
 
 ---
 
@@ -181,8 +185,9 @@ The goal is:
 ## 12. Admin System (Critical)
 
 ### Admin Base
-- [ ] Implement admin authentication/authorization
-- [ ] Separate admin API routes
+- [x] Implement admin authentication/authorization
+- [x] Separate admin API routes
+- [x] Add disabled-by-default local admin bootstrap/test account flow
 
 ### Dashboard
 - [ ] Implement admin dashboard metrics
@@ -208,9 +213,9 @@ The goal is:
 
 ## 13. Ranking Admin Tools
 
-- [ ] Implement season creation
-- [ ] Implement season status change
-- [ ] Implement ranking recalculation trigger
+- [x] Implement season creation
+- [x] Implement season status change
+- [x] Implement ranking recalculation trigger
 - [ ] Implement ranking exclusion control
 
 ---
@@ -236,7 +241,7 @@ The goal is:
 ## 16. Logging System
 
 - [ ] Implement user action logs
-- [ ] Implement admin action logs
+- [x] Implement admin action log entity and policy update logging
 - [ ] Log recommendation / visit / report / admin actions
 
 ---

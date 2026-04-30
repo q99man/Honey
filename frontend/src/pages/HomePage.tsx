@@ -6,14 +6,23 @@ import SpaceCard from "../components/SpaceCard";
 import type { Place } from "../types/place";
 
 type Props = {
-  spaces: Place[];
+  places: Place[];
+  loading: boolean;
+  errorMessage: string | null;
   onToggleWish: (id: number) => void;
+  onSearch: (keyword: string) => void;
 };
 
-export default function HomePage({ spaces, onToggleWish }: Props) {
+export default function HomePage({
+  places,
+  loading,
+  errorMessage,
+  onToggleWish,
+  onSearch,
+}: Props) {
   return (
     <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
-      <SearchBar />
+      <SearchBar onSearch={onSearch} />
       <CategoryTabs />
 
       <div className="mt-4 px-6">
@@ -25,17 +34,36 @@ export default function HomePage({ spaces, onToggleWish }: Props) {
       <div className="mt-8 px-6">
         <h2 className="mb-4 text-lg font-bold">오늘의 꿀스팟</h2>
 
+        {loading && (
+          <div className="rounded-xl bg-white p-5 text-sm text-gray-500">
+            장소를 불러오는 중입니다.
+          </div>
+        )}
+
+        {!loading && errorMessage && (
+          <div className="rounded-xl bg-white p-5 text-sm text-red-500">
+            {errorMessage}
+          </div>
+        )}
+
+        {!loading && !errorMessage && places.length === 0 && (
+          <div className="rounded-xl bg-white p-5 text-sm text-gray-500">
+            아직 등록된 장소가 없습니다.
+          </div>
+        )}
+
         <div className="flex flex-col gap-4">
-          {spaces.map((space) => (
-            <Link key={space.id} to={`/spaces/${space.id}`}>
+          {places.map((place) => (
+            <Link key={place.id} to={`/places/${place.id}`}>
               <SpaceCard
-                title={space.title}
-                desc={space.desc}
-                distance={space.distance}
-                rating={space.rating}
-                price={space.price}
-                isWished={space.isWished}
-                onToggleWish={() => onToggleWish(space.id)}
+                title={place.title}
+                desc={place.desc}
+                distance={place.distance}
+                rating={place.rating}
+                price={place.price}
+                imageUrl={place.imageUrl}
+                isWished={place.isWished}
+                onToggleWish={() => onToggleWish(place.id)}
               />
             </Link>
           ))}

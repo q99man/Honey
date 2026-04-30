@@ -69,6 +69,10 @@ public class UserAuth extends BaseTimeEntity {
         return passwordHash;
     }
 
+    public void updatePasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
+    }
+
     public void markLoggedIn() {
         this.lastLoginAt = LocalDateTime.now();
     }

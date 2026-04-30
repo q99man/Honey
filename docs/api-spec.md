@@ -480,6 +480,8 @@ GET /api/places/nearby?lat={lat}&lng={lng}&radius={radius}
 Purpose:
 Returns nearby flowers for map-based exploration.
 
+Response items include `distanceMeter` when distance is calculated.
+
 6.4 Get Places by Region
 GET /api/places?cityId={cityId}&districtId={districtId}&dongId={dongId}
 6.5 Search Places
@@ -514,22 +516,23 @@ Response:
   "success": true,
   "data": {
     "canRegister": true,
-    "allowedScopes": [
-      "DONG",
-      "DISTRICT",
-      "CITY"
-    ],
-    "currentUsage": {
-      "dong": 1,
-      "district": 0,
-      "city": 0
-    }
+    "registrationScope": "DISTRICT",
+    "registrationLimit": 5,
+    "currentUsage": 1
   },
   "message": "OK"
 }
+
+MVP note:
+The current backend uses one active registration scope policy and one per-user registration limit.
 7. Recommendation API
 7.1 Recommend Place
 POST /api/places/{placeId}/recommend
+
+Requires:
+- authenticated user
+- phone verification
+- daily recommendation limit policy
 
 Response:
 
@@ -544,6 +547,18 @@ Response:
 }
 7.2 Cancel Recommendation
 DELETE /api/places/{placeId}/recommend
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "recommended": false,
+    "recommendCount": 32,
+    "myWeight": 1.10
+  },
+  "message": "Recommendation canceled"
+}
 7.3 Get My Recommendations
 GET /api/users/me/recommendations
 7.4 Get Recommendation Policy
@@ -563,6 +578,12 @@ Response:
 8. Visit API
 8.1 Verify Visit
 POST /api/places/{placeId}/visits
+
+Requires:
+- authenticated user
+- phone verification
+- GPS distance within `system_policies.visit.radius_meter`
+- no active cooldown from `system_policies.visit.cooldown_hour`
 
 Request:
 
@@ -584,6 +605,8 @@ Response:
   },
   "message": "Visit verified"
 }
+MVP note:
+`expGained` currently returns 0 until the trust/level growth system is implemented.
 8.2 Get Visit Policy
 GET /api/places/{placeId}/visit-policy
 
@@ -600,11 +623,47 @@ Response:
 }
 8.3 Get My Visits
 GET /api/users/me/visits
+
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "visitId": 701,
+      "placeId": 1001,
+      "placeName": "Sangdong Sundaeguk",
+      "categoryCode": "KOREAN",
+      "address": "Some road address",
+      "distanceMeter": 42,
+      "imageUrl": "https://image.example.com/visit.jpg",
+      "visitedAt": "2026-04-22T13:00:00"
+    }
+  ],
+  "message": "OK"
+}
 8.4 Get Place Visit Summary
 GET /api/places/{placeId}/visits/summary
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "placeId": 1001,
+    "visitCount": 20,
+    "lastVisitedAt": "2026-04-22T13:00:00"
+  },
+  "message": "OK"
+}
 9. Comment API
 9.1 Create Comment
 POST /api/places/{placeId}/comments
+
+Requires:
+- authenticated user
+- phone verification
+- one visible comment per user/place
 
 Request:
 
@@ -624,17 +683,91 @@ Response:
 9.2 Update Comment
 PATCH /api/comments/{commentId}
 
+Requires:
+- authenticated comment owner
+- phone verification
+
 Request:
 
 {
   "content": "Rich soup and strong local taste"
 }
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "commentId": 501,
+    "placeId": 1001,
+    "placeName": "Sangdong Sundaeguk",
+    "userId": 1,
+    "nickname": "bee_user",
+    "content": "Rich soup and strong local taste",
+    "createdAt": "2026-04-22T13:00:00",
+    "updatedAt": "2026-04-22T13:10:00"
+  },
+  "message": "Comment updated"
+}
 9.3 Delete Comment
 DELETE /api/comments/{commentId}
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "commentId": 501,
+    "deleted": true,
+    "commentCount": 10
+  },
+  "message": "Comment deleted"
+}
 9.4 Get Place Comments
 GET /api/places/{placeId}/comments
+
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "commentId": 501,
+      "placeId": 1001,
+      "placeName": "Sangdong Sundaeguk",
+      "userId": 1,
+      "nickname": "bee_user",
+      "content": "Rich soup and reliable quality",
+      "createdAt": "2026-04-22T13:00:00",
+      "updatedAt": "2026-04-22T13:00:00"
+    }
+  ],
+  "message": "OK"
+}
 9.5 Get My Comments
 GET /api/users/me/comments
+
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "commentId": 501,
+      "placeId": 1001,
+      "placeName": "Sangdong Sundaeguk",
+      "userId": 1,
+      "nickname": "bee_user",
+      "content": "Rich soup and reliable quality",
+      "createdAt": "2026-04-22T13:00:00",
+      "updatedAt": "2026-04-22T13:00:00"
+    }
+  ],
+  "message": "OK"
+}
+
+MVP note:
+Deleting a comment marks it deleted. Writing again for the same place restores the existing row to respect the unique user/place rule.
 10. Ranking API
 
 These APIs return seasonal ranking data.
@@ -684,6 +817,26 @@ Returns star and rank history by season.
 
 10.4 Get Current Season Info
 GET /api/rankings/seasons/current
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "seasonCode": "2026-04",
+    "seasonName": "2026년 4월",
+    "seasonType": "MONTHLY",
+    "startAt": "2026-04-01T00:00:00",
+    "endAt": "2026-04-30T23:59:59",
+    "status": "ACTIVE"
+  },
+  "message": "OK"
+}
+
+MVP note:
+Place ranking reads are public and read from `place_season_scores`.
+They must not recalculate scores from recommendation, visit, or comment rows on each request.
+Audience tags currently return an empty list until audience aggregation is implemented.
 11. Mission API
 11.1 Get Active Missions
 GET /api/missions
@@ -750,6 +903,9 @@ All admin actions must:
 require admin role
 be logged
 validate permission on server side
+
+MVP bootstrap note:
+Local admin/test account creation is handled by disabled-by-default startup configuration, not by a public API endpoint.
 15.1 Admin Dashboard
 GET /api/admin/dashboard
 
@@ -866,17 +1022,83 @@ GET /api/admin/seasons
 
 Get season list.
 
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "seasonCode": "2026-04",
+      "seasonName": "2026년 4월",
+      "seasonType": "MONTHLY",
+      "startAt": "2026-04-01T00:00:00",
+      "endAt": "2026-04-30T23:59:59",
+      "status": "ACTIVE"
+    }
+  ],
+  "message": "OK"
+}
+
 POST /api/admin/seasons
 
 Create season.
+
+Request:
+
+{
+  "seasonCode": "2026-04",
+  "seasonName": "2026년 4월",
+  "seasonType": "MONTHLY",
+  "startAt": "2026-04-01T00:00:00",
+  "endAt": "2026-04-30T23:59:59",
+  "status": "ACTIVE",
+  "memo": "MVP launch season"
+}
 
 PATCH /api/admin/seasons/{seasonId}
 
 Change season status or period.
 
+Request:
+
+{
+  "seasonName": "2026년 4월",
+  "seasonType": "MONTHLY",
+  "startAt": "2026-04-01T00:00:00",
+  "endAt": "2026-04-30T23:59:59",
+  "status": "ACTIVE",
+  "memo": "Open current season"
+}
+
 POST /api/admin/rankings/recalculate
 
 Trigger ranking recalculation.
+
+Request:
+
+{
+  "seasonCode": "2026-04",
+  "memo": "Manual MVP recalculation"
+}
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "seasonCode": "2026-04",
+    "placeCount": 25,
+    "scoreCount": 75
+  },
+  "message": "Ranking recalculated"
+}
+
+Notes:
+- ranking recalculation reads `place_stats`, not raw recommendation, visit, or comment rows
+- `ranking.recommend_weight`, `ranking.visit_weight`, and `ranking.comment_weight` are read from `system_policies`
+- one active season is allowed at a time in the MVP admin flow
+- admin ranking actions are logged to `admin_action_logs`
 
 PATCH /api/admin/rankings/places/{placeId}/exclude
 
@@ -890,12 +1112,20 @@ Get all policies.
 PATCH /api/admin/policies/{policyKey}
 
 Update policy value.
+Requires SUPER_ADMIN.
 
 Request:
 
 {
-  "value": "20"
+  "value": "20",
+  "memo": "Increase launch-period recommendation limit"
 }
+
+Notes:
+- one active recommendation per user/place is allowed
+- daily limit is read from `system_policies.recommend.daily_limit`
+- recommendation weight is read from `user_trust.recommend_weight`
+- recommend/cancel updates `place_stats`
 
 Typical policy keys:
 
@@ -921,6 +1151,10 @@ Request:
   "regionChangeCooldownDays": 7,
   "registrationScope": "DISTRICT"
 }
+
+Notes:
+- policy changes are logged to admin_action_logs
+- default policy rows can be bootstrapped by setting POLICY_SEED_ENABLED=true
 15.10 Admin Action Logs
 GET /api/admin/action-logs
 

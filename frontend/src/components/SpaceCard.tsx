@@ -3,7 +3,8 @@ type Props = {
   desc: string;
   distance: string;
   rating: number;
-  price: number;
+  price: string;
+  imageUrl?: string;
   isWished?: boolean;
   onToggleWish?: () => void;
 };
@@ -14,12 +15,22 @@ export default function SpaceCard({
   distance,
   rating,
   price,
+  imageUrl,
   isWished = false,
   onToggleWish,
 }: Props) {
   return (
     <div className="relative flex gap-3 rounded-xl bg-white p-3 text-left shadow-sm">
-      <div className="h-[72px] w-[72px] shrink-0 rounded-lg bg-[#f0d5a5]" />
+      <div className="h-[72px] w-[72px] shrink-0 overflow-hidden rounded-lg bg-[#f0d5a5]">
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt=""
+            className="h-full w-full object-cover"
+            loading="lazy"
+          />
+        )}
+      </div>
 
       <div className="flex flex-1 flex-col gap-1 pr-8">
         <div className="text-[16px] font-bold">{title}</div>
@@ -27,9 +38,7 @@ export default function SpaceCard({
 
         <div className="text-[12px] text-gray-400">
           {distance} · 별 {rating} ·{" "}
-          <span className="font-bold text-black">
-            {price.toLocaleString()}원
-          </span>
+          <span className="font-bold text-black">{price}</span>
         </div>
       </div>
 

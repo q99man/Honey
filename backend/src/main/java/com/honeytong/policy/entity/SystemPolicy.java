@@ -74,11 +74,36 @@ public class SystemPolicy extends BaseTimeEntity {
         return policyValue;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getPolicyGroup() {
+        return policyGroup;
+    }
+
+    public String getPolicyKey() {
+        return policyKey;
+    }
+
     public PolicyValueType getValueType() {
         return valueType;
     }
 
+    public String getDescription() {
+        return description;
+    }
+
+    public User getUpdatedBy() {
+        return updatedBy;
+    }
+
     public boolean isActive() {
         return active;
+    }
+
+    public void updateValue(String policyValue, User updatedBy) {
+        this.policyValue = policyValue;
+        this.updatedBy = updatedBy;
     }
 }

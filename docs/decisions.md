@@ -362,6 +362,168 @@ Region change cooldown must be read from `system_policies`.
 
 ---
 
+## 16.7 Policy Seed Import and Admin Policy Management
+
+### Decision
+Default system policies can be imported from an opt-in UTF-8 CSV seed file, and admins manage policies through separated admin APIs.
+
+### Current Implementation
+- `POLICY_SEED_ENABLED=true` enables missing-only policy seed import on backend startup
+- `POLICY_SEED_LOCATION` defaults to `classpath:policy/policy-defaults.csv`
+- `GET /api/admin/policies` is available to ADMIN and SUPER_ADMIN users
+- policy updates are restricted to SUPER_ADMIN users
+- policy updates are logged to `admin_action_logs`
+
+### Reason
+- business policy values must live in the database, not application logic
+- seed import gives local and initial environments a repeatable bootstrap path
+- missing-only import avoids overwriting values changed by admins
+- policy changes need an audit trail because they affect platform rules
+
+---
+
+## 16.8 MVP Place Registration Policy
+
+### Decision
+Place registration uses a simple MVP policy model: one per-user registration limit and one region scope.
+
+### Current Implementation
+- `POST /api/places` requires phone verification
+- user primary region verification is required before place registration
+- `place.registration_limit` controls how many active places a user can register
+- `region.registration_scope` controls whether registration is allowed within DONG, DISTRICT, or CITY
+- place stats are initialized when a place is created
+
+### Reason
+- this keeps the first place API small and testable
+- registration remains policy-driven from the beginning
+- the model can later expand to level-based or region-specific limits without changing the core place table
+
+---
+
+## 16.9 MVP Recommendation Policy
+
+### Decision
+Recommendation is a positive-only user action with one active recommendation per user/place.
+
+### Current Implementation
+- `POST /api/places/{placeId}/recommend` requires phone verification
+- `DELETE /api/places/{placeId}/recommend` cancels an active recommendation
+- duplicate active recommendations are rejected
+- `recommend.daily_limit` controls the daily recommendation limit
+- `user_trust.recommend_weight` is stored on the recommendation and applied to place stats
+- recommend/cancel updates `place_stats.recommend_count`, `score_total`, and `trust_weighted_score`
+
+### Reason
+- positive-only recommendation keeps MVP interaction simple and low-conflict
+- daily limits and phone verification reduce basic abuse
+- storing the weight on each recommendation preserves the action's historical influence for later ranking aggregation
+
+---
+
+## 16.10 Local Admin Bootstrap
+
+### Decision
+Provide a disabled-by-default local admin bootstrap path for development and MVP testing.
+
+### Current Implementation
+- `ADMIN_BOOTSTRAP_ENABLED=false` keeps the flow inactive by default
+- when enabled, the backend creates or promotes one LOCAL account to ADMIN or SUPER_ADMIN on startup
+- optional phone verification can be applied to the bootstrap account for later core-action testing
+- existing accounts keep their password unless `ADMIN_BOOTSTRAP_RESET_PASSWORD=true`
+- bootstrap actions are written to `admin_action_logs`
+
+### Reason
+- admin policy testing should not require manual database edits
+- later place registration tests need a repeatable privileged test account path
+- no public admin account creation API is exposed for MVP safety
+
+---
+
+## 16.11 MVP Visit Verification Policy
+
+### Decision
+Visit verification uses stored GPS coordinates, policy-driven radius, and policy-driven cooldown.
+
+### Current Implementation
+- `POST /api/places/{placeId}/visits` requires phone verification
+- `GET /api/users/me/visits` returns the authenticated user's valid visits
+- `GET /api/places/{placeId}/visits/summary` returns aggregate visit count and latest valid visit time
+- `visit.radius_meter` controls the maximum allowed GPS distance from the place
+- `visit.cooldown_hour` controls when the same user can verify the same place again
+- `ranking.visit_weight` is applied when a valid visit updates `place_stats`
+- valid visits are stored in `visits` with `is_valid = true`
+- growth EXP is returned as `0` until the trust/level growth system is implemented
+
+### Reason
+- visits are the most trusted MVP action and need server-side validation
+- radius and cooldown must remain admin-adjustable
+- ranking should read from aggregated stats later instead of calculating raw events on every request
+
+---
+
+## 16.12 MVP Comment Policy
+
+### Decision
+Comments are short, owner-controlled context attached to a place, with one visible comment per user/place.
+
+### Current Implementation
+- `POST /api/places/{placeId}/comments` requires phone verification
+- `PATCH /api/comments/{commentId}` requires phone verification and comment ownership
+- `DELETE /api/comments/{commentId}` marks the comment deleted
+- `GET /api/places/{placeId}/comments` returns visible comments for a place
+- `GET /api/users/me/comments` returns visible comments written by the authenticated user
+- a deleted comment row is restored when the same user writes again for the same place
+- `ranking.comment_weight` is applied when visible comments update `place_stats`
+
+### Reason
+- short comments add useful local context without turning the MVP into a long-form review product
+- one visible comment per user/place prevents spam and keeps moderation simpler
+- restoring deleted rows respects the database unique key while allowing users to write again later
+
+---
+
+## 16.13 MVP Ranking Read Foundation
+
+### Decision
+Public place ranking reads use precomputed season score rows only.
+
+### Current Implementation
+- `GET /api/rankings/places` reads `place_season_scores` by season, region type, and region ID
+- `GET /api/rankings/seasons/current` returns the active season from `seasons`
+- supported ranking region types are DONG, DISTRICT, and CITY
+- hidden or deleted places are excluded from ranking responses
+- audience tags return an empty list until audience aggregation is implemented
+
+### Reason
+- ranking reads must stay fast and predictable
+- raw recommendation, visit, and comment rows should feed aggregation jobs, not public read queries
+- adding the read contract now lets the frontend and later admin/batch work connect without reshaping the API
+
+---
+
+## 16.14 MVP Ranking Aggregation and Admin Season Control
+
+### Decision
+MVP ranking recalculation is an admin-triggered operation that rewrites season score rows from aggregate place stats.
+
+### Current Implementation
+- admins can list, create, and update ranking seasons through `/api/admin/seasons`
+- admins can trigger place ranking recalculation through `POST /api/admin/rankings/recalculate`
+- one ACTIVE season is allowed at a time in the MVP admin flow
+- recalculation reads `place_stats`, not raw recommendation, visit, or comment rows
+- recalculation writes dong, district, and city rows into `place_season_scores`
+- ranking weights are loaded from `system_policies` keys `ranking.recommend_weight`, `ranking.visit_weight`, and `ranking.comment_weight`
+- the top place in dong/district/city receives star levels 1/2/3 for that season result
+- admin season and recalculation actions are logged to `admin_action_logs`
+
+### Reason
+- public ranking reads need precomputed rows to stay fast and predictable
+- the MVP needs a controlled manual recalculation path before adding a scheduler
+- keeping the trigger under admin APIs preserves operator control and auditability
+
+---
+
 ## 17. Server-Side Validation Only
 
 ### Decision

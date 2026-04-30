@@ -6,6 +6,7 @@ import static org.mockito.Mockito.when;
 import com.honeytong.policy.entity.PolicyValueType;
 import com.honeytong.policy.entity.SystemPolicy;
 import com.honeytong.policy.repository.SystemPolicyRepository;
+import java.math.BigDecimal;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,5 +44,24 @@ class PolicyServiceTest {
         int value = policyService.getRequiredInteger("region", "change_cooldown_day");
 
         assertThat(value).isEqualTo(7);
+    }
+
+    @Test
+    void getRequiredDecimal_returnsDecimalPolicyValue() {
+        SystemPolicy policy = new SystemPolicy(
+                "ranking",
+                "visit_weight",
+                "2.0",
+                PolicyValueType.DECIMAL,
+                "방문 점수 가중치"
+        );
+        when(systemPolicyRepository.findByPolicyGroupAndPolicyKeyAndActiveTrue(
+                "ranking",
+                "visit_weight"
+        )).thenReturn(Optional.of(policy));
+
+        BigDecimal value = policyService.getRequiredDecimal("ranking", "visit_weight");
+
+        assertThat(value).isEqualByComparingTo("2.0");
     }
 }

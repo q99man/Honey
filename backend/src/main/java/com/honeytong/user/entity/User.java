@@ -99,6 +99,10 @@ public class User extends BaseTimeEntity {
         return role;
     }
 
+    public void promoteTo(UserRole role) {
+        this.role = role;
+    }
+
     public boolean isActive() {
         return status == UserStatus.ACTIVE && deletedAt == null;
     }

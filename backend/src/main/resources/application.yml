@@ -45,3 +45,17 @@ app:
     seed:
       enabled: ${REGION_SEED_ENABLED:false}
       location: ${REGION_SEED_LOCATION:classpath:region/region-seed.csv}
+  policies:
+    seed:
+      enabled: ${POLICY_SEED_ENABLED:false}
+      location: ${POLICY_SEED_LOCATION:classpath:policy/policy-defaults.csv}
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      email: ${ADMIN_BOOTSTRAP_EMAIL:}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+      nickname: ${ADMIN_BOOTSTRAP_NICKNAME:local-admin}
+      role: ${ADMIN_BOOTSTRAP_ROLE:SUPER_ADMIN}
+      phone: ${ADMIN_BOOTSTRAP_PHONE:}
+      phone-verified: ${ADMIN_BOOTSTRAP_PHONE_VERIFIED:true}
+      reset-password: ${ADMIN_BOOTSTRAP_RESET_PASSWORD:false}

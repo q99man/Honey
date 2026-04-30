@@ -356,6 +356,7 @@ Notes
 approval_status supports future moderation policies
 current_star_level and current_flower_grade support current state display
 ranking history is stored separately
+current_star_level is updated by admin-triggered ranking recalculation based on the best current season result
 
 4.2 place_images
 
@@ -470,6 +471,8 @@ CREATE TABLE recommendations (
 Notes
 one user can recommend one place only once
 soft status control is useful for cancellation and admin invalidation
+the backend treats ACTIVE as the current recommendation state and CANCELED as user cancellation
+daily recommendation limits are enforced with `system_policies.recommend.daily_limit`
 
 5.2 visits
 
@@ -495,6 +498,11 @@ CREATE TABLE visits (
 Notes
 visit cooldown should be enforced in server logic
 storing is_valid allows later investigation or admin invalidation
+the visit API currently stores valid visits and rejects out-of-radius or cooldown-active attempts
+visit radius is enforced with `system_policies.visit.radius_meter`
+visit cooldown is enforced with `system_policies.visit.cooldown_hour`
+my visit history reads valid rows from this table
+place visit summary reads aggregate count from `place_stats` and latest valid visit time from this table
 
 5.3 comments
 
@@ -519,6 +527,9 @@ CREATE TABLE comments (
 Notes
 comment is lightweight and short-form by design
 one user can only keep one active comment per place
+the backend restores a deleted comment row when the same user writes again for the same place
+visible comments update `place_stats.comment_count`
+comment score weight is read from `system_policies` key `ranking.comment_weight`
 
 6. Ranking and Season Tables
 
@@ -570,6 +581,9 @@ CREATE TABLE place_season_scores (
 );
 Notes
 ranking queries should use this table instead of recalculating from raw activities every time
+the current ranking read API reads this table for dong, district, and city rankings
+admin-triggered MVP recalculation deletes and rewrites rows for a season from `place_stats`
+ranking weights are read from `system_policies`
 
 6.3 place_ranking_history
 
@@ -590,6 +604,9 @@ CREATE TABLE place_ranking_history (
   CONSTRAINT fk_place_ranking_history_season
     FOREIGN KEY (season_id) REFERENCES seasons(id)
 );
+Notes
+the entity is available for season finalization history
+MVP read APIs do not populate this table yet
 
 7. Mission Tables
 
@@ -722,6 +739,8 @@ recommend.daily_limit = 20
 visit.radius_meter = 70
 visit.cooldown_hour = 24
 region.change_cooldown_day = 7
+region.registration_scope = DISTRICT
+place.registration_limit = 5
 ranking.recommend_weight = 1.0
 ranking.visit_weight = 2.0
 ranking.comment_weight = 0.5
@@ -729,6 +748,23 @@ Notes
 this table is critical for admin-driven operation
 do not hardcode these values in application logic
 the region change API requires `policy_group = region` and `policy_key = change_cooldown_day`
+the place creation API requires `policy_group = place` and `policy_key = registration_limit`
+the place creation API requires `policy_group = region` and `policy_key = registration_scope`
+
+9.2 Policy Seed Import
+
+The backend supports an opt-in UTF-8 CSV import for default policy rows.
+
+CSV columns:
+
+policy_group,policy_key,policy_value,value_type,description
+
+Rules:
+- import is disabled by default
+- set POLICY_SEED_ENABLED=true to run import on backend startup
+- set POLICY_SEED_LOCATION to a classpath or file resource
+- import inserts missing policies only and never overwrites admin-edited values
+- the default classpath resource is `backend/src/main/resources/policy/policy-defaults.csv`
 
 10. Logging Tables
 
@@ -779,6 +815,7 @@ reports
 user_sanctions
 admin_action_logs
 system_policies
+place_ranking_history
 
 12. Recommended Future Expansion Tables
 
@@ -790,7 +827,6 @@ missions
 user_mission_progress
 user_level_history
 user_action_logs
-place_ranking_history
 
 13. Important Index Recommendations
 
