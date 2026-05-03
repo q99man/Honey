@@ -45,6 +45,8 @@ Core priorities:
 ## Workflow rules
 
 - Check tasks.md before coding
+- For coding, review, or refactoring work, use the local `agent-workflow` skill as a supplemental behavior guide
+- On Windows, normalize the tool session before running local commands with `scripts/dev-env.ps1`; prefer the project PowerShell wrappers for Gradle and npm so Git, Java, Node, and npm resolve consistently
 - Update progress.md after work
 - Update decisions.md if logic changes
 - Sync db-schema.md and api-spec.md if changed
@@ -82,3 +84,4 @@ Before finishing:
 
 Use skills in `/skills` when relevant.
 Prefer using an existing skill over creating new logic.
+Project-specific rules in this file and `/docs` always take priority over general workflow skills.

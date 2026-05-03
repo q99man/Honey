@@ -75,6 +75,10 @@ public class Visit extends BaseTimeEntity {
         return id;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public Place getPlace() {
         return place;
     }
@@ -97,5 +101,14 @@ public class Visit extends BaseTimeEntity {
 
     public boolean isValid() {
         return valid;
+    }
+
+    public String getValidReason() {
+        return validReason;
+    }
+
+    public void invalidate(String reason) {
+        this.valid = false;
+        this.validReason = reason;
     }
 }

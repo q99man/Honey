@@ -9,6 +9,8 @@ public interface PlaceSeasonScoreRepository extends JpaRepository<PlaceSeasonSco
 
     void deleteBySeasonId(Long seasonId);
 
+    List<PlaceSeasonScore> findAllBySeasonIdOrderByRegionTypeAscRegionRefIdAscRankNoAsc(Long seasonId);
+
     List<PlaceSeasonScore> findTop50BySeasonIdAndRegionTypeAndRegionRefIdOrderByRankNoAscTotalScoreDesc(
             Long seasonId,
             RankingRegionType regionType,

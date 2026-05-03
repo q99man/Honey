@@ -1,0 +1,75 @@
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+  cache:
+    type: ${CACHE_TYPE:none}
+  data:
+    redis:
+      host: ${REDIS_HOST}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:2s}
+      repositories:
+        enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: ${JPA_DDL_AUTO:validate}
+    properties:
+      hibernate:
+        format_sql: false
+  flyway:
+    enabled: ${FLYWAY_ENABLED:true}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.honeytong: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.orm.jdbc.bind: ${LOG_LEVEL_SQL_BIND:OFF}
+
+management:
+  health:
+    redis:
+      enabled: ${REDIS_HEALTH_ENABLED:false}
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health}
+  endpoint:
+    health:
+      probes:
+        enabled: ${MANAGEMENT_HEALTH_PROBES_ENABLED:true}
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:never}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  security:
+    jwt:
+      secret: ${JWT_SECRET}
+  regions:
+    seed:
+      enabled: ${REGION_SEED_ENABLED:false}
+  policies:
+    seed:
+      enabled: ${POLICY_SEED_ENABLED:false}
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+  redis:
+    enabled: ${APP_REDIS_ENABLED:false}
+    policy-cache-ttl: ${POLICY_CACHE_TTL:10m}
+    ranking-cache-ttl: ${RANKING_CACHE_TTL:5m}
+  ranking:
+    scheduler:
+      enabled: ${RANKING_SCHEDULER_ENABLED:false}
+      cron: ${RANKING_SCHEDULER_CRON:0 0 4 * * *}
+      zone: ${RANKING_SCHEDULER_ZONE:Asia/Seoul}
+      season-code: ${RANKING_SCHEDULER_SEASON_CODE:}

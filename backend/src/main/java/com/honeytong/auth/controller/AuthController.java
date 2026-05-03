@@ -1,6 +1,7 @@
 package com.honeytong.auth.controller;
 
 import com.honeytong.auth.dto.LoginRequest;
+import com.honeytong.auth.dto.OAuthLoginRequest;
 import com.honeytong.auth.dto.PhoneVerificationSendRequest;
 import com.honeytong.auth.dto.PhoneVerificationSendResponse;
 import com.honeytong.auth.dto.PhoneVerificationStatusResponse;
@@ -15,6 +16,7 @@ import com.honeytong.common.api.ApiResponse;
 import jakarta.validation.Valid;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,6 +42,14 @@ public class AuthController {
     @PostMapping("/login")
     public ApiResponse<TokenResponse> login(@Valid @RequestBody LoginRequest request) {
         return ApiResponse.success(authService.login(request), "Login successful");
+    }
+
+    @PostMapping("/oauth/{provider}")
+    public ApiResponse<TokenResponse> oauthLogin(
+            @PathVariable String provider,
+            @Valid @RequestBody OAuthLoginRequest request
+    ) {
+        return ApiResponse.success(authService.oauthLogin(provider, request), "OAuth login successful");
     }
 
     @PostMapping("/refresh")

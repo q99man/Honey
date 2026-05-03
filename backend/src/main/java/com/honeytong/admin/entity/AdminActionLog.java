@@ -66,4 +66,40 @@ public class AdminActionLog {
         this.memo = memo;
         this.createdAt = LocalDateTime.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public User getAdminUser() {
+        return adminUser;
+    }
+
+    public String getActionType() {
+        return actionType;
+    }
+
+    public String getTargetType() {
+        return targetType;
+    }
+
+    public Long getTargetId() {
+        return targetId;
+    }
+
+    public String getBeforeValue() {
+        return beforeValue;
+    }
+
+    public String getAfterValue() {
+        return afterValue;
+    }
+
+    public String getMemo() {
+        return memo;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

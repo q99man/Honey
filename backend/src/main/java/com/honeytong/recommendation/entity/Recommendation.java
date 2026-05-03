@@ -64,6 +64,10 @@ public class Recommendation extends BaseTimeEntity {
         return recommendWeight;
     }
 
+    public User getUser() {
+        return user;
+    }
+
     public Place getPlace() {
         return place;
     }
@@ -83,5 +87,9 @@ public class Recommendation extends BaseTimeEntity {
 
     public void cancel() {
         this.status = RecommendationStatus.CANCELED;
+    }
+
+    public void invalidate() {
+        this.status = RecommendationStatus.INVALIDATED;
     }
 }

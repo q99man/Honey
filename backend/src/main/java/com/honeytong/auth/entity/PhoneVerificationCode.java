@@ -55,8 +55,20 @@ public class PhoneVerificationCode extends BaseTimeEntity {
         this.verified = false;
     }
 
+    public Long getId() {
+        return id;
+    }
+
     public String getCodeHash() {
         return codeHash;
+    }
+
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
+    }
+
+    public int getAttemptCount() {
+        return attemptCount;
     }
 
     public boolean isExpired() {

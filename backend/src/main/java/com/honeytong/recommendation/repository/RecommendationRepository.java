@@ -13,12 +13,22 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
 
     boolean existsByUserIdAndPlaceIdAndStatus(Long userId, Long placeId, RecommendationStatus status);
 
+    long countByUserIdAndStatus(Long userId, RecommendationStatus status);
+
     long countByUserIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
             Long userId,
             RecommendationStatus status,
             LocalDateTime from,
             LocalDateTime to
     );
+
+    long countByStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+            RecommendationStatus status,
+            LocalDateTime from,
+            LocalDateTime to
+    );
+
+    List<Recommendation> findTop50ByOrderByCreatedAtDesc();
 
     List<Recommendation> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, RecommendationStatus status);
 }

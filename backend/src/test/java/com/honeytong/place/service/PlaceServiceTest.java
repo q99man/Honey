@@ -3,11 +3,19 @@ package com.honeytong.place.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyCollection;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.honeytong.admin.entity.AdminActionLog;
+import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
+import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.dto.PlaceCreateRequest;
+import com.honeytong.place.dto.PlaceUpdateRequest;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceImage;
@@ -24,7 +32,10 @@ import com.honeytong.region.entity.UserRegionStatus;
 import com.honeytong.region.repository.RegionDongRepository;
 import com.honeytong.region.repository.UserRegionRepository;
 import com.honeytong.user.entity.User;
+import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.repository.UserSanctionRepository;
+import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -59,7 +70,16 @@ class PlaceServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private UserSanctionRepository userSanctionRepository;
+
+    @Mock
+    private AdminActionLogRepository adminActionLogRepository;
+
+    @Mock
     private PolicyService policyService;
+
+    @Mock
+    private UserActionLogService userActionLogService;
 
     private PlaceService placeService;
     private User user;
@@ -77,18 +97,23 @@ class PlaceServiceTest {
                 regionDongRepository,
                 userRegionRepository,
                 userRepository,
-                policyService
+                userSanctionRepository,
+                policyService,
+                adminActionLogRepository,
+                new ObjectMapper(),
+                userActionLogService
         );
 
-        user = new User("테스터", "tester@example.com");
+        user = new User("tester", "tester@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);
-        city = new RegionCity("서울특별시", "Seoul", null, "11");
+        user.verifyPhone("01012345678");
+        city = new RegionCity("Seoul", "Seoul", null, "11");
         ReflectionTestUtils.setField(city, "id", 10L);
-        district = new RegionDistrict(city, "마포구", "Mapo-gu", null, "11440");
+        district = new RegionDistrict(city, "Mapo-gu", "Mapo-gu", null, "11440");
         ReflectionTestUtils.setField(district, "id", 20L);
-        userDong = new RegionDong(city, district, "서교동", "Seogyo-dong", null, "1144066000");
+        userDong = new RegionDong(city, district, "Seogyo-dong", "Seogyo-dong", null, "1144066000");
         ReflectionTestUtils.setField(userDong, "id", 30L);
-        targetDong = new RegionDong(city, district, "합정동", "Hapjeong-dong", null, "1144068000");
+        targetDong = new RegionDong(city, district, "Hapjeong-dong", "Hapjeong-dong", null, "1144068000");
         ReflectionTestUtils.setField(targetDong, "id", 31L);
     }
 
@@ -113,15 +138,22 @@ class PlaceServiceTest {
         assertThat(response.placeId()).isEqualTo(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
         verify(placeStatsRepository).save(any(PlaceStats.class));
+        verify(userActionLogService).record(
+                eq(USER_ID),
+                eq(UserActionLogService.ACTION_PLACE_CREATE),
+                eq(UserActionLogService.TARGET_PLACE),
+                eq(100L),
+                any()
+        );
     }
 
     @Test
     void createPlace_rejectsPlaceOutsideRegistrationScope() {
-        RegionCity otherCity = new RegionCity("부산광역시", "Busan", null, "26");
+        RegionCity otherCity = new RegionCity("Busan", "Busan", null, "26");
         ReflectionTestUtils.setField(otherCity, "id", 11L);
-        RegionDistrict otherDistrict = new RegionDistrict(otherCity, "해운대구", "Haeundae-gu", null, "26350");
+        RegionDistrict otherDistrict = new RegionDistrict(otherCity, "Haeundae-gu", "Haeundae-gu", null, "26350");
         ReflectionTestUtils.setField(otherDistrict, "id", 21L);
-        RegionDong otherDong = new RegionDong(otherCity, otherDistrict, "우동", "U-dong", null, "2635065100");
+        RegionDong otherDong = new RegionDong(otherCity, otherDistrict, "U-dong", "U-dong", null, "2635065100");
         ReflectionTestUtils.setField(otherDong, "id", 32L);
 
         UserRegion userRegion = new UserRegion(user, userDong);
@@ -153,6 +185,24 @@ class PlaceServiceTest {
     }
 
     @Test
+    void getMyRegisteredPlaces_returnsNonDeletedPlacesCreatedByUser() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        PlaceStats stats = new PlaceStats(place);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findTop50ByCreatedByIdAndDeletedAtIsNullOrderByCreatedAtDesc(USER_ID))
+                .thenReturn(List.of(place));
+        when(placeStatsRepository.findById(100L)).thenReturn(Optional.of(stats));
+        when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
+
+        var response = placeService.getMyRegisteredPlaces(USER_ID);
+
+        assertThat(response).hasSize(1);
+        assertThat(response.getFirst().id()).isEqualTo(100L);
+        assertThat(response.getFirst().name()).isEqualTo("Test Place");
+    }
+
+    @Test
     void getNearbyPlaces_returnsPlacesInsideRadiusWithDistance() {
         Place place = createPlaceEntity(targetDong);
         ReflectionTestUtils.setField(place, "id", 100L);
@@ -175,31 +225,172 @@ class PlaceServiceTest {
         PlaceStats stats = new PlaceStats(place);
         when(placeRepository
                 .findTop50ByNameContainingIgnoreCaseAndDeletedAtIsNullAndExposureStatusOrderByCreatedAtDesc(
-                        "국밥",
+                        "Place",
                         PlaceExposureStatus.VISIBLE
                 )).thenReturn(List.of(place));
         when(placeStatsRepository.findById(100L)).thenReturn(Optional.of(stats));
         when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
 
-        var response = placeService.searchPlaces("국밥");
+        var response = placeService.searchPlaces("Place");
 
         assertThat(response).hasSize(1);
-        assertThat(response.getFirst().name()).isEqualTo("합정 국밥");
+        assertThat(response.getFirst().name()).isEqualTo("Test Place");
+    }
+
+    @Test
+    void updatePlace_allowsOwnerToUpdateFieldsAndReplaceImages() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        PlaceImage updatedImage = new PlaceImage(
+                place,
+                "https://image.example.com/new-place.jpg",
+                0,
+                true,
+                user
+        );
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of(updatedImage));
+
+        var response = placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateRequest("  Updated Place  ", null, List.of("https://image.example.com/new-place.jpg"))
+        );
+
+        assertThat(response.placeId()).isEqualTo(100L);
+        assertThat(response.name()).isEqualTo("Updated Place");
+        assertThat(response.imageUrls()).containsExactly("https://image.example.com/new-place.jpg");
+        verify(placeImageRepository).deleteByPlaceId(100L);
+        verify(placeImageRepository).save(any(PlaceImage.class));
+    }
+
+    @Test
+    void updatePlace_rejectsNonOwnerUser() {
+        User otherUser = new User("other", "other@example.com");
+        ReflectionTestUtils.setField(otherUser, "id", 2L);
+        otherUser.verifyPhone("01099998888");
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(otherUser));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(2L, 100L, updateRequest("Updated Place", null, null)))
+                .isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void updatePlace_rejectsUnverifiedNormalOwner() {
+        User unverifiedOwner = new User("owner", "owner@example.com");
+        ReflectionTestUtils.setField(unverifiedOwner, "id", USER_ID);
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        ReflectionTestUtils.setField(place, "createdBy", unverifiedOwner);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(unverifiedOwner));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateRequest("Updated Place", null, null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.PHONE_VERIFICATION_REQUIRED));
+        verify(userSanctionRepository, never()).existsBlockingSanction(any(), any(), anyCollection(), any());
+    }
+
+    @Test
+    void updatePlace_rejectsNormalOwnerWithActiveBlockingSanction() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(userSanctionRepository.existsBlockingSanction(eq(USER_ID), any(), anyCollection(), any()))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateRequest("Updated Place", null, null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.USER_SANCTION_ACTIVE));
+    }
+
+    @Test
+    void updatePlace_logsAdminUpdate() {
+        User admin = new User("admin", "admin@example.com");
+        ReflectionTestUtils.setField(admin, "id", 10L);
+        admin.promoteTo(UserRole.ADMIN);
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(admin));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
+
+        var response = placeService.updatePlace(10L, 100L, updateRequest("Admin Updated Place", null, null));
+
+        assertThat(response.name()).isEqualTo("Admin Updated Place");
+        verify(adminActionLogRepository).save(any(AdminActionLog.class));
+        verify(userSanctionRepository, never()).existsBlockingSanction(any(), any(), anyCollection(), any());
+    }
+
+    @Test
+    void updatePlace_rejectsPartialCoordinateUpdate() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                coordinateOnlyUpdateRequest(BigDecimal.valueOf(37.5510000), null)
+        )).isInstanceOf(ApiException.class);
+    }
+
+    @Test
+    void deletePlace_marksPlaceDeletedAndClearsStarLevel() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        place.updateCurrentStarLevel(2);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        var response = placeService.deletePlace(USER_ID, 100L);
+
+        assertThat(response.deleted()).isTrue();
+        assertThat(place.isDeleted()).isTrue();
+        assertThat(place.getCurrentStarLevel()).isZero();
+    }
+
+    @Test
+    void deletePlace_logsAdminDelete() {
+        User admin = new User("admin", "admin@example.com");
+        ReflectionTestUtils.setField(admin, "id", 10L);
+        admin.promoteTo(UserRole.SUPER_ADMIN);
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(10L)).thenReturn(Optional.of(admin));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        var response = placeService.deletePlace(10L, 100L);
+
+        assertThat(response.deleted()).isTrue();
+        verify(adminActionLogRepository).save(any(AdminActionLog.class));
     }
 
     private PlaceCreateRequest createRequest() {
         return new PlaceCreateRequest(
-                "합정 국밥",
+                "Test Place",
                 "KOREAN",
                 31L,
-                "서울 마포구 양화로 1",
+                "1 Test Road",
                 null,
                 BigDecimal.valueOf(37.5500000),
                 BigDecimal.valueOf(126.9100000),
                 "10000_20000",
-                "국밥",
-                "동네에서 다시 찾고 싶은 국밥집",
-                "맑은 국물과 빠른 회전이 좋습니다.",
+                "Test Menu",
+                "Local favorite worth revisiting",
+                "Fast service and rich taste",
                 false,
                 List.of("https://image.example.com/place.jpg")
         );
@@ -209,17 +400,53 @@ class PlaceServiceTest {
         return new Place(
                 user,
                 dong,
-                "합정 국밥",
+                "Test Place",
                 "KOREAN",
-                "서울 마포구 양화로 1",
+                "1 Test Road",
                 null,
                 BigDecimal.valueOf(37.5500000),
                 BigDecimal.valueOf(126.9100000),
                 "10000_20000",
-                "국밥",
-                "동네에서 다시 찾고 싶은 국밥집",
-                "맑은 국물과 빠른 회전이 좋습니다.",
+                "Test Menu",
+                "Local favorite worth revisiting",
+                "Fast service and rich taste",
                 false
+        );
+    }
+
+    private PlaceUpdateRequest updateRequest(String name, Long dongId, List<String> imageUrls) {
+        return new PlaceUpdateRequest(
+                name,
+                null,
+                dongId,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                imageUrls
+        );
+    }
+
+    private PlaceUpdateRequest coordinateOnlyUpdateRequest(BigDecimal latitude, BigDecimal longitude) {
+        return new PlaceUpdateRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                latitude,
+                longitude,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null
         );
     }
 }

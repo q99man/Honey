@@ -32,7 +32,15 @@ export default function HomePage({
       </div>
 
       <div className="mt-8 px-6">
-        <h2 className="mb-4 text-lg font-bold">오늘의 꿀스팟</h2>
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-lg font-bold">오늘의 꿀스팟</h2>
+          <Link
+            to="/places/new"
+            className="rounded-lg bg-yellow-400 px-3 py-2 text-sm font-bold text-black"
+          >
+            등록
+          </Link>
+        </div>
 
         {loading && (
           <div className="rounded-xl bg-white p-5 text-sm text-gray-500">

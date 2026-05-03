@@ -53,6 +53,16 @@ public class UserLevel extends BaseTimeEntity {
         this.rankScore = BigDecimal.ZERO;
     }
 
+    public void addExp(int exp) {
+        this.exp += exp;
+        this.totalExp += exp;
+    }
+
+    public void advanceLevel(int level, int exp) {
+        this.level = level;
+        this.exp = exp;
+    }
+
     public int getLevel() {
         return level;
     }
@@ -61,11 +71,19 @@ public class UserLevel extends BaseTimeEntity {
         return exp;
     }
 
+    public int getTotalExp() {
+        return totalExp;
+    }
+
     public String getTitle() {
         return title;
     }
 
     public String getAvatarStage() {
         return avatarStage;
+    }
+
+    public BigDecimal getRankScore() {
+        return rankScore;
     }
 }

@@ -8,6 +8,7 @@ import com.honeytong.place.entity.PlaceStats;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.place.repository.PlaceStatsRepository;
 import com.honeytong.policy.service.PolicyService;
+import com.honeytong.recommendation.counter.RecommendationDailyCounter;
 import com.honeytong.recommendation.dto.MyRecommendationResponse;
 import com.honeytong.recommendation.dto.RecommendationPolicyResponse;
 import com.honeytong.recommendation.dto.RecommendationResponse;
@@ -18,9 +19,11 @@ import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
+import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -36,6 +39,8 @@ public class RecommendationService {
     private final UserRepository userRepository;
     private final UserTrustRepository userTrustRepository;
     private final PolicyService policyService;
+    private final RecommendationDailyCounter recommendationDailyCounter;
+    private final UserActionLogService userActionLogService;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
@@ -43,7 +48,9 @@ public class RecommendationService {
             PlaceStatsRepository placeStatsRepository,
             UserRepository userRepository,
             UserTrustRepository userTrustRepository,
-            PolicyService policyService
+            PolicyService policyService,
+            RecommendationDailyCounter recommendationDailyCounter,
+            UserActionLogService userActionLogService
     ) {
         this.recommendationRepository = recommendationRepository;
         this.placeRepository = placeRepository;
@@ -51,6 +58,8 @@ public class RecommendationService {
         this.userRepository = userRepository;
         this.userTrustRepository = userTrustRepository;
         this.policyService = policyService;
+        this.recommendationDailyCounter = recommendationDailyCounter;
+        this.userActionLogService = userActionLogService;
     }
 
     @Transactional
@@ -72,13 +81,24 @@ public class RecommendationService {
 
         PlaceStats stats = getStats(placeId);
         stats.addRecommendation(recommendation.getRecommendWeight());
+        recommendationDailyCounter.evict(userId, LocalDate.now());
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_RECOMMENDATION_CREATE,
+                UserActionLogService.TARGET_PLACE,
+                place.getId(),
+                Map.of(
+                        "recommendWeight", recommendation.getRecommendWeight(),
+                        "recommendationStatus", recommendation.getStatus().name()
+                )
+        );
         return new RecommendationResponse(true, stats.getRecommendCount(), recommendation.getRecommendWeight());
     }
 
     @Transactional
     public RecommendationResponse cancelRecommendation(Long userId, Long placeId) {
-        getActiveUser(userId);
-        getVisiblePlace(placeId);
+        User user = getActiveUser(userId);
+        Place place = getVisiblePlace(placeId);
         Recommendation recommendation = recommendationRepository.findByUserIdAndPlaceId(userId, placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "추천 내역을 찾을 수 없습니다."));
         if (!recommendation.isActive()) {
@@ -88,6 +108,17 @@ public class RecommendationService {
         recommendation.cancel();
         PlaceStats stats = getStats(placeId);
         stats.removeRecommendation(recommendation.getRecommendWeight());
+        recommendationDailyCounter.evict(userId, LocalDate.now());
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_RECOMMENDATION_CANCEL,
+                UserActionLogService.TARGET_PLACE,
+                place.getId(),
+                Map.of(
+                        "recommendWeight", recommendation.getRecommendWeight(),
+                        "recommendationStatus", recommendation.getStatus().name()
+                )
+        );
         return new RecommendationResponse(false, stats.getRecommendCount(), recommendation.getRecommendWeight());
     }
 
@@ -133,11 +164,15 @@ public class RecommendationService {
         }
 
         LocalDate today = LocalDate.now();
-        long usedCount = recommendationRepository.countByUserIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+        long usedCount = recommendationDailyCounter.getUsedCount(
                 userId,
-                RecommendationStatus.ACTIVE,
-                today.atStartOfDay(),
-                today.plusDays(1).atStartOfDay()
+                today,
+                () -> recommendationRepository.countByUserIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
+                        userId,
+                        RecommendationStatus.ACTIVE,
+                        today.atStartOfDay(),
+                        today.plusDays(1).atStartOfDay()
+                )
         );
         return Math.max(0, dailyLimit - (int) usedCount);
     }

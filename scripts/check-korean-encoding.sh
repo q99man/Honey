@@ -3,31 +3,20 @@ set -e
 
 echo "[check-korean-encoding] Scanning for possible mojibake..."
 
-EXCLUDES=(
-  --exclude-dir=.git
-  --exclude-dir=build
-  --exclude-dir=out
-  --exclude-dir=dist
-  --exclude-dir=node_modules
-  --exclude-dir=.idea
-  --exclude-dir=.gradle
-)
+PATTERN='占|�|Ã|Â|챙|챘'
 
-PATTERN='�|Ã|ì|ë|ì•|ìž|í•|ìœ|ë‹|ì–|ì„'
-FILES=$(find . \
-  -path './.git' -prune -o \
-  -path './build' -prune -o \
-  -path './out' -prune -o \
-  -path './dist' -prune -o \
-  -path './node_modules' -prune -o \
-  -path './frontend/node_modules' -prune -o \
-  -path './.idea' -prune -o \
-  -path './.gradle' -prune -o \
+if find . \
+  -path '*/.git' -prune -o \
+  -path '*/build' -prune -o \
+  -path '*/out' -prune -o \
+  -path '*/dist' -prune -o \
+  -path '*/node_modules' -prune -o \
+  -path '*/.idea' -prune -o \
+  -path '*/.gradle' -prune -o \
+  -path '*/.gradle-user-home' -prune -o \
   -path './scripts/check-korean-encoding.sh' -prune -o \
   -path './docs/ui-language.md' -prune -o \
-  -type f -print)
-
-if [ -n "$FILES" ] && grep -In -E "$PATTERN" $FILES; then
+  -type f -print0 | xargs -0 grep -IIn -E "$PATTERN"; then
   echo ""
   echo "[ERROR] Possible broken Korean text detected."
   echo "Fix encoding before commit."

@@ -1,12 +1,19 @@
 package com.honeytong.place.service;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.honeytong.admin.entity.AdminActionLog;
+import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.dto.PlaceCreateRequest;
 import com.honeytong.place.dto.PlaceCreateResponse;
+import com.honeytong.place.dto.PlaceDeleteResponse;
 import com.honeytong.place.dto.PlaceDetailResponse;
 import com.honeytong.place.dto.PlaceListItemResponse;
 import com.honeytong.place.dto.PlaceRegistrationPolicyResponse;
+import com.honeytong.place.dto.PlaceUpdateRequest;
+import com.honeytong.place.dto.PlaceUpdateResponse;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceImage;
@@ -21,19 +28,35 @@ import com.honeytong.region.entity.UserRegionStatus;
 import com.honeytong.region.repository.RegionDongRepository;
 import com.honeytong.region.repository.UserRegionRepository;
 import com.honeytong.user.entity.User;
+import com.honeytong.user.entity.UserRole;
+import com.honeytong.user.entity.UserSanctionStatus;
+import com.honeytong.user.entity.UserSanctionType;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.repository.UserSanctionRepository;
+import com.honeytong.user.service.UserActionLogService;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class PlaceService {
 
+    private static final List<UserSanctionType> BLOCKING_SANCTION_TYPES = List.of(
+            UserSanctionType.TEMPORARY_RESTRICTION,
+            UserSanctionType.PERMANENT_RESTRICTION
+    );
     private static final String PLACE_POLICY_GROUP = "place";
     private static final String REGISTRATION_LIMIT_KEY = "registration_limit";
     private static final String REGION_POLICY_GROUP = "region";
     private static final String REGISTRATION_SCOPE_KEY = "registration_scope";
+    private static final String PLACE_TARGET_TYPE = "PLACE";
+    private static final String PLACE_UPDATE_ACTION = "PLACE_UPDATE";
+    private static final String PLACE_DELETE_ACTION = "PLACE_DELETE";
 
     private final PlaceRepository placeRepository;
     private final PlaceImageRepository placeImageRepository;
@@ -41,7 +64,11 @@ public class PlaceService {
     private final RegionDongRepository regionDongRepository;
     private final UserRegionRepository userRegionRepository;
     private final UserRepository userRepository;
+    private final UserSanctionRepository userSanctionRepository;
     private final PolicyService policyService;
+    private final AdminActionLogRepository adminActionLogRepository;
+    private final ObjectMapper objectMapper;
+    private final UserActionLogService userActionLogService;
 
     public PlaceService(
             PlaceRepository placeRepository,
@@ -50,7 +77,11 @@ public class PlaceService {
             RegionDongRepository regionDongRepository,
             UserRegionRepository userRegionRepository,
             UserRepository userRepository,
-            PolicyService policyService
+            UserSanctionRepository userSanctionRepository,
+            PolicyService policyService,
+            AdminActionLogRepository adminActionLogRepository,
+            ObjectMapper objectMapper,
+            UserActionLogService userActionLogService
     ) {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
@@ -58,7 +89,11 @@ public class PlaceService {
         this.regionDongRepository = regionDongRepository;
         this.userRegionRepository = userRegionRepository;
         this.userRepository = userRepository;
+        this.userSanctionRepository = userSanctionRepository;
         this.policyService = policyService;
+        this.adminActionLogRepository = adminActionLogRepository;
+        this.objectMapper = objectMapper;
+        this.userActionLogService = userActionLogService;
     }
 
     @Transactional
@@ -66,7 +101,7 @@ public class PlaceService {
         User user = getActiveUser(userId);
         UserRegion userRegion = getPrimaryRegion(userId);
         RegionDong placeDong = regionDongRepository.findById(request.dongId())
-                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "등록할 지역을 찾을 수 없습니다."));
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "등록 지역을 찾을 수 없습니다."));
 
         validateRegistrationLimit(userId);
         validateRegistrationScope(userRegion, placeDong);
@@ -88,6 +123,17 @@ public class PlaceService {
         ));
         saveImages(place, request.imageUrls(), user);
         placeStatsRepository.save(new PlaceStats(place));
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_PLACE_CREATE,
+                UserActionLogService.TARGET_PLACE,
+                place.getId(),
+                Map.of(
+                        "categoryCode", place.getCategoryCode(),
+                        "dongId", place.getRegionDong().getId(),
+                        "franchise", place.isFranchise()
+                )
+        );
 
         return new PlaceCreateResponse(place.getId(), place.getApprovalStatus());
     }
@@ -100,10 +146,7 @@ public class PlaceService {
             throw new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소를 찾을 수 없습니다.");
         }
         PlaceStats stats = getStats(placeId);
-        List<String> imageUrls = placeImageRepository.findByPlaceIdOrderBySortOrderAsc(placeId).stream()
-                .map(PlaceImage::getImageUrl)
-                .toList();
-        return toDetailResponse(place, stats, imageUrls);
+        return toDetailResponse(place, stats, currentImageUrls(placeId));
     }
 
     @Transactional(readOnly = true)
@@ -181,6 +224,84 @@ public class PlaceService {
         );
     }
 
+    @Transactional(readOnly = true)
+    public List<PlaceListItemResponse> getMyRegisteredPlaces(Long userId) {
+        getActiveUser(userId);
+        return placeRepository.findTop50ByCreatedByIdAndDeletedAtIsNullOrderByCreatedAtDesc(userId).stream()
+                .map(place -> toListItemResponse(place, getStats(place.getId()), null))
+                .toList();
+    }
+
+    @Transactional
+    public PlaceUpdateResponse updatePlace(Long userId, Long placeId, PlaceUpdateRequest request) {
+        User actor = getActiveUser(userId);
+        Place place = placeRepository.findByIdAndDeletedAtIsNull(placeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소를 찾을 수 없습니다."));
+        ensureOwnerOrAdmin(actor, place);
+
+        boolean adminActor = isAdmin(actor);
+        if (!adminActor) {
+            requirePhoneVerified(actor);
+            requireNoActiveSanction(actor.getId());
+        }
+
+        String beforeValue = adminActor ? serializePlaceMutationState(place, currentImageUrls(place.getId())) : null;
+        RegionDong nextDong = resolveDongForUpdate(actor, place, request.dongId(), adminActor);
+        place.updateDetails(
+                nextDong,
+                requiredTextOrCurrent(request.name(), place.getName(), "장소 이름을 입력해 주세요."),
+                requiredTextOrCurrent(request.categoryCode(), place.getCategoryCode(), "카테고리를 입력해 주세요."),
+                optionalTextOrCurrent(request.addressRoad(), place.getAddressRoad()),
+                optionalTextOrCurrent(request.addressJibun(), place.getAddressJibun()),
+                coordinateOrCurrent(request.latitude(), request.longitude(), place.getLatitude(), true),
+                coordinateOrCurrent(request.latitude(), request.longitude(), place.getLongitude(), false),
+                optionalTextOrCurrent(request.priceRangeCode(), place.getPriceRangeCode()),
+                optionalTextOrCurrent(request.recommendedMenu(), place.getRecommendedMenu()),
+                requiredTextOrCurrent(
+                        request.shortRecommendation(),
+                        place.getShortRecommendation(),
+                        "짧은 추천 문구를 입력해 주세요."
+                ),
+                optionalTextOrCurrent(request.featureText(), place.getFeatureText()),
+                request.franchise() == null ? place.isFranchise() : request.franchise()
+        );
+        if (request.imageUrls() != null) {
+            replaceImages(place, request.imageUrls(), actor);
+        }
+
+        List<String> imageUrls = currentImageUrls(place.getId());
+        if (adminActor) {
+            String afterValue = serializePlaceMutationState(place, imageUrls);
+            if (!beforeValue.equals(afterValue)) {
+                saveActionLog(actor, place, PLACE_UPDATE_ACTION, beforeValue, afterValue, null);
+            }
+        }
+        return toUpdateResponse(place, imageUrls);
+    }
+
+    @Transactional
+    public PlaceDeleteResponse deletePlace(Long userId, Long placeId) {
+        User actor = getActiveUser(userId);
+        Place place = placeRepository.findByIdAndDeletedAtIsNull(placeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소를 찾을 수 없습니다."));
+        ensureOwnerOrAdmin(actor, place);
+
+        boolean adminActor = isAdmin(actor);
+        String beforeValue = adminActor ? serializePlaceDeletionState(place, false) : null;
+        place.delete();
+        if (adminActor) {
+            saveActionLog(
+                    actor,
+                    place,
+                    PLACE_DELETE_ACTION,
+                    beforeValue,
+                    serializePlaceDeletionState(place, true),
+                    null
+            );
+        }
+        return new PlaceDeleteResponse(place.getId(), true);
+    }
+
     private void validateRegistrationLimit(Long userId) {
         int registrationLimit = getRegistrationLimit();
         long currentUsage = placeRepository.countByCreatedByIdAndDeletedAtIsNull(userId);
@@ -222,14 +343,55 @@ public class PlaceService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new ApiException(ErrorCode.UNAUTHORIZED));
         if (!user.isActive()) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "이용할 수 없는 계정입니다.");
+            throw new ApiException(ErrorCode.FORBIDDEN, "사용할 수 없는 계정입니다.");
         }
         return user;
+    }
+
+    private void ensureOwnerOrAdmin(User actor, Place place) {
+        if (isAdmin(actor) || place.getCreatedBy().getId().equals(actor.getId())) {
+            return;
+        }
+        throw new ApiException(ErrorCode.FORBIDDEN, "장소 소유자 또는 관리자만 변경할 수 있습니다.");
+    }
+
+    private boolean isAdmin(User user) {
+        return user.getRole() == UserRole.ADMIN || user.getRole() == UserRole.SUPER_ADMIN;
+    }
+
+    private void requirePhoneVerified(User user) {
+        if (!user.isPhoneVerified()) {
+            throw new ApiException(ErrorCode.PHONE_VERIFICATION_REQUIRED);
+        }
+    }
+
+    private void requireNoActiveSanction(Long userId) {
+        boolean hasBlockingSanction = userSanctionRepository.existsBlockingSanction(
+                userId,
+                UserSanctionStatus.ACTIVE,
+                BLOCKING_SANCTION_TYPES,
+                LocalDateTime.now()
+        );
+        if (hasBlockingSanction) {
+            throw new ApiException(ErrorCode.USER_SANCTION_ACTIVE);
+        }
     }
 
     private UserRegion getPrimaryRegion(Long userId) {
         return userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(userId, UserRegionStatus.ACTIVE)
                 .orElseThrow(() -> new ApiException(ErrorCode.REGION_VERIFICATION_REQUIRED));
+    }
+
+    private RegionDong resolveDongForUpdate(User actor, Place place, Long dongId, boolean adminActor) {
+        if (dongId == null) {
+            return place.getRegionDong();
+        }
+        RegionDong nextDong = regionDongRepository.findById(dongId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "지역을 찾을 수 없습니다."));
+        if (!adminActor) {
+            validateRegistrationScope(getPrimaryRegion(actor.getId()), nextDong);
+        }
+        return nextDong;
     }
 
     private void saveImages(Place place, List<String> imageUrls, User user) {
@@ -243,6 +405,17 @@ public class PlaceService {
             }
             placeImageRepository.save(new PlaceImage(place, imageUrl.trim(), index, index == 0, user));
         }
+    }
+
+    private void replaceImages(Place place, List<String> imageUrls, User user) {
+        placeImageRepository.deleteByPlaceId(place.getId());
+        saveImages(place, imageUrls, user);
+    }
+
+    private List<String> currentImageUrls(Long placeId) {
+        return placeImageRepository.findByPlaceIdOrderBySortOrderAsc(placeId).stream()
+                .map(PlaceImage::getImageUrl)
+                .toList();
     }
 
     private PlaceStats getStats(Long placeId) {
@@ -305,6 +478,118 @@ public class PlaceService {
                 distanceMeter,
                 representativeImageUrl
         );
+    }
+
+    private PlaceUpdateResponse toUpdateResponse(Place place, List<String> imageUrls) {
+        return new PlaceUpdateResponse(
+                place.getId(),
+                place.getName(),
+                place.getCategoryCode(),
+                place.getRegionCity().getId(),
+                place.getRegionDistrict().getId(),
+                place.getRegionDong().getId(),
+                place.getAddressRoad(),
+                place.getAddressJibun(),
+                place.getLatitude(),
+                place.getLongitude(),
+                place.getPriceRangeCode(),
+                place.getRecommendedMenu(),
+                place.getShortRecommendation(),
+                place.getFeatureText(),
+                place.isFranchise(),
+                imageUrls
+        );
+    }
+
+    private String requiredTextOrCurrent(String value, String currentValue, String message) {
+        if (value == null) {
+            return currentValue;
+        }
+        if (value.isBlank()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, message);
+        }
+        return value.trim();
+    }
+
+    private String optionalTextOrCurrent(String value, String currentValue) {
+        if (value == null) {
+            return currentValue;
+        }
+        if (value.isBlank()) {
+            return null;
+        }
+        return value.trim();
+    }
+
+    private BigDecimal coordinateOrCurrent(
+            BigDecimal latitude,
+            BigDecimal longitude,
+            BigDecimal currentValue,
+            boolean latitudeRequested
+    ) {
+        if ((latitude == null) != (longitude == null)) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "위도와 경도는 함께 수정해야 합니다.");
+        }
+        if (latitude == null) {
+            return currentValue;
+        }
+        return latitudeRequested ? latitude : longitude;
+    }
+
+    private void saveActionLog(
+            User admin,
+            Place place,
+            String actionType,
+            String beforeValue,
+            String afterValue,
+            String memo
+    ) {
+        adminActionLogRepository.save(new AdminActionLog(
+                admin,
+                actionType,
+                PLACE_TARGET_TYPE,
+                place.getId(),
+                beforeValue,
+                afterValue,
+                memo
+        ));
+    }
+
+    private String serializePlaceMutationState(Place place, List<String> imageUrls) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("placeId", place.getId());
+        state.put("name", place.getName());
+        state.put("categoryCode", place.getCategoryCode());
+        state.put("cityId", place.getRegionCity().getId());
+        state.put("districtId", place.getRegionDistrict().getId());
+        state.put("dongId", place.getRegionDong().getId());
+        state.put("addressRoad", place.getAddressRoad());
+        state.put("addressJibun", place.getAddressJibun());
+        state.put("latitude", place.getLatitude());
+        state.put("longitude", place.getLongitude());
+        state.put("priceRangeCode", place.getPriceRangeCode());
+        state.put("recommendedMenu", place.getRecommendedMenu());
+        state.put("shortRecommendation", place.getShortRecommendation());
+        state.put("featureText", place.getFeatureText());
+        state.put("franchise", place.isFranchise());
+        state.put("imageUrls", imageUrls);
+        return serialize(state);
+    }
+
+    private String serializePlaceDeletionState(Place place, boolean deleted) {
+        Map<String, Object> state = new LinkedHashMap<>();
+        state.put("placeId", place.getId());
+        state.put("deleted", deleted);
+        state.put("starLevel", place.getCurrentStarLevel());
+        return serialize(state);
+    }
+
+    private String serialize(Map<String, Object> value) {
+        try {
+            return objectMapper.writeValueAsString(value);
+        } catch (JsonProcessingException exception) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "관리자 작업 로그를 생성할 수 없습니다.");
+        }
     }
 
     private int calculateDistanceMeter(double lat1, double lng1, double lat2, double lng2) {

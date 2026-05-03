@@ -1,5 +1,6 @@
 package com.honeytong.visit.controller;
 
+import com.honeytong.auth.security.RequireNoActiveSanction;
 import com.honeytong.auth.security.RequirePhoneVerified;
 import com.honeytong.common.api.ApiResponse;
 import com.honeytong.visit.dto.MyVisitResponse;
@@ -29,6 +30,7 @@ public class VisitController {
     }
 
     @RequirePhoneVerified
+    @RequireNoActiveSanction
     @PostMapping("/places/{placeId}/visits")
     public ApiResponse<VisitResponse> verifyVisit(
             @AuthenticationPrincipal Long userId,

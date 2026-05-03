@@ -17,8 +17,10 @@ import com.honeytong.place.repository.PlaceStatsRepository;
 import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,19 +35,22 @@ public class CommentService {
     private final PlaceStatsRepository placeStatsRepository;
     private final UserRepository userRepository;
     private final PolicyService policyService;
+    private final UserActionLogService userActionLogService;
 
     public CommentService(
             CommentRepository commentRepository,
             PlaceRepository placeRepository,
             PlaceStatsRepository placeStatsRepository,
             UserRepository userRepository,
-            PolicyService policyService
+            PolicyService policyService,
+            UserActionLogService userActionLogService
     ) {
         this.commentRepository = commentRepository;
         this.placeRepository = placeRepository;
         this.placeStatsRepository = placeStatsRepository;
         this.userRepository = userRepository;
         this.policyService = policyService;
+        this.userActionLogService = userActionLogService;
     }
 
     @Transactional
@@ -60,27 +65,48 @@ public class CommentService {
 
         PlaceStats stats = getStats(placeId);
         stats.addComment(getCommentWeight());
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_COMMENT_CREATE,
+                UserActionLogService.TARGET_COMMENT,
+                comment.getId(),
+                Map.of("placeId", place.getId())
+        );
         return new CommentCreateResponse(comment.getId());
     }
 
     @Transactional
     public CommentResponse updateComment(Long userId, Long commentId, CommentRequest request) {
-        getActiveUser(userId);
+        User user = getActiveUser(userId);
         Comment comment = getVisibleComment(commentId);
         validateOwner(userId, comment);
         comment.updateContent(normalizeContent(request.content()));
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_COMMENT_UPDATE,
+                UserActionLogService.TARGET_COMMENT,
+                comment.getId(),
+                Map.of("placeId", comment.getPlace().getId())
+        );
         return toCommentResponse(comment);
     }
 
     @Transactional
     public CommentDeleteResponse deleteComment(Long userId, Long commentId) {
-        getActiveUser(userId);
+        User user = getActiveUser(userId);
         Comment comment = getVisibleComment(commentId);
         validateOwner(userId, comment);
         comment.delete();
 
         PlaceStats stats = getStats(comment.getPlace().getId());
         stats.removeComment(getCommentWeight());
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_COMMENT_DELETE,
+                UserActionLogService.TARGET_COMMENT,
+                comment.getId(),
+                Map.of("placeId", comment.getPlace().getId())
+        );
         return new CommentDeleteResponse(comment.getId(), true, stats.getCommentCount());
     }
 
@@ -107,6 +133,9 @@ public class CommentService {
     private Comment restoreDeletedComment(Comment comment, String content) {
         if (comment.isVisible()) {
             throw new ApiException(ErrorCode.COMMENT_ALREADY_EXISTS);
+        }
+        if (comment.getStatus() != CommentStatus.DELETED) {
+            throw new ApiException(ErrorCode.FORBIDDEN, "?대떦 ?볤?瑜??ㅼ떆 ?묒꽦?????놁뒿?덈떎.");
         }
         comment.restore(content);
         return comment;

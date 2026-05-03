@@ -94,6 +94,9 @@ public class Place extends BaseTimeEntity {
     @Column(name = "current_flower_grade", length = 30)
     private String currentFlowerGrade;
 
+    @Column(name = "ranking_excluded", nullable = false)
+    private boolean rankingExcluded;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -135,6 +138,7 @@ public class Place extends BaseTimeEntity {
         this.exposureStatus = PlaceExposureStatus.VISIBLE;
         this.currentStarLevel = 0;
         this.currentFlowerGrade = "SEED";
+        this.rankingExcluded = false;
     }
 
     public Long getId() {
@@ -213,6 +217,18 @@ public class Place extends BaseTimeEntity {
         return exposureStatus;
     }
 
+    public void changeExposureStatus(PlaceExposureStatus exposureStatus) {
+        this.exposureStatus = exposureStatus;
+    }
+
+    public void changeApprovalStatus(PlaceApprovalStatus approvalStatus) {
+        this.approvalStatus = approvalStatus;
+    }
+
+    public void changeFranchiseReviewStatus(FranchiseReviewStatus franchiseReviewStatus) {
+        this.franchiseReviewStatus = franchiseReviewStatus;
+    }
+
     public int getCurrentStarLevel() {
         return currentStarLevel;
     }
@@ -223,6 +239,52 @@ public class Place extends BaseTimeEntity {
 
     public String getCurrentFlowerGrade() {
         return currentFlowerGrade;
+    }
+
+    public boolean isRankingExcluded() {
+        return rankingExcluded;
+    }
+
+    public void changeRankingExcluded(boolean rankingExcluded) {
+        this.rankingExcluded = rankingExcluded;
+        if (rankingExcluded) {
+            this.currentStarLevel = 0;
+        }
+    }
+
+    public void updateDetails(
+            RegionDong regionDong,
+            String name,
+            String categoryCode,
+            String addressRoad,
+            String addressJibun,
+            BigDecimal latitude,
+            BigDecimal longitude,
+            String priceRangeCode,
+            String recommendedMenu,
+            String shortRecommendation,
+            String featureText,
+            boolean franchise
+    ) {
+        this.regionCity = regionDong.getCity();
+        this.regionDistrict = regionDong.getDistrict();
+        this.regionDong = regionDong;
+        this.name = name;
+        this.categoryCode = categoryCode;
+        this.addressRoad = addressRoad;
+        this.addressJibun = addressJibun;
+        this.latitude = latitude;
+        this.longitude = longitude;
+        this.priceRangeCode = priceRangeCode;
+        this.recommendedMenu = recommendedMenu;
+        this.shortRecommendation = shortRecommendation;
+        this.featureText = featureText;
+        this.franchise = franchise;
+    }
+
+    public void delete() {
+        this.deletedAt = LocalDateTime.now();
+        this.currentStarLevel = 0;
     }
 
     public boolean isDeleted() {

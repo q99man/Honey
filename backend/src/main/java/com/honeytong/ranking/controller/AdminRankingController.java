@@ -1,6 +1,10 @@
 package com.honeytong.ranking.controller;
 
 import com.honeytong.common.api.ApiResponse;
+import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeRequest;
+import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeResponse;
+import com.honeytong.ranking.dto.AdminRankingPlaceExclusionRequest;
+import com.honeytong.ranking.dto.AdminRankingPlaceExclusionResponse;
 import com.honeytong.ranking.dto.AdminRankingRecalculateRequest;
 import com.honeytong.ranking.dto.AdminRankingRecalculateResponse;
 import com.honeytong.ranking.dto.AdminSeasonCreateRequest;
@@ -58,6 +62,30 @@ public class AdminRankingController {
         return ApiResponse.success(
                 adminRankingService.recalculatePlaceRankings(adminUserId, request),
                 "Ranking recalculated"
+        );
+    }
+
+    @PostMapping("/rankings/seasons/{seasonId}/finalize-history")
+    public ApiResponse<AdminRankingHistoryFinalizeResponse> finalizeRankingHistory(
+            @AuthenticationPrincipal Long adminUserId,
+            @PathVariable Long seasonId,
+            @Valid @RequestBody(required = false) AdminRankingHistoryFinalizeRequest request
+    ) {
+        return ApiResponse.success(
+                adminRankingService.finalizeRankingHistory(adminUserId, seasonId, request),
+                "Ranking history finalized"
+        );
+    }
+
+    @PatchMapping("/rankings/places/{placeId}/exclude")
+    public ApiResponse<AdminRankingPlaceExclusionResponse> changePlaceRankingExclusion(
+            @AuthenticationPrincipal Long adminUserId,
+            @PathVariable Long placeId,
+            @Valid @RequestBody AdminRankingPlaceExclusionRequest request
+    ) {
+        return ApiResponse.success(
+                adminRankingService.changePlaceRankingExclusion(adminUserId, placeId, request),
+                "Place ranking exclusion changed"
         );
     }
 }

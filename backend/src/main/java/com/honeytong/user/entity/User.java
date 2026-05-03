@@ -73,8 +73,20 @@ public class User extends BaseTimeEntity {
         return email;
     }
 
+    public String getPhone() {
+        return phone;
+    }
+
     public String getLanguagePreference() {
         return languagePreference;
+    }
+
+    public boolean isMarketingAgreed() {
+        return marketingAgreed;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
     }
 
     public boolean isPhoneVerified() {

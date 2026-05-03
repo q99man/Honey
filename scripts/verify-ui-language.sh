@@ -3,7 +3,7 @@ set -e
 
 echo "[verify-ui-language] Checking for suspicious English-only UI labels..."
 
-TARGET_DIRS=("src" "app" "pages" "components")
+TARGET_DIRS=("frontend/src" "src" "app" "pages" "components")
 
 FOUND=0
 

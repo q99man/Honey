@@ -10,4 +10,10 @@ public interface PhoneVerificationCodeRepository extends JpaRepository<PhoneVeri
             Long userId,
             String phone
     );
+
+    Optional<PhoneVerificationCode> findByIdAndUserIdAndPhoneAndVerifiedFalse(
+            Long id,
+            Long userId,
+            String phone
+    );
 }

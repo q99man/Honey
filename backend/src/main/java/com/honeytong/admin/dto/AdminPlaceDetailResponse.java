@@ -1,0 +1,51 @@
+package com.honeytong.admin.dto;
+
+import com.honeytong.place.entity.FranchiseReviewStatus;
+import com.honeytong.place.entity.PlaceApprovalStatus;
+import com.honeytong.place.entity.PlaceExposureStatus;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.List;
+
+public record AdminPlaceDetailResponse(
+        Long placeId,
+        String name,
+        String categoryCode,
+        Long createdByUserId,
+        String createdByNickname,
+        Long cityId,
+        Long districtId,
+        Long dongId,
+        String cityName,
+        String districtName,
+        String dongName,
+        String addressRoad,
+        String addressJibun,
+        BigDecimal latitude,
+        BigDecimal longitude,
+        String priceRangeCode,
+        String recommendedMenu,
+        String shortRecommendation,
+        String featureText,
+        boolean franchise,
+        FranchiseReviewStatus franchiseReviewStatus,
+        PlaceApprovalStatus approvalStatus,
+        PlaceExposureStatus exposureStatus,
+        boolean rankingExcluded,
+        int starLevel,
+        String flowerGrade,
+        int recommendCount,
+        int visitCount,
+        int commentCount,
+        int uniqueUserCount,
+        BigDecimal scoreTotal,
+        BigDecimal manualAdjustmentScore,
+        BigDecimal recentScore,
+        BigDecimal diversityScore,
+        BigDecimal trustWeightedScore,
+        LocalDateTime lastActivityAt,
+        List<String> imageUrls,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {
+}

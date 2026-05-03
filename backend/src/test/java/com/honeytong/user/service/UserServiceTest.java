@@ -3,7 +3,6 @@ package com.honeytong.user.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.honeytong.user.config.GrowthProperties;
 import com.honeytong.user.dto.UserActivitySummaryResponse;
 import com.honeytong.user.dto.UserProfileUpdateRequest;
 import com.honeytong.user.dto.UserStatusResponse;
@@ -38,6 +37,9 @@ class UserServiceTest {
     @Mock
     private UserActivitySummaryReader activitySummaryReader;
 
+    @Mock
+    private UserGrowthPolicyService userGrowthPolicyService;
+
     private UserService userService;
     private User user;
 
@@ -48,7 +50,7 @@ class UserServiceTest {
                 userTrustRepository,
                 userLevelRepository,
                 activitySummaryReader,
-                new GrowthProperties(100)
+                userGrowthPolicyService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -83,6 +85,7 @@ class UserServiceTest {
         UserLevel level = new UserLevel(user);
         when(userTrustRepository.findById(USER_ID)).thenReturn(Optional.of(trust));
         when(userLevelRepository.findById(USER_ID)).thenReturn(Optional.of(level));
+        when(userGrowthPolicyService.getNextLevelExp(1)).thenReturn(java.util.OptionalInt.of(100));
 
         UserStatusResponse response = userService.getMyStatus(USER_ID);
 

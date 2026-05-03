@@ -10,16 +10,22 @@ import com.honeytong.place.repository.PlaceStatsRepository;
 import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.service.UserActionLogService;
+import com.honeytong.user.service.UserGrowthService;
+import com.honeytong.user.service.VisitGrowthResult;
 import com.honeytong.visit.dto.MyVisitResponse;
 import com.honeytong.visit.dto.PlaceVisitSummaryResponse;
 import com.honeytong.visit.dto.VisitPolicyResponse;
 import com.honeytong.visit.dto.VisitResponse;
 import com.honeytong.visit.dto.VisitVerifyRequest;
+import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -38,19 +44,28 @@ public class VisitService {
     private final PlaceStatsRepository placeStatsRepository;
     private final UserRepository userRepository;
     private final PolicyService policyService;
+    private final UserGrowthService userGrowthService;
+    private final UserActionLogService userActionLogService;
+    private final VisitCooldownCache visitCooldownCache;
 
     public VisitService(
             VisitRepository visitRepository,
             PlaceRepository placeRepository,
             PlaceStatsRepository placeStatsRepository,
             UserRepository userRepository,
-            PolicyService policyService
+            PolicyService policyService,
+            UserGrowthService userGrowthService,
+            UserActionLogService userActionLogService,
+            VisitCooldownCache visitCooldownCache
     ) {
         this.visitRepository = visitRepository;
         this.placeRepository = placeRepository;
         this.placeStatsRepository = placeStatsRepository;
         this.userRepository = userRepository;
         this.policyService = policyService;
+        this.userGrowthService = userGrowthService;
+        this.userActionLogService = userActionLogService;
+        this.visitCooldownCache = visitCooldownCache;
     }
 
     @Transactional
@@ -58,7 +73,8 @@ public class VisitService {
         User user = getActiveUser(userId);
         Place place = getVisiblePlace(placeId);
         int radiusMeter = getRadiusMeter();
-        validateCooldown(userId, placeId);
+        int cooldownHour = getCooldownHour();
+        validateCooldown(userId, placeId, cooldownHour);
 
         int distanceMeter = calculateDistanceMeter(
                 request.latitude().doubleValue(),
@@ -70,7 +86,7 @@ public class VisitService {
             throw new ApiException(ErrorCode.OUT_OF_VISIT_RADIUS);
         }
 
-        visitRepository.save(new Visit(
+        Visit visit = visitRepository.save(new Visit(
                 user,
                 place,
                 request.latitude(),
@@ -83,7 +99,20 @@ public class VisitService {
 
         PlaceStats stats = getStats(placeId);
         stats.addVisit(getVisitWeight());
-        return new VisitResponse(true, distanceMeter, 0, stats.getVisitCount());
+        visitCooldownCache.evict(userId, placeId);
+        VisitGrowthResult growthResult = userGrowthService.applyValidVisit(userId);
+        Map<String, Object> metadata = new LinkedHashMap<>();
+        metadata.put("visitId", visit.getId());
+        metadata.put("distanceMeter", distanceMeter);
+        metadata.put("expGained", growthResult.expGained());
+        userActionLogService.record(
+                user.getId(),
+                UserActionLogService.ACTION_VISIT_VERIFY,
+                UserActionLogService.TARGET_PLACE,
+                place.getId(),
+                metadata
+        );
+        return new VisitResponse(true, distanceMeter, growthResult.expGained(), stats.getVisitCount());
     }
 
     @Transactional(readOnly = true)
@@ -91,7 +120,7 @@ public class VisitService {
         getActiveUser(userId);
         getVisiblePlace(placeId);
         int radiusMeter = getRadiusMeter();
-        LocalDateTime cooldownUntil = getCooldownUntil(userId, placeId);
+        LocalDateTime cooldownUntil = getCooldownUntil(userId, placeId, getCooldownHour());
         return new VisitPolicyResponse(cooldownUntil == null, radiusMeter, cooldownUntil);
     }
 
@@ -113,20 +142,24 @@ public class VisitService {
         return new PlaceVisitSummaryResponse(placeId, stats.getVisitCount(), lastVisitedAt);
     }
 
-    private void validateCooldown(Long userId, Long placeId) {
-        if (getCooldownUntil(userId, placeId) != null) {
+    private void validateCooldown(Long userId, Long placeId, int cooldownHour) {
+        if (getCooldownUntil(userId, placeId, cooldownHour) != null) {
             throw new ApiException(ErrorCode.VISIT_COOLDOWN_ACTIVE);
         }
     }
 
-    private LocalDateTime getCooldownUntil(Long userId, Long placeId) {
-        int cooldownHour = getCooldownHour();
+    private LocalDateTime getCooldownUntil(Long userId, Long placeId, int cooldownHour) {
         if (cooldownHour <= 0) {
             return null;
         }
         LocalDateTime now = LocalDateTime.now();
-        return visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(userId, placeId)
-                .map(visit -> visit.getCreatedAt().plusHours(cooldownHour))
+        return visitCooldownCache.getCooldownUntil(
+                        userId,
+                        placeId,
+                        () -> visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(userId, placeId)
+                                .map(visit -> visit.getCreatedAt().plusHours(cooldownHour))
+                                .filter(until -> until.isAfter(now))
+                )
                 .filter(until -> until.isAfter(now))
                 .orElse(null);
     }

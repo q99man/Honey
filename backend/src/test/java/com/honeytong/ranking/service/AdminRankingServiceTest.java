@@ -3,6 +3,7 @@ package com.honeytong.ranking.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,17 +13,15 @@ import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
-import com.honeytong.place.entity.PlaceStats;
-import com.honeytong.place.repository.PlaceStatsRepository;
-import com.honeytong.policy.service.PolicyService;
+import com.honeytong.place.repository.PlaceRepository;
+import com.honeytong.ranking.cache.RankingCache;
+import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeRequest;
+import com.honeytong.ranking.dto.AdminRankingPlaceExclusionRequest;
 import com.honeytong.ranking.dto.AdminRankingRecalculateRequest;
 import com.honeytong.ranking.dto.AdminSeasonCreateRequest;
-import com.honeytong.ranking.entity.PlaceSeasonScore;
-import com.honeytong.ranking.entity.RankingRegionType;
 import com.honeytong.ranking.entity.Season;
 import com.honeytong.ranking.entity.SeasonStatus;
 import com.honeytong.ranking.entity.SeasonType;
-import com.honeytong.ranking.repository.PlaceSeasonScoreRepository;
 import com.honeytong.ranking.repository.SeasonRepository;
 import com.honeytong.region.entity.RegionCity;
 import com.honeytong.region.entity.RegionDistrict;
@@ -32,8 +31,6 @@ import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.repository.UserRepository;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -54,13 +51,7 @@ class AdminRankingServiceTest {
     private SeasonRepository seasonRepository;
 
     @Mock
-    private PlaceStatsRepository placeStatsRepository;
-
-    @Mock
-    private PlaceSeasonScoreRepository placeSeasonScoreRepository;
-
-    @Mock
-    private PolicyService policyService;
+    private PlaceRepository placeRepository;
 
     @Mock
     private UserRepository userRepository;
@@ -68,31 +59,40 @@ class AdminRankingServiceTest {
     @Mock
     private AdminActionLogRepository adminActionLogRepository;
 
+    @Mock
+    private RankingCache rankingCache;
+
+    @Mock
+    private RankingRecalculationService rankingRecalculationService;
+
+    @Mock
+    private RankingHistoryFinalizationService rankingHistoryFinalizationService;
+
     private AdminRankingService adminRankingService;
     private User admin;
     private Season season;
     private Place place;
-    private PlaceStats stats;
 
     @BeforeEach
     void setUp() {
         adminRankingService = new AdminRankingService(
                 seasonRepository,
-                placeStatsRepository,
-                placeSeasonScoreRepository,
-                policyService,
+                placeRepository,
                 userRepository,
                 adminActionLogRepository,
+                rankingCache,
+                rankingRecalculationService,
+                rankingHistoryFinalizationService,
                 new ObjectMapper()
         );
 
-        admin = new User("관리자", "admin@example.com");
+        admin = new User("admin", "admin@example.com");
+        admin.promoteTo(UserRole.ADMIN);
         ReflectionTestUtils.setField(admin, "id", ADMIN_ID);
-        ReflectionTestUtils.setField(admin, "role", UserRole.ADMIN);
 
         season = new Season(
                 "2026-04",
-                "2026년 4월",
+                "April 2026",
                 SeasonType.MONTHLY,
                 LocalDateTime.of(2026, 4, 1, 0, 0),
                 LocalDateTime.of(2026, 4, 30, 23, 59),
@@ -100,69 +100,121 @@ class AdminRankingServiceTest {
         );
         ReflectionTestUtils.setField(season, "id", SEASON_ID);
 
-        RegionCity city = new RegionCity("서울특별시", "Seoul", null, "11");
+        RegionCity city = new RegionCity("Seoul", "Seoul", null, "11");
         ReflectionTestUtils.setField(city, "id", 20L);
-        RegionDistrict district = new RegionDistrict(city, "마포구", "Mapo-gu", null, "11440");
+        RegionDistrict district = new RegionDistrict(city, "Mapo-gu", "Mapo-gu", null, "11440");
         ReflectionTestUtils.setField(district, "id", 30L);
-        RegionDong dong = new RegionDong(city, district, "서교동", "Seogyo-dong", null, "1144066000");
+        RegionDong dong = new RegionDong(city, district, "Seogyo-dong", "Seogyo-dong", null, "1144066000");
         ReflectionTestUtils.setField(dong, "id", 40L);
 
-        User owner = new User("테스터", "tester@example.com");
+        User owner = new User("owner", "owner@example.com");
         ReflectionTestUtils.setField(owner, "id", 2L);
         place = new Place(
                 owner,
                 dong,
-                "서교 순대국",
+                "Honey Soup",
                 "KOREAN",
-                "서울 마포구 양화로 1",
+                "Mapo road 1",
                 null,
                 BigDecimal.valueOf(37.5500000),
                 BigDecimal.valueOf(126.9100000),
                 "10000_20000",
-                "순대국",
-                "동네에서 다시 찾고 싶은 국밥집",
-                "맑은 국물과 빠른 회전이 좋습니다.",
+                "Soup",
+                "A reliable local soup place",
+                "Rich soup and fast service.",
                 false
         );
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
-
-        stats = new PlaceStats(place);
-        stats.addRecommendation(BigDecimal.ONE);
-        stats.addVisit(BigDecimal.valueOf(2));
-        stats.addComment(BigDecimal.valueOf(0.5));
     }
 
     @Test
-    @SuppressWarnings("unchecked")
-    void recalculatePlaceRankings_writesScoresFromAggregatedStatsAndLogsAction() {
+    void recalculatePlaceRankings_delegatesToCoreServiceAndLogsAction() {
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
-        when(seasonRepository.findFirstByStatusOrderByStartAtDesc(SeasonStatus.ACTIVE))
-                .thenReturn(Optional.of(season));
-        when(placeStatsRepository.findAll()).thenReturn(List.of(stats));
-        when(policyService.getRequiredDecimal("ranking", "recommend_weight")).thenReturn(BigDecimal.ONE);
-        when(policyService.getRequiredDecimal("ranking", "visit_weight")).thenReturn(BigDecimal.valueOf(2));
-        when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
+        when(rankingRecalculationService.recalculate(null))
+                .thenReturn(new RankingRecalculationResult(SEASON_ID, "2026-04", 1, 3));
 
         var response = adminRankingService.recalculatePlaceRankings(
                 ADMIN_ID,
-                new AdminRankingRecalculateRequest(null, "테스트 재계산")
+                new AdminRankingRecalculateRequest(null, "Manual recalculation.")
         );
 
-        ArgumentCaptor<Iterable<PlaceSeasonScore>> captor = ArgumentCaptor.forClass(Iterable.class);
-        verify(placeSeasonScoreRepository).deleteBySeasonId(SEASON_ID);
-        verify(placeSeasonScoreRepository).saveAll(captor.capture());
-        List<PlaceSeasonScore> savedScores = new ArrayList<>();
-        captor.getValue().forEach(savedScores::add);
+        ArgumentCaptor<AdminActionLog> captor = ArgumentCaptor.forClass(AdminActionLog.class);
+        verify(rankingRecalculationService).recalculate(null);
+        verify(adminActionLogRepository).save(captor.capture());
+        AdminActionLog log = captor.getValue();
 
         assertThat(response.seasonCode()).isEqualTo("2026-04");
         assertThat(response.placeCount()).isEqualTo(1);
         assertThat(response.scoreCount()).isEqualTo(3);
-        assertThat(savedScores).hasSize(3);
-        assertThat(savedScores)
-                .extracting(PlaceSeasonScore::getRegionType)
-                .containsExactlyInAnyOrder(RankingRegionType.DONG, RankingRegionType.DISTRICT, RankingRegionType.CITY);
-        assertThat(place.getCurrentStarLevel()).isEqualTo(3);
+        assertThat(log.getActionType()).isEqualTo("RANKING_RECALCULATE");
+        assertThat(log.getTargetType()).isEqualTo("RANKING");
+        assertThat(log.getTargetId()).isEqualTo(SEASON_ID);
+        assertThat(log.getAfterValue()).contains("\"seasonCode\":\"2026-04\"");
+        assertThat(log.getMemo()).isEqualTo("Manual recalculation.");
+    }
+
+    @Test
+    void finalizeRankingHistory_delegatesToCoreServiceAndLogsAction() {
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(rankingHistoryFinalizationService.finalizeSeasonHistory(SEASON_ID))
+                .thenReturn(new RankingHistoryFinalizationResult(SEASON_ID, "2026-04", 3));
+
+        var response = adminRankingService.finalizeRankingHistory(
+                ADMIN_ID,
+                SEASON_ID,
+                new AdminRankingHistoryFinalizeRequest("Finalize April history.")
+        );
+
+        ArgumentCaptor<AdminActionLog> captor = ArgumentCaptor.forClass(AdminActionLog.class);
+        verify(rankingHistoryFinalizationService).finalizeSeasonHistory(SEASON_ID);
+        verify(adminActionLogRepository).save(captor.capture());
+        AdminActionLog log = captor.getValue();
+
+        assertThat(response.seasonId()).isEqualTo(SEASON_ID);
+        assertThat(response.seasonCode()).isEqualTo("2026-04");
+        assertThat(response.historyCount()).isEqualTo(3);
+        assertThat(log.getActionType()).isEqualTo("RANKING_HISTORY_FINALIZE");
+        assertThat(log.getTargetType()).isEqualTo("SEASON");
+        assertThat(log.getTargetId()).isEqualTo(SEASON_ID);
+        assertThat(log.getAfterValue()).contains("\"historyCount\":3");
+        assertThat(log.getMemo()).isEqualTo("Finalize April history.");
+    }
+
+    @Test
+    void changePlaceRankingExclusion_excludesPlaceClearsStarAndLogsAction() {
+        place.updateCurrentStarLevel(3);
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(placeRepository.findByIdAndDeletedAtIsNull(PLACE_ID)).thenReturn(Optional.of(place));
+
+        var response = adminRankingService.changePlaceRankingExclusion(
+                ADMIN_ID,
+                PLACE_ID,
+                new AdminRankingPlaceExclusionRequest(true, "Exclude from current ranking.")
+        );
+
+        assertThat(response.placeId()).isEqualTo(PLACE_ID);
+        assertThat(response.rankingExcluded()).isTrue();
+        assertThat(response.starLevel()).isZero();
+        assertThat(place.isRankingExcluded()).isTrue();
+        assertThat(place.getCurrentStarLevel()).isZero();
+        verify(rankingCache).evictAllPlaceRankings();
         verify(adminActionLogRepository).save(any(AdminActionLog.class));
+    }
+
+    @Test
+    void changePlaceRankingExclusion_doesNotLogWhenStateIsUnchanged() {
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(placeRepository.findByIdAndDeletedAtIsNull(PLACE_ID)).thenReturn(Optional.of(place));
+
+        var response = adminRankingService.changePlaceRankingExclusion(
+                ADMIN_ID,
+                PLACE_ID,
+                new AdminRankingPlaceExclusionRequest(false, "No-op.")
+        );
+
+        assertThat(response.rankingExcluded()).isFalse();
+        verify(rankingCache, never()).evictAllPlaceRankings();
+        verify(adminActionLogRepository, never()).save(any(AdminActionLog.class));
     }
 
     @Test
@@ -174,7 +226,7 @@ class AdminRankingServiceTest {
                 ADMIN_ID,
                 new AdminSeasonCreateRequest(
                         "2026-04",
-                        "2026년 4월",
+                        "April 2026",
                         SeasonType.MONTHLY,
                         LocalDateTime.of(2026, 4, 1, 0, 0),
                         LocalDateTime.of(2026, 4, 30, 23, 59),
@@ -196,7 +248,7 @@ class AdminRankingServiceTest {
                 ADMIN_ID,
                 new AdminSeasonCreateRequest(
                         "2026-05",
-                        "2026년 5월",
+                        "May 2026",
                         SeasonType.MONTHLY,
                         LocalDateTime.of(2026, 5, 1, 0, 0),
                         LocalDateTime.of(2026, 5, 31, 23, 59),

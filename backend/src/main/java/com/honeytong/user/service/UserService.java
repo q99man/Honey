@@ -2,7 +2,6 @@ package com.honeytong.user.service;
 
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
-import com.honeytong.user.config.GrowthProperties;
 import com.honeytong.user.dto.UserActivitySummaryResponse;
 import com.honeytong.user.dto.UserGrowthResponse;
 import com.honeytong.user.dto.UserProfileResponse;
@@ -24,20 +23,20 @@ public class UserService {
     private final UserTrustRepository userTrustRepository;
     private final UserLevelRepository userLevelRepository;
     private final UserActivitySummaryReader activitySummaryReader;
-    private final GrowthProperties growthProperties;
+    private final UserGrowthPolicyService userGrowthPolicyService;
 
     public UserService(
             UserRepository userRepository,
             UserTrustRepository userTrustRepository,
             UserLevelRepository userLevelRepository,
             UserActivitySummaryReader activitySummaryReader,
-            GrowthProperties growthProperties
+            UserGrowthPolicyService userGrowthPolicyService
     ) {
         this.userRepository = userRepository;
         this.userTrustRepository = userTrustRepository;
         this.userLevelRepository = userLevelRepository;
         this.activitySummaryReader = activitySummaryReader;
-        this.growthProperties = growthProperties;
+        this.userGrowthPolicyService = userGrowthPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -118,6 +117,6 @@ public class UserService {
     }
 
     private int calculateNextLevelExp(UserLevel level) {
-        return level.getLevel() * growthProperties.baseNextLevelExp();
+        return userGrowthPolicyService.getNextLevelExp(level.getLevel()).orElse(0);
     }
 }

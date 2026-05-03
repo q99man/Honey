@@ -87,6 +87,10 @@ public class Comment extends BaseTimeEntity {
         return reportCount;
     }
 
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
     public boolean isVisible() {
         return status == CommentStatus.VISIBLE && deletedAt == null;
     }
@@ -99,6 +103,10 @@ public class Comment extends BaseTimeEntity {
         this.content = content;
         this.status = CommentStatus.VISIBLE;
         this.deletedAt = null;
+    }
+
+    public void blind() {
+        this.status = CommentStatus.BLINDED;
     }
 
     public void delete() {

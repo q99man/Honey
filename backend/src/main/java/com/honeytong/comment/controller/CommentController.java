@@ -1,5 +1,6 @@
 package com.honeytong.comment.controller;
 
+import com.honeytong.auth.security.RequireNoActiveSanction;
 import com.honeytong.auth.security.RequirePhoneVerified;
 import com.honeytong.comment.dto.CommentCreateResponse;
 import com.honeytong.comment.dto.CommentDeleteResponse;
@@ -30,6 +31,7 @@ public class CommentController {
     }
 
     @RequirePhoneVerified
+    @RequireNoActiveSanction
     @PostMapping("/places/{placeId}/comments")
     public ApiResponse<CommentCreateResponse> createComment(
             @AuthenticationPrincipal Long userId,
@@ -40,6 +42,7 @@ public class CommentController {
     }
 
     @RequirePhoneVerified
+    @RequireNoActiveSanction
     @PatchMapping("/comments/{commentId}")
     public ApiResponse<CommentResponse> updateComment(
             @AuthenticationPrincipal Long userId,

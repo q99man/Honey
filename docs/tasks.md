@@ -16,10 +16,11 @@ The goal is:
 - [x] Set up package structure (domain-based)
 - [x] Configure application.yml (dev / prod)
 - [x] Configure database connection (MySQL)
-- [ ] Configure Redis connection
+- [x] Configure Redis connection
 - [x] Add global exception handler
 - [x] Add base response format (success/error)
-- [ ] Configure logging
+- [x] Configure logging
+- [x] Add Windows tool session bootstrap scripts for Git, Node/npm, Java, and Gradle
 
 ---
 
@@ -28,16 +29,18 @@ The goal is:
 ### Core Auth
 - [x] Implement signup API
 - [x] Implement login API
-- [ ] Implement OAuth login (Kakao, Naver, Google)
+- [x] Implement OAuth login (Kakao, Naver, Google)
 - [x] Implement JWT authentication (access + refresh)
 - [x] Implement logout
 - [x] Implement token refresh
+- [x] Connect frontend login/signup/logout token flow
 
 ### Phone Verification
 - [x] Send verification code API
 - [x] Verify code API
 - [x] Store verification state
-- [ ] Enforce phone verification in core actions
+- [x] Enforce phone verification in core actions
+- [x] Connect frontend phone verification flow
 
 ---
 
@@ -65,6 +68,7 @@ The goal is:
 - [x] Implement primary region assignment
 - [x] Implement region change API
 - [x] Implement region change policy validation
+- [x] Connect frontend region verification flow
 
 ---
 
@@ -82,8 +86,11 @@ The goal is:
 - [x] Implement nearby places API
 - [x] Implement region-based place list
 - [x] Implement place search API
-- [ ] Implement update place API
-- [ ] Implement delete place API
+- [x] Implement update place API
+- [x] Implement delete place API
+- [x] Connect frontend place registration flow
+- [x] Connect frontend my registered places read flow
+- [x] Connect frontend place owner edit/delete flow
 
 ---
 
@@ -97,6 +104,7 @@ The goal is:
 - [x] Apply trust-based weight
 - [x] Update place_stats on recommendation
 - [x] Implement recommendation policy API
+- [x] Connect place detail frontend recommendation action
 
 ---
 
@@ -108,10 +116,11 @@ The goal is:
 - [x] Enforce visit cooldown
 - [x] Store visit validity
 - [x] Update place_stats on visit
-- [ ] Update user trust/level on visit
+- [x] Update user trust/level on visit
 - [x] Implement visit policy API
 - [x] Implement my visits API
 - [x] Implement place visit summary API
+- [x] Connect place detail frontend visit verification action
 
 ---
 
@@ -124,6 +133,7 @@ The goal is:
 - [x] Implement delete comment API
 - [x] Implement place comment list API
 - [x] Implement user comment list API
+- [x] Connect place detail frontend comment actions
 
 ---
 
@@ -139,17 +149,21 @@ The goal is:
 - [x] Implement ranking aggregation logic
 - [x] Implement ranking read API (dong/district/city)
 - [x] Implement season handling
+- [x] Implement disabled-by-default ranking scheduler foundation
+- [x] Implement controlled ranking history finalization foundation
+- [x] Implement place ranking history read API
+- [x] Connect ranking frontend read views
 
 ---
 
 ## 9. Trust & Level System
 
-- [ ] Implement trust score update logic
-- [ ] Implement trust grade evaluation
-- [ ] Implement recommendation weight calculation
-- [ ] Implement level exp gain logic
-- [ ] Implement level up logic
-- [ ] Implement level history tracking
+- [x] Implement valid-visit trust score update logic
+- [x] Implement trust grade evaluation
+- [x] Implement recommendation weight calculation
+- [x] Implement visit EXP gain logic
+- [x] Implement level up logic
+- [x] Implement level history tracking
 
 ---
 
@@ -159,7 +173,8 @@ The goal is:
 - [x] Implement policy loading service
 - [x] Add opt-in policy seed/bootstrap import path
 - [x] Implement admin policy read/update API
-- [ ] Implement policy cache (Redis)
+- [x] Implement policy cache (Redis)
+- [x] Connect admin policy frontend management flow
 - [ ] Replace hardcoded values with policy values
 
 ### Policies to Support
@@ -167,7 +182,9 @@ The goal is:
 - [x] visit radius
 - [x] visit cooldown
 - [x] ranking weights
-- [ ] trust weights
+- [x] visit growth/trust signal values
+- [x] trust weights
+- [x] level thresholds
 - [x] region change cooldown
 - [x] place registration limit
 
@@ -175,10 +192,11 @@ The goal is:
 
 ## 11. Report System
 
-- [ ] Create report entity
-- [ ] Implement create report API
-- [ ] Implement user report list API
-- [ ] Integrate report with admin workflow
+- [x] Create report entity
+- [x] Implement create report API
+- [x] Implement user report list API
+- [x] Connect report frontend user flow
+- [x] Integrate report with admin workflow
 
 ---
 
@@ -190,24 +208,46 @@ The goal is:
 - [x] Add disabled-by-default local admin bootstrap/test account flow
 
 ### Dashboard
-- [ ] Implement admin dashboard metrics
+- [x] Implement admin dashboard metrics
+- [x] Connect admin dashboard frontend read flow
+- [x] Connect admin policy frontend management flow
 
 ### User Management
-- [ ] Implement admin user list
-- [ ] Implement user detail view
-- [ ] Implement user sanction system
-- [ ] Implement trust adjustment
+- [x] Implement admin user list
+- [x] Implement user detail view
+- [x] Implement user sanction creation API
+- [x] Enforce active user sanctions on core write actions
+- [x] Implement trust adjustment
+- [x] Implement recommendation weight adjustment
+- [x] Connect admin user management frontend flow
 
 ### Place Management
-- [ ] Implement place moderation
-- [ ] Implement approval status control
-- [ ] Implement exposure control
-- [ ] Implement franchise review
+- [x] Implement admin place list/detail read APIs
+- [x] Implement place moderation status control foundation
+- [x] Implement approval status control
+- [x] Implement exposure control
+- [x] Implement franchise review status control
+- [x] Implement place score adjustment foundation
+- [x] Connect admin place management frontend flow
 
 ### Report Management
-- [ ] Implement report list
-- [ ] Implement report processing
-- [ ] Apply actions (hide, delete, sanction)
+- [x] Implement report list
+- [x] Implement report processing
+- [x] Apply actions (hide, delete, sanction)
+- [x] Connect admin report management frontend flow
+
+### Comment Management
+- [x] Implement admin comment list API
+- [x] Implement comment blind control
+- [x] Implement comment delete control
+- [x] Connect admin comment moderation frontend flow
+
+### Recommendation and Visit Management
+- [x] Implement recommendation log read API
+- [x] Implement visit log read API
+- [x] Implement recommendation invalidation
+- [x] Implement visit invalidation
+- [x] Connect admin recommendation and visit moderation frontend flow
 
 ---
 
@@ -216,7 +256,8 @@ The goal is:
 - [x] Implement season creation
 - [x] Implement season status change
 - [x] Implement ranking recalculation trigger
-- [ ] Implement ranking exclusion control
+- [x] Implement ranking exclusion control
+- [x] Implement ranking history finalization trigger
 
 ---
 
@@ -240,9 +281,11 @@ The goal is:
 
 ## 16. Logging System
 
-- [ ] Implement user action logs
+- [x] Implement user action logs
+- [x] Implement admin user action log read API
 - [x] Implement admin action log entity and policy update logging
-- [ ] Log recommendation / visit / report / admin actions
+- [x] Implement admin action log read API
+- [x] Log recommendation / visit / report / admin actions
 
 ---
 
@@ -250,7 +293,8 @@ The goal is:
 
 - [ ] Optimize place_stats updates
 - [ ] Add caching for hot endpoints
-- [ ] Optimize ranking queries
+- [x] Optimize ranking queries
+- [x] Add ranking query indexes
 - [ ] Add indexes for heavy queries
 
 ---
@@ -268,11 +312,12 @@ The goal is:
 
 ## 19. Deployment Preparation
 
-- [ ] Prepare production profile
-- [ ] Configure environment variables
-- [ ] Setup database migration strategy
-- [ ] Setup logging for production
-- [ ] Setup monitoring basics
+- [x] Prepare production profile
+- [x] Configure environment variables
+- [x] Setup database migration strategy
+- [x] Setup logging for production
+- [x] Setup monitoring basics
+- [x] Add environment-driven ranking scheduler settings
 
 ---
 
@@ -282,6 +327,17 @@ The goal is:
 - [x] Add git attributes for UTF-8
 - [x] Add Korean encoding check script
 - [x] Add Korean locale file as default UI source
+- [x] Restore broken Korean UI text in touched frontend screens and locale file
+- [x] Add shared frontend authenticated API client behavior for core actions
+- [x] Add My Page auth and phone verification UI
+- [x] Add place registration UI connected to backend policy and creation APIs
+- [x] Add user report creation and my report list UI
+- [x] Add admin report management UI
+- [x] Add admin dashboard read UI
+- [x] Add admin policy management UI
+- [x] Add admin user management UI
+- [x] Add admin place management UI
+- [x] Add admin activity moderation UI
 
 ---
 
@@ -298,7 +354,7 @@ MVP is complete when:
 - [ ] user can comment
 - [ ] ranking works per region
 - [ ] admin can manage reports
-- [ ] admin can adjust policies
+- [x] admin can adjust policies
 - [ ] system prevents basic abuse
 
 ---

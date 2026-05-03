@@ -6,6 +6,7 @@ import com.honeytong.admin.entity.AdminActionLog;
 import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.cache.PolicyCache;
 import com.honeytong.policy.dto.AdminPolicyResponse;
 import com.honeytong.policy.dto.AdminPolicyUpdateRequest;
 import com.honeytong.policy.dto.AdminRegionPolicyRequest;
@@ -35,6 +36,7 @@ public class AdminPolicyService {
     private final UserRepository userRepository;
     private final AdminActionLogRepository adminActionLogRepository;
     private final PolicyService policyService;
+    private final PolicyCache policyCache;
     private final ObjectMapper objectMapper;
 
     public AdminPolicyService(
@@ -42,12 +44,14 @@ public class AdminPolicyService {
             UserRepository userRepository,
             AdminActionLogRepository adminActionLogRepository,
             PolicyService policyService,
+            PolicyCache policyCache,
             ObjectMapper objectMapper
     ) {
         this.systemPolicyRepository = systemPolicyRepository;
         this.userRepository = userRepository;
         this.adminActionLogRepository = adminActionLogRepository;
         this.policyService = policyService;
+        this.policyCache = policyCache;
         this.objectMapper = objectMapper;
     }
 
@@ -73,6 +77,7 @@ public class AdminPolicyService {
         policy.updateValue(value, admin);
         String afterValue = serializePolicy(policy);
         savePolicyUpdateLog(admin, policy, beforeValue, afterValue, request.memo());
+        evictPolicy(policy);
 
         return toResponse(policy);
     }
@@ -117,6 +122,7 @@ public class AdminPolicyService {
         policy.updateValue(value, admin);
         String afterValue = serializePolicy(policy);
         savePolicyUpdateLog(admin, policy, beforeValue, afterValue, memo);
+        evictPolicy(policy);
     }
 
     private User ensureAdmin(Long userId) {
@@ -203,6 +209,10 @@ public class AdminPolicyService {
                 afterValue,
                 memo
         ));
+    }
+
+    private void evictPolicy(SystemPolicy policy) {
+        policyCache.evict(policy.getPolicyGroup(), policy.getPolicyKey());
     }
 
     private String serializePolicy(SystemPolicy policy) {

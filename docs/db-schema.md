@@ -50,6 +50,20 @@ Examples:
 - one comment per user per place
 - unique phone number per active account
 
+1.4 Migration Strategy
+
+The backend uses Flyway for production schema migration.
+
+Rules:
+- migration files live in `backend/src/main/resources/db/migration`
+- filenames use `V{number}__{description}.sql`
+- `V1__baseline_schema.sql` captures the current backend core schema baseline
+- production runs Flyway before Hibernate validates the schema
+- production must keep Hibernate schema mutation disabled with `spring.jpa.hibernate.ddl-auto=validate`
+- local development keeps Flyway disabled by default for convenience and can opt in with `FLYWAY_ENABLED=true`
+- every future schema change must update this document and add a new Flyway migration file
+- existing non-empty databases without `flyway_schema_history` must be baselined intentionally after backup and review
+
 ---
 
 2. Region Tables
@@ -180,6 +194,8 @@ CREATE TABLE user_auth (
 Notes
 provider values can be LOCAL, KAKAO, NAVER, GOOGLE
 password_hash is used only for LOCAL login
+OAuth login rows store the verified provider user id from Kakao, Naver, or Google.
+OAuth account lookup and login are based on `(provider, provider_user_id)` and do not merge accounts by email alone.
 
 3.2.1 refresh_tokens
 
@@ -278,6 +294,11 @@ CREATE TABLE user_trust (
 Notes
 trust and level are intentionally separated
 trust affects influence, not just activity count
+valid visits increase trust_score by `system_policies.trust.valid_visit_score` and update last_evaluated_at
+trust_grade is evaluated from `system_policies.trust.grade_thresholds`
+recommend_weight is evaluated from `system_policies.trust.recommend_weight_by_grade`
+admins can adjust trust_score, trust_grade, and recommend_weight through separated admin user APIs
+admin trust and recommendation-weight adjustments are logged in admin_action_logs
 
 3.5 user_level
 
@@ -296,6 +317,11 @@ CREATE TABLE user_level (
   CONSTRAINT fk_user_level_user
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+Notes
+valid visits add `system_policies.growth.visit_exp` to exp and total_exp
+level-up uses `system_policies.growth.level_exp_thresholds`
+exp stores the remaining EXP toward the next level after level-up
+total_exp stores lifetime earned EXP
 
 3.6 user_level_history
 
@@ -311,6 +337,9 @@ CREATE TABLE user_level_history (
   CONSTRAINT fk_user_level_history_user
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
+Notes
+valid visit growth writes a row only when the user's level actually changes
+changed_reason currently stores `VALID_VISIT` for visit-driven level-up
 
 4. Place Tables
 
@@ -338,6 +367,7 @@ CREATE TABLE places (
   franchise_review_status VARCHAR(20) DEFAULT 'PENDING',
   approval_status VARCHAR(20) NOT NULL DEFAULT 'APPROVED',
   exposure_status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE',
+  ranking_excluded BOOLEAN NOT NULL DEFAULT FALSE,
   current_star_level INT NOT NULL DEFAULT 0,
   current_flower_grade VARCHAR(30) DEFAULT 'SEED',
   created_at DATETIME NOT NULL,
@@ -357,6 +387,8 @@ approval_status supports future moderation policies
 current_star_level and current_flower_grade support current state display
 ranking history is stored separately
 current_star_level is updated by admin-triggered ranking recalculation based on the best current season result
+ranking_excluded is an admin-controlled flag that removes a place from ranking recalculation without hiding it from normal place discovery
+deleted_at is used for logical deletion by place owners or admins
 
 4.2 place_images
 
@@ -388,6 +420,7 @@ CREATE TABLE place_stats (
   comment_count INT NOT NULL DEFAULT 0,
   unique_user_count INT NOT NULL DEFAULT 0,
   score_total DECIMAL(12,2) NOT NULL DEFAULT 0,
+  manual_adjustment_score DECIMAL(12,2) NOT NULL DEFAULT 0,
   recent_score DECIMAL(12,2) NOT NULL DEFAULT 0,
   diversity_score DECIMAL(12,2) NOT NULL DEFAULT 0,
   trust_weighted_score DECIMAL(12,2) NOT NULL DEFAULT 0,
@@ -400,6 +433,7 @@ CREATE TABLE place_stats (
 Notes
 do not calculate all ranking values on every read
 this table is a read optimization and aggregation target
+manual_adjustment_score stores audited admin score adjustments separately from automatic recommendation, visit, and comment aggregates
 
 4.4 place_audience_stats
 
@@ -471,8 +505,9 @@ CREATE TABLE recommendations (
 Notes
 one user can recommend one place only once
 soft status control is useful for cancellation and admin invalidation
-the backend treats ACTIVE as the current recommendation state and CANCELED as user cancellation
+the backend treats ACTIVE as the current recommendation state, CANCELED as user cancellation, and INVALIDATED as admin invalidation
 daily recommendation limits are enforced with `system_policies.recommend.daily_limit`
+user activity summary counts ACTIVE recommendations only
 
 5.2 visits
 
@@ -499,10 +534,12 @@ Notes
 visit cooldown should be enforced in server logic
 storing is_valid allows later investigation or admin invalidation
 the visit API currently stores valid visits and rejects out-of-radius or cooldown-active attempts
+admin visit invalidation sets `is_valid = false` and `valid_reason = ADMIN_INVALIDATED`
 visit radius is enforced with `system_policies.visit.radius_meter`
 visit cooldown is enforced with `system_policies.visit.cooldown_hour`
 my visit history reads valid rows from this table
 place visit summary reads aggregate count from `place_stats` and latest valid visit time from this table
+user activity summary counts valid visits only
 
 5.3 comments
 
@@ -528,8 +565,10 @@ Notes
 comment is lightweight and short-form by design
 one user can only keep one active comment per place
 the backend restores a deleted comment row when the same user writes again for the same place
+admin-blinded comments use `status = BLINDED` and cannot be restored by user rewrite
 visible comments update `place_stats.comment_count`
 comment score weight is read from `system_policies` key `ranking.comment_weight`
+user activity summary counts visible comments whose deleted_at is null
 
 6. Ranking and Season Tables
 
@@ -605,8 +644,10 @@ CREATE TABLE place_ranking_history (
     FOREIGN KEY (season_id) REFERENCES seasons(id)
 );
 Notes
-the entity is available for season finalization history
-MVP read APIs do not populate this table yet
+admin ranking history finalization rewrites this table from `place_season_scores` for a selected season
+finalization deletes existing rows for the season before inserting the current score snapshot to avoid duplicate season/region/place history rows
+public place ranking history reads use this table and return finalized season snapshots only
+visible places without history rows return an empty history list
 
 7. Mission Tables
 
@@ -669,8 +710,23 @@ CREATE TABLE reports (
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   CONSTRAINT fk_reports_reporter
-    FOREIGN KEY (reporter_user_id) REFERENCES users(id)
+    FOREIGN KEY (reporter_user_id) REFERENCES users(id),
+  CONSTRAINT fk_reports_reviewer
+    FOREIGN KEY (reviewed_by) REFERENCES users(id)
 );
+
+Notes
+the backend currently creates report rows from `POST /api/reports` and reads the reporter's own reports from `GET /api/users/me/reports`
+admins can list, inspect, and process reports through `/api/admin/reports`
+supported target_type values are PLACE, COMMENT, and USER
+new user reports are stored as PENDING and do not apply automated sanctions
+target existence and visibility are validated in server logic before insert
+users cannot report themselves as USER targets
+admin processing currently allows PENDING to APPROVED or REJECTED only
+admin processing records reviewed_by, reviewed_at, and review_note
+admin processing writes a REPORT_PROCESS row to admin_action_logs
+approved reports can receive explicit follow-up actions through the admin report workflow
+report follow-up actions do not add columns to reports; target state changes are recorded in their own tables and linked through admin_action_logs
 
 8.2 user_sanctions
 
@@ -692,6 +748,15 @@ CREATE TABLE user_sanctions (
   CONSTRAINT fk_user_sanctions_admin
     FOREIGN KEY (created_by) REFERENCES users(id)
 );
+
+Notes
+the backend currently creates sanction rows from `POST /api/admin/users/{userId}/sanctions`
+supported sanction_type values are WARNING, TEMPORARY_RESTRICTION, and PERMANENT_RESTRICTION
+supported status values are ACTIVE, EXPIRED, and CANCELED
+new sanctions are stored as ACTIVE and increment `user_trust.sanction_count` when the trust row exists
+active TEMPORARY_RESTRICTION and PERMANENT_RESTRICTION rows block core write actions while `start_at <= now` and `end_at` is null or in the future
+WARNING rows are audit/trust signals and do not block actions
+expiration status automation remains a follow-up workflow
 
 8.3 admin_action_logs
 
@@ -741,6 +806,11 @@ visit.cooldown_hour = 24
 region.change_cooldown_day = 7
 region.registration_scope = DISTRICT
 place.registration_limit = 5
+growth.visit_exp = 2
+growth.level_exp_thresholds = 1:10;2:20;3:30
+trust.valid_visit_score = 1
+trust.grade_thresholds = SEED_BEE:0;VERIFIED_BEE:5;LOCAL_BEE:10
+trust.recommend_weight_by_grade = SEED_BEE:1.00;VERIFIED_BEE:1.05;LOCAL_BEE:1.10
 ranking.recommend_weight = 1.0
 ranking.visit_weight = 2.0
 ranking.comment_weight = 0.5
@@ -750,6 +820,10 @@ do not hardcode these values in application logic
 the region change API requires `policy_group = region` and `policy_key = change_cooldown_day`
 the place creation API requires `policy_group = place` and `policy_key = registration_limit`
 the place creation API requires `policy_group = region` and `policy_key = registration_scope`
+the visit growth flow requires `policy_group = growth` and `policy_key = visit_exp`
+the visit trust flow requires `policy_group = trust` and `policy_key = valid_visit_score`
+the level-up flow requires `policy_group = growth` and `policy_key = level_exp_thresholds`
+the trust evaluation flow requires `policy_group = trust` keys `grade_thresholds` and `recommend_weight_by_grade`
 
 9.2 Policy Seed Import
 
@@ -764,6 +838,7 @@ Rules:
 - set POLICY_SEED_ENABLED=true to run import on backend startup
 - set POLICY_SEED_LOCATION to a classpath or file resource
 - import inserts missing policies only and never overwrites admin-edited values
+- list-style policy values use semicolon-separated `key:value` entries so CSV parsing remains stable
 - the default classpath resource is `backend/src/main/resources/policy/policy-defaults.csv`
 
 10. Logging Tables
@@ -786,8 +861,11 @@ CREATE TABLE user_action_logs (
     FOREIGN KEY (user_id) REFERENCES users(id)
 );
 Notes
-not all MVP builds need this immediately
-highly useful for admin analysis and abuse tracing
+the backend writes user action logs for core participation and moderation-signal events
+current action_type values include PLACE_CREATE, RECOMMENDATION_CREATE, RECOMMENDATION_CANCEL, VISIT_VERIFY, COMMENT_CREATE, COMMENT_UPDATE, COMMENT_DELETE, and REPORT_CREATE
+target_type stores the primary object being investigated, such as PLACE, COMMENT, or REPORT
+metadata_json stores small event-specific context such as place id, distance, recommendation weight, or report target information
+user action logs are written after the domain transaction commits and should not break the completed user action if telemetry storage fails
 
 11. Recommended MVP Table Set
 
@@ -816,6 +894,7 @@ user_sanctions
 admin_action_logs
 system_policies
 place_ranking_history
+user_action_logs
 
 12. Recommended Future Expansion Tables
 
@@ -826,7 +905,6 @@ place_tags
 missions
 user_mission_progress
 user_level_history
-user_action_logs
 
 13. Important Index Recommendations
 
@@ -850,6 +928,10 @@ unique index on (user_id, place_id)
 index on (place_id, status)
 place_season_scores
 index on (season_id, region_type, region_ref_id, total_score)
+index on (season_id, region_type, region_ref_id, rank_no, total_score)
+place_ranking_history
+index on (place_id, season_id, region_type, region_ref_id, rank_no)
+index on (season_id, region_type, region_ref_id, rank_no)
 reports
 index on (status, target_type)
 index on (reporter_user_id, created_at)

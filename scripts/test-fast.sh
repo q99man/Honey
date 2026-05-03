@@ -2,10 +2,10 @@
 set -e
 
 echo "[test]"
-if [ -x ./gradlew ]; then
+if [ -f ./backend/gradlew ] || [ -f ./backend/gradlew.bat ]; then
+  ./scripts/run-backend-gradle.sh test
+elif [ -f ./gradlew ]; then
   ./gradlew test
-elif [ -x ./backend/gradlew ]; then
-  (cd backend && ./gradlew test)
 elif [ -f ./frontend/package.json ]; then
   (cd frontend && npm run build)
 else

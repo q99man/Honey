@@ -32,7 +32,7 @@ export default function SpaceCard({
         )}
       </div>
 
-      <div className="flex flex-1 flex-col gap-1 pr-8">
+      <div className={`flex flex-1 flex-col gap-1 ${onToggleWish ? "pr-8" : ""}`}>
         <div className="text-[16px] font-bold">{title}</div>
         <div className="line-clamp-2 text-[13px] text-gray-500">{desc}</div>
 
@@ -42,17 +42,19 @@ export default function SpaceCard({
         </div>
       </div>
 
-      <button
-        type="button"
-        aria-label={isWished ? "찜 해제" : "찜하기"}
-        onClick={(e) => {
-          e.preventDefault();
-          onToggleWish?.();
-        }}
-        className="absolute right-3 top-3 text-lg"
-      >
-        {isWished ? "♥" : "♡"}
-      </button>
+      {onToggleWish && (
+        <button
+          type="button"
+          aria-label={isWished ? "찜 해제" : "찜하기"}
+          onClick={(e) => {
+            e.preventDefault();
+            onToggleWish();
+          }}
+          className="absolute right-3 top-3 text-lg"
+        >
+          {isWished ? "♥" : "♡"}
+        </button>
+      )}
     </div>
   );
 }

@@ -40,6 +40,9 @@ public class PlaceStats extends BaseTimeEntity {
     @Column(name = "score_total", nullable = false, precision = 12, scale = 2)
     private BigDecimal scoreTotal;
 
+    @Column(name = "manual_adjustment_score", nullable = false, precision = 12, scale = 2)
+    private BigDecimal manualAdjustmentScore;
+
     @Column(name = "recent_score", nullable = false, precision = 12, scale = 2)
     private BigDecimal recentScore;
 
@@ -62,6 +65,7 @@ public class PlaceStats extends BaseTimeEntity {
         this.commentCount = 0;
         this.uniqueUserCount = 0;
         this.scoreTotal = BigDecimal.ZERO;
+        this.manualAdjustmentScore = BigDecimal.ZERO;
         this.recentScore = BigDecimal.ZERO;
         this.diversityScore = BigDecimal.ZERO;
         this.trustWeightedScore = BigDecimal.ZERO;
@@ -77,6 +81,18 @@ public class PlaceStats extends BaseTimeEntity {
 
     public int getCommentCount() {
         return commentCount;
+    }
+
+    public int getUniqueUserCount() {
+        return uniqueUserCount;
+    }
+
+    public BigDecimal getScoreTotal() {
+        return scoreTotal;
+    }
+
+    public BigDecimal getManualAdjustmentScore() {
+        return manualAdjustmentScore == null ? BigDecimal.ZERO : manualAdjustmentScore;
     }
 
     public Place getPlace() {
@@ -122,6 +138,15 @@ public class PlaceStats extends BaseTimeEntity {
         this.lastActivityAt = LocalDateTime.now();
     }
 
+    public void removeVisit(BigDecimal visitWeight) {
+        if (this.visitCount > 0) {
+            this.visitCount--;
+        }
+        this.scoreTotal = this.scoreTotal.subtract(visitWeight).max(BigDecimal.ZERO);
+        this.trustWeightedScore = this.trustWeightedScore.subtract(visitWeight).max(BigDecimal.ZERO);
+        this.lastActivityAt = LocalDateTime.now();
+    }
+
     public void addComment(BigDecimal commentWeight) {
         this.commentCount++;
         this.scoreTotal = this.scoreTotal.add(commentWeight);
@@ -136,5 +161,9 @@ public class PlaceStats extends BaseTimeEntity {
         this.scoreTotal = this.scoreTotal.subtract(commentWeight).max(BigDecimal.ZERO);
         this.trustWeightedScore = this.trustWeightedScore.subtract(commentWeight).max(BigDecimal.ZERO);
         this.lastActivityAt = LocalDateTime.now();
+    }
+
+    public void adjustManualScore(BigDecimal scoreDelta) {
+        this.manualAdjustmentScore = getManualAdjustmentScore().add(scoreDelta);
     }
 }

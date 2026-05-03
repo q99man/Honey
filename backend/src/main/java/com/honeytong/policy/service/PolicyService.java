@@ -2,6 +2,8 @@ package com.honeytong.policy.service;
 
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.cache.CachedPolicy;
+import com.honeytong.policy.cache.PolicyCache;
 import com.honeytong.policy.entity.PolicyValueType;
 import com.honeytong.policy.entity.SystemPolicy;
 import com.honeytong.policy.repository.SystemPolicyRepository;
@@ -13,19 +15,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class PolicyService {
 
     private final SystemPolicyRepository systemPolicyRepository;
+    private final PolicyCache policyCache;
 
-    public PolicyService(SystemPolicyRepository systemPolicyRepository) {
+    public PolicyService(SystemPolicyRepository systemPolicyRepository, PolicyCache policyCache) {
         this.systemPolicyRepository = systemPolicyRepository;
+        this.policyCache = policyCache;
     }
 
     @Transactional(readOnly = true)
     public int getRequiredInteger(String policyGroup, String policyKey) {
-        SystemPolicy policy = getRequiredPolicy(policyGroup, policyKey);
-        if (policy.getValueType() != PolicyValueType.INTEGER) {
+        CachedPolicy policy = getRequiredPolicy(policyGroup, policyKey);
+        if (policy.valueType() != PolicyValueType.INTEGER) {
             throw invalidType(policyGroup, policyKey);
         }
         try {
-            return Integer.parseInt(policy.getPolicyValue());
+            return Integer.parseInt(policy.value());
         } catch (NumberFormatException exception) {
             throw new ApiException(
                     ErrorCode.POLICY_VIOLATION,
@@ -36,12 +40,12 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public BigDecimal getRequiredDecimal(String policyGroup, String policyKey) {
-        SystemPolicy policy = getRequiredPolicy(policyGroup, policyKey);
-        if (policy.getValueType() != PolicyValueType.DECIMAL) {
+        CachedPolicy policy = getRequiredPolicy(policyGroup, policyKey);
+        if (policy.valueType() != PolicyValueType.DECIMAL) {
             throw invalidType(policyGroup, policyKey);
         }
         try {
-            return new BigDecimal(policy.getPolicyValue());
+            return new BigDecimal(policy.value());
         } catch (NumberFormatException exception) {
             throw new ApiException(
                     ErrorCode.POLICY_VIOLATION,
@@ -52,20 +56,28 @@ public class PolicyService {
 
     @Transactional(readOnly = true)
     public String getRequiredString(String policyGroup, String policyKey) {
-        SystemPolicy policy = getRequiredPolicy(policyGroup, policyKey);
-        if (policy.getValueType() != PolicyValueType.STRING) {
+        CachedPolicy policy = getRequiredPolicy(policyGroup, policyKey);
+        if (policy.valueType() != PolicyValueType.STRING) {
             throw invalidType(policyGroup, policyKey);
         }
-        return policy.getPolicyValue();
+        return policy.value();
     }
 
-    private SystemPolicy getRequiredPolicy(String policyGroup, String policyKey) {
-        return systemPolicyRepository
+    private CachedPolicy getRequiredPolicy(String policyGroup, String policyKey) {
+        return policyCache.get(policyGroup, policyKey)
+                .orElseGet(() -> loadRequiredPolicy(policyGroup, policyKey));
+    }
+
+    private CachedPolicy loadRequiredPolicy(String policyGroup, String policyKey) {
+        SystemPolicy policy = systemPolicyRepository
                 .findByPolicyGroupAndPolicyKeyAndActiveTrue(policyGroup, policyKey)
                 .orElseThrow(() -> new ApiException(
                         ErrorCode.POLICY_VIOLATION,
                         "필수 정책이 설정되어 있지 않습니다: " + fullKey(policyGroup, policyKey)
                 ));
+        CachedPolicy cachedPolicy = CachedPolicy.from(policy);
+        policyCache.put(policyGroup, policyKey, cachedPolicy);
+        return cachedPolicy;
     }
 
     private ApiException invalidType(String policyGroup, String policyKey) {

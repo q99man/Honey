@@ -3,6 +3,7 @@ package com.honeytong.recommendation.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -12,6 +13,7 @@ import com.honeytong.place.entity.PlaceStats;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.place.repository.PlaceStatsRepository;
 import com.honeytong.policy.service.PolicyService;
+import com.honeytong.recommendation.counter.RecommendationDailyCounter;
 import com.honeytong.recommendation.entity.Recommendation;
 import com.honeytong.recommendation.entity.RecommendationStatus;
 import com.honeytong.recommendation.repository.RecommendationRepository;
@@ -22,7 +24,9 @@ import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
+import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -55,6 +59,12 @@ class RecommendationServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private RecommendationDailyCounter recommendationDailyCounter;
+
+    @Mock
+    private UserActionLogService userActionLogService;
+
     private RecommendationService recommendationService;
     private User user;
     private Place place;
@@ -68,7 +78,9 @@ class RecommendationServiceTest {
                 placeStatsRepository,
                 userRepository,
                 userTrustRepository,
-                policyService
+                policyService,
+                recommendationDailyCounter,
+                userActionLogService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -109,12 +121,8 @@ class RecommendationServiceTest {
                 RecommendationStatus.ACTIVE
         )).thenReturn(false);
         when(policyService.getRequiredInteger("recommend", "daily_limit")).thenReturn(20);
-        when(recommendationRepository.countByUserIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                any(),
-                any(),
-                any(),
-                any()
-        )).thenReturn(0L);
+        when(recommendationDailyCounter.getUsedCount(eq(USER_ID), any(LocalDate.class), any()))
+                .thenReturn(0L);
         when(userTrustRepository.findById(USER_ID)).thenReturn(Optional.of(trust));
         when(recommendationRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID)).thenReturn(Optional.empty());
         when(recommendationRepository.save(any(Recommendation.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -126,6 +134,14 @@ class RecommendationServiceTest {
         assertThat(response.recommendCount()).isEqualTo(1);
         assertThat(response.myWeight()).isEqualByComparingTo("1.0");
         verify(recommendationRepository).save(any(Recommendation.class));
+        verify(recommendationDailyCounter).evict(eq(USER_ID), any(LocalDate.class));
+        verify(userActionLogService).record(
+                eq(USER_ID),
+                eq(UserActionLogService.ACTION_RECOMMENDATION_CREATE),
+                eq(UserActionLogService.TARGET_PLACE),
+                eq(PLACE_ID),
+                any()
+        );
     }
 
     @Test
@@ -153,12 +169,8 @@ class RecommendationServiceTest {
                 RecommendationStatus.ACTIVE
         )).thenReturn(false);
         when(policyService.getRequiredInteger("recommend", "daily_limit")).thenReturn(1);
-        when(recommendationRepository.countByUserIdAndStatusAndCreatedAtGreaterThanEqualAndCreatedAtLessThan(
-                any(),
-                any(),
-                any(),
-                any()
-        )).thenReturn(1L);
+        when(recommendationDailyCounter.getUsedCount(eq(USER_ID), any(LocalDate.class), any()))
+                .thenReturn(1L);
 
         var response = recommendationService.getRecommendationPolicy(USER_ID, PLACE_ID);
 
@@ -182,5 +194,13 @@ class RecommendationServiceTest {
         assertThat(response.recommended()).isFalse();
         assertThat(response.recommendCount()).isZero();
         assertThat(recommendation.getStatus()).isEqualTo(RecommendationStatus.CANCELED);
+        verify(recommendationDailyCounter).evict(eq(USER_ID), any(LocalDate.class));
+        verify(userActionLogService).record(
+                eq(USER_ID),
+                eq(UserActionLogService.ACTION_RECOMMENDATION_CANCEL),
+                eq(UserActionLogService.TARGET_PLACE),
+                eq(PLACE_ID),
+                any()
+        );
     }
 }

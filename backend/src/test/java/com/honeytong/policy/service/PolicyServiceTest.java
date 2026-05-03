@@ -1,8 +1,13 @@
 package com.honeytong.policy.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+import com.honeytong.policy.cache.CachedPolicy;
+import com.honeytong.policy.cache.PolicyCache;
 import com.honeytong.policy.entity.PolicyValueType;
 import com.honeytong.policy.entity.SystemPolicy;
 import com.honeytong.policy.repository.SystemPolicyRepository;
@@ -20,11 +25,14 @@ class PolicyServiceTest {
     @Mock
     private SystemPolicyRepository systemPolicyRepository;
 
+    @Mock
+    private PolicyCache policyCache;
+
     private PolicyService policyService;
 
     @BeforeEach
     void setUp() {
-        policyService = new PolicyService(systemPolicyRepository);
+        policyService = new PolicyService(systemPolicyRepository, policyCache);
     }
 
     @Test
@@ -40,10 +48,12 @@ class PolicyServiceTest {
                 "region",
                 "change_cooldown_day"
         )).thenReturn(Optional.of(policy));
+        when(policyCache.get("region", "change_cooldown_day")).thenReturn(Optional.empty());
 
         int value = policyService.getRequiredInteger("region", "change_cooldown_day");
 
         assertThat(value).isEqualTo(7);
+        verify(policyCache).put("region", "change_cooldown_day", CachedPolicy.from(policy));
     }
 
     @Test
@@ -59,9 +69,21 @@ class PolicyServiceTest {
                 "ranking",
                 "visit_weight"
         )).thenReturn(Optional.of(policy));
+        when(policyCache.get("ranking", "visit_weight")).thenReturn(Optional.empty());
 
         BigDecimal value = policyService.getRequiredDecimal("ranking", "visit_weight");
 
         assertThat(value).isEqualByComparingTo("2.0");
+    }
+
+    @Test
+    void getRequiredString_returnsCachedValueWithoutRepositoryLookup() {
+        when(policyCache.get("region", "registration_scope"))
+                .thenReturn(Optional.of(new CachedPolicy("CITY", PolicyValueType.STRING)));
+
+        String value = policyService.getRequiredString("region", "registration_scope");
+
+        assertThat(value).isEqualTo("CITY");
+        verify(systemPolicyRepository, never()).findByPolicyGroupAndPolicyKeyAndActiveTrue(any(), any());
     }
 }

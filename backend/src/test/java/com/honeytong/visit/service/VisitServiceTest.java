@@ -3,6 +3,7 @@ package com.honeytong.visit.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -19,6 +20,10 @@ import com.honeytong.region.entity.RegionDistrict;
 import com.honeytong.region.entity.RegionDong;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.service.UserActionLogService;
+import com.honeytong.user.service.UserGrowthService;
+import com.honeytong.user.service.VisitGrowthResult;
+import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.dto.VisitVerifyRequest;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
@@ -55,6 +60,15 @@ class VisitServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private UserGrowthService userGrowthService;
+
+    @Mock
+    private UserActionLogService userActionLogService;
+
+    @Mock
+    private VisitCooldownCache visitCooldownCache;
+
     private VisitService visitService;
     private User user;
     private Place place;
@@ -67,31 +81,34 @@ class VisitServiceTest {
                 placeRepository,
                 placeStatsRepository,
                 userRepository,
-                policyService
+                policyService,
+                userGrowthService,
+                userActionLogService,
+                visitCooldownCache
         );
 
-        user = new User("테스터", "tester@example.com");
+        user = new User("tester", "tester@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);
 
-        RegionCity city = new RegionCity("서울특별시", "Seoul", null, "11");
+        RegionCity city = new RegionCity("Seoul", "Seoul", null, "11");
         ReflectionTestUtils.setField(city, "id", 10L);
-        RegionDistrict district = new RegionDistrict(city, "마포구", "Mapo-gu", null, "11440");
+        RegionDistrict district = new RegionDistrict(city, "Mapo-gu", "Mapo-gu", null, "11440");
         ReflectionTestUtils.setField(district, "id", 20L);
-        RegionDong dong = new RegionDong(city, district, "서교동", "Seogyo-dong", null, "1144066000");
+        RegionDong dong = new RegionDong(city, district, "Seogyo-dong", "Seogyo-dong", null, "1144066000");
         ReflectionTestUtils.setField(dong, "id", 30L);
         place = new Place(
                 user,
                 dong,
-                "한정 국밥",
+                "Local Soup",
                 "KOREAN",
-                "서울 마포구 독막로 1",
+                "Seoul Mapo-gu Yanghwa-ro 1",
                 null,
                 BigDecimal.valueOf(37.5500000),
                 BigDecimal.valueOf(126.9100000),
                 "10000_20000",
-                "국밥",
-                "동네에서 다시 찾고 싶은 국밥집",
-                "맑은 국물과 빠른 회전이 좋습니다.",
+                "Soup",
+                "A neighborhood soup place worth revisiting.",
+                "Clear broth and fast turnover.",
                 false
         );
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
@@ -103,10 +120,12 @@ class VisitServiceTest {
         stubActiveUserAndVisiblePlace();
         when(policyService.getRequiredInteger("visit", "radius_meter")).thenReturn(70);
         when(policyService.getRequiredInteger("visit", "cooldown_hour")).thenReturn(24);
-        when(visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(USER_ID, PLACE_ID))
+        when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
                 .thenReturn(Optional.empty());
+        when(visitRepository.save(any(Visit.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "visit_weight")).thenReturn(BigDecimal.valueOf(2.0));
+        when(userGrowthService.applyValidVisit(USER_ID)).thenReturn(new VisitGrowthResult(2, 1));
 
         var response = visitService.verifyVisit(
                 USER_ID,
@@ -120,11 +139,20 @@ class VisitServiceTest {
 
         assertThat(response.verified()).isTrue();
         assertThat(response.distanceMeter()).isLessThanOrEqualTo(70);
-        assertThat(response.expGained()).isZero();
+        assertThat(response.expGained()).isEqualTo(2);
         assertThat(response.visitCount()).isEqualTo(1);
 
         ArgumentCaptor<Visit> visitCaptor = ArgumentCaptor.forClass(Visit.class);
         verify(visitRepository).save(visitCaptor.capture());
+        verify(visitCooldownCache).evict(USER_ID, PLACE_ID);
+        verify(userGrowthService).applyValidVisit(USER_ID);
+        verify(userActionLogService).record(
+                org.mockito.Mockito.eq(USER_ID),
+                org.mockito.Mockito.eq(UserActionLogService.ACTION_VISIT_VERIFY),
+                org.mockito.Mockito.eq(UserActionLogService.TARGET_PLACE),
+                org.mockito.Mockito.eq(PLACE_ID),
+                org.mockito.Mockito.any()
+        );
         assertThat(visitCaptor.getValue().isValid()).isTrue();
         assertThat(visitCaptor.getValue().getDistanceMeter()).isEqualTo(response.distanceMeter());
     }
@@ -134,7 +162,7 @@ class VisitServiceTest {
         stubActiveUserAndVisiblePlace();
         when(policyService.getRequiredInteger("visit", "radius_meter")).thenReturn(70);
         when(policyService.getRequiredInteger("visit", "cooldown_hour")).thenReturn(24);
-        when(visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(USER_ID, PLACE_ID))
+        when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
                 .thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> visitService.verifyVisit(
@@ -156,8 +184,8 @@ class VisitServiceTest {
         stubActiveUserAndVisiblePlace();
         when(policyService.getRequiredInteger("visit", "radius_meter")).thenReturn(70);
         when(policyService.getRequiredInteger("visit", "cooldown_hour")).thenReturn(24);
-        when(visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(USER_ID, PLACE_ID))
-                .thenReturn(Optional.of(recentVisit(LocalDateTime.now().minusHours(1))));
+        when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
+                .thenReturn(Optional.of(LocalDateTime.now().plusHours(23)));
 
         assertThatThrownBy(() -> visitService.verifyVisit(
                 USER_ID,
@@ -178,8 +206,8 @@ class VisitServiceTest {
         stubActiveUserAndVisiblePlace();
         when(policyService.getRequiredInteger("visit", "radius_meter")).thenReturn(70);
         when(policyService.getRequiredInteger("visit", "cooldown_hour")).thenReturn(24);
-        when(visitRepository.findTopByUserIdAndPlaceIdAndValidTrueOrderByCreatedAtDesc(USER_ID, PLACE_ID))
-                .thenReturn(Optional.of(recentVisit(recentAt)));
+        when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
+                .thenReturn(Optional.of(recentAt.plusHours(24)));
 
         var response = visitService.getVisitPolicy(USER_ID, PLACE_ID);
 
@@ -202,7 +230,7 @@ class VisitServiceTest {
         assertThat(response).hasSize(1);
         assertThat(response.get(0).visitId()).isEqualTo(200L);
         assertThat(response.get(0).placeId()).isEqualTo(PLACE_ID);
-        assertThat(response.get(0).placeName()).isEqualTo("한정 국밥");
+        assertThat(response.get(0).placeName()).isEqualTo("Local Soup");
         assertThat(response.get(0).visitedAt()).isEqualTo(visitedAt);
     }
 

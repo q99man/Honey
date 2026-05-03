@@ -76,4 +76,40 @@ public class PlaceRankingHistory {
     protected void onCreate() {
         this.createdAt = LocalDateTime.now();
     }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Place getPlace() {
+        return place;
+    }
+
+    public Season getSeason() {
+        return season;
+    }
+
+    public RankingRegionType getRegionType() {
+        return regionType;
+    }
+
+    public Long getRegionRefId() {
+        return regionRefId;
+    }
+
+    public int getRankNo() {
+        return rankNo;
+    }
+
+    public int getStarLevel() {
+        return starLevel;
+    }
+
+    public BigDecimal getTotalScore() {
+        return totalScore;
+    }
+
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
 }

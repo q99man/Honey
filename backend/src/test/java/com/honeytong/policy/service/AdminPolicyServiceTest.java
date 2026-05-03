@@ -11,6 +11,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.honeytong.admin.entity.AdminActionLog;
 import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
+import com.honeytong.policy.cache.PolicyCache;
 import com.honeytong.policy.dto.AdminPolicyUpdateRequest;
 import com.honeytong.policy.dto.AdminRegionPolicyRequest;
 import com.honeytong.policy.entity.PolicyValueType;
@@ -44,6 +45,9 @@ class AdminPolicyServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private PolicyCache policyCache;
+
     private AdminPolicyService adminPolicyService;
     private User superAdmin;
 
@@ -58,6 +62,7 @@ class AdminPolicyServiceTest {
                 userRepository,
                 adminActionLogRepository,
                 policyService,
+                policyCache,
                 new ObjectMapper()
         );
     }
@@ -86,6 +91,7 @@ class AdminPolicyServiceTest {
         assertThat(response.fullKey()).isEqualTo("visit.radius_meter");
         assertThat(policy.getUpdatedBy()).isEqualTo(superAdmin);
         verify(adminActionLogRepository).save(any(AdminActionLog.class));
+        verify(policyCache).evict("visit", "radius_meter");
     }
 
     @Test
@@ -144,5 +150,7 @@ class AdminPolicyServiceTest {
         assertThat(cooldownPolicy.getPolicyValue()).isEqualTo("3");
         assertThat(scopePolicy.getPolicyValue()).isEqualTo("CITY");
         verify(adminActionLogRepository, times(2)).save(any(AdminActionLog.class));
+        verify(policyCache).evict("region", "change_cooldown_day");
+        verify(policyCache).evict("region", "registration_scope");
     }
 }

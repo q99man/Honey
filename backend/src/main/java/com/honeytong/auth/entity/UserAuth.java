@@ -65,8 +65,24 @@ public class UserAuth extends BaseTimeEntity {
         return user;
     }
 
+    public AuthProvider getProvider() {
+        return provider;
+    }
+
+    public String getProviderUserId() {
+        return providerUserId;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
     public String getPasswordHash() {
         return passwordHash;
+    }
+
+    public LocalDateTime getLastLoginAt() {
+        return lastLoginAt;
     }
 
     public void updatePasswordHash(String passwordHash) {

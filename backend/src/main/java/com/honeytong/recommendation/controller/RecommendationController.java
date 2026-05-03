@@ -1,5 +1,6 @@
 package com.honeytong.recommendation.controller;
 
+import com.honeytong.auth.security.RequireNoActiveSanction;
 import com.honeytong.auth.security.RequirePhoneVerified;
 import com.honeytong.common.api.ApiResponse;
 import com.honeytong.recommendation.dto.MyRecommendationResponse;
@@ -26,6 +27,7 @@ public class RecommendationController {
     }
 
     @RequirePhoneVerified
+    @RequireNoActiveSanction
     @PostMapping("/places/{placeId}/recommend")
     public ApiResponse<RecommendationResponse> recommend(
             @AuthenticationPrincipal Long userId,

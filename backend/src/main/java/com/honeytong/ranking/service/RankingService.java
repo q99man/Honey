@@ -4,6 +4,7 @@ import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
+import com.honeytong.ranking.cache.RankingCache;
 import com.honeytong.ranking.dto.CurrentSeasonResponse;
 import com.honeytong.ranking.dto.PlaceRankingItemResponse;
 import com.honeytong.ranking.dto.PlaceRankingResponse;
@@ -29,19 +30,22 @@ public class RankingService {
     private final RegionCityRepository regionCityRepository;
     private final RegionDistrictRepository regionDistrictRepository;
     private final RegionDongRepository regionDongRepository;
+    private final RankingCache rankingCache;
 
     public RankingService(
             SeasonRepository seasonRepository,
             PlaceSeasonScoreRepository placeSeasonScoreRepository,
             RegionCityRepository regionCityRepository,
             RegionDistrictRepository regionDistrictRepository,
-            RegionDongRepository regionDongRepository
+            RegionDongRepository regionDongRepository,
+            RankingCache rankingCache
     ) {
         this.seasonRepository = seasonRepository;
         this.placeSeasonScoreRepository = placeSeasonScoreRepository;
         this.regionCityRepository = regionCityRepository;
         this.regionDistrictRepository = regionDistrictRepository;
         this.regionDongRepository = regionDongRepository;
+        this.rankingCache = rankingCache;
     }
 
     @Transactional(readOnly = true)
@@ -52,7 +56,19 @@ public class RankingService {
         RankingRegionType regionType = RankingRegionType.from(regionTypeValue);
         Season season = resolveSeason(seasonCode);
         String regionName = resolveRegionName(regionType, regionId);
+        String resolvedSeasonCode = season.getSeasonCode();
 
+        return rankingCache.getPlaceRanking(resolvedSeasonCode, regionType, regionId)
+                .orElseGet(() -> loadPlaceRankings(season, resolvedSeasonCode, regionType, regionId, regionName));
+    }
+
+    private PlaceRankingResponse loadPlaceRankings(
+            Season season,
+            String seasonCode,
+            RankingRegionType regionType,
+            Long regionId,
+            String regionName
+    ) {
         List<PlaceSeasonScore> scores = placeSeasonScoreRepository
                 .findTop50BySeasonIdAndRegionTypeAndRegionRefIdOrderByRankNoAscTotalScoreDesc(
                         season.getId(),
@@ -77,12 +93,14 @@ public class RankingService {
             ));
         }
 
-        return new PlaceRankingResponse(
-                season.getSeasonCode(),
+        PlaceRankingResponse response = new PlaceRankingResponse(
+                seasonCode,
                 regionType.toApiValue(),
                 regionName,
                 items
         );
+        rankingCache.putPlaceRanking(seasonCode, regionType, regionId, response);
+        return response;
     }
 
     @Transactional(readOnly = true)

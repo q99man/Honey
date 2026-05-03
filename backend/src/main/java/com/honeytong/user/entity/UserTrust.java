@@ -82,6 +82,36 @@ public class UserTrust extends BaseTimeEntity {
         this.regionVerified = true;
     }
 
+    public void increaseSanctionCount() {
+        this.sanctionCount += 1;
+    }
+
+    public void addTrustScore(int trustScoreDelta) {
+        this.trustScore += trustScoreDelta;
+        this.lastEvaluatedAt = LocalDateTime.now();
+    }
+
+    public void applyTrustEvaluation(TrustGrade trustGrade, BigDecimal recommendWeight) {
+        this.trustGrade = trustGrade;
+        this.recommendWeight = recommendWeight;
+        this.lastEvaluatedAt = LocalDateTime.now();
+    }
+
+    public void adjustTrust(int trustScore, TrustGrade trustGrade) {
+        this.trustScore = trustScore;
+        this.trustGrade = trustGrade;
+        this.lastEvaluatedAt = LocalDateTime.now();
+    }
+
+    public void adjustRecommendWeight(BigDecimal recommendWeight) {
+        this.recommendWeight = recommendWeight;
+        this.lastEvaluatedAt = LocalDateTime.now();
+    }
+
+    public int getTrustScore() {
+        return trustScore;
+    }
+
     public TrustGrade getTrustGrade() {
         return trustGrade;
     }
@@ -90,11 +120,31 @@ public class UserTrust extends BaseTimeEntity {
         return recommendWeight;
     }
 
+    public int getSanctionCount() {
+        return sanctionCount;
+    }
+
+    public int getReportReceivedCount() {
+        return reportReceivedCount;
+    }
+
+    public int getReportConfirmedCount() {
+        return reportConfirmedCount;
+    }
+
+    public int getAbnormalActivityScore() {
+        return abnormalActivityScore;
+    }
+
     public boolean isPhoneVerified() {
         return phoneVerified;
     }
 
     public boolean isRegionVerified() {
         return regionVerified;
+    }
+
+    public LocalDateTime getLastEvaluatedAt() {
+        return lastEvaluatedAt;
     }
 }

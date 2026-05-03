@@ -7,6 +7,8 @@ import com.honeytong.auth.dto.PhoneVerificationStatusResponse;
 import com.honeytong.auth.dto.PhoneVerificationVerifyRequest;
 import com.honeytong.auth.entity.PhoneVerificationCode;
 import com.honeytong.auth.repository.PhoneVerificationCodeRepository;
+import com.honeytong.auth.verification.PhoneVerificationCache;
+import com.honeytong.auth.verification.PhoneVerificationState;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.user.entity.User;
@@ -26,6 +28,7 @@ public class PhoneVerificationService {
     private final UserTrustRepository userTrustRepository;
     private final PhoneVerificationCodeRepository phoneVerificationCodeRepository;
     private final PhoneVerificationSender phoneVerificationSender;
+    private final PhoneVerificationCache phoneVerificationCache;
     private final PhoneVerificationProperties properties;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
@@ -35,6 +38,7 @@ public class PhoneVerificationService {
             UserTrustRepository userTrustRepository,
             PhoneVerificationCodeRepository phoneVerificationCodeRepository,
             PhoneVerificationSender phoneVerificationSender,
+            PhoneVerificationCache phoneVerificationCache,
             PhoneVerificationProperties properties,
             PasswordEncoder passwordEncoder
     ) {
@@ -42,6 +46,7 @@ public class PhoneVerificationService {
         this.userTrustRepository = userTrustRepository;
         this.phoneVerificationCodeRepository = phoneVerificationCodeRepository;
         this.phoneVerificationSender = phoneVerificationSender;
+        this.phoneVerificationCache = phoneVerificationCache;
         this.properties = properties;
         this.passwordEncoder = passwordEncoder;
     }
@@ -54,24 +59,38 @@ public class PhoneVerificationService {
         String codeHash = passwordEncoder.encode(code);
         LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(properties.codeTtlMinutes());
 
-        phoneVerificationCodeRepository.save(
-                new PhoneVerificationCode(user, request.phone(), codeHash, expiresAt)
+        PhoneVerificationCode verificationCode = new PhoneVerificationCode(
+                user,
+                request.phone(),
+                codeHash,
+                expiresAt
         );
+        phoneVerificationCodeRepository.save(verificationCode);
+        phoneVerificationCache.put(userId, request.phone(), PhoneVerificationState.from(verificationCode));
         phoneVerificationSender.send(request.phone(), code);
 
         return new PhoneVerificationSendResponse(true);
     }
 
-    @Transactional
+    @Transactional(noRollbackFor = ApiException.class)
     public PhoneVerificationStatusResponse verifyCode(Long userId, PhoneVerificationVerifyRequest request) {
         User user = getActiveUser(userId);
         validatePhoneAvailable(request.phone(), userId);
-        PhoneVerificationCode verificationCode = phoneVerificationCodeRepository
-                .findTopByUserIdAndPhoneAndVerifiedFalseOrderByCreatedAtDesc(userId, request.phone())
+
+        PhoneVerificationState verificationState = phoneVerificationCache.getLatestUnverified(
+                        userId,
+                        request.phone(),
+                        () -> phoneVerificationCodeRepository
+                                .findTopByUserIdAndPhoneAndVerifiedFalseOrderByCreatedAtDesc(userId, request.phone())
+                                .map(PhoneVerificationState::from)
+                )
                 .orElseThrow(() -> new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드를 먼저 요청해 주세요."));
 
+        validateAttemptAvailable(verificationState);
+        PhoneVerificationCode verificationCode = getVerificationCode(userId, request.phone(), verificationState);
         validateAttemptAvailable(verificationCode);
         verificationCode.increaseAttempt();
+        phoneVerificationCache.put(userId, request.phone(), PhoneVerificationState.from(verificationCode));
 
         if (!passwordEncoder.matches(request.code(), verificationCode.getCodeHash())) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드가 올바르지 않습니다.");
@@ -80,6 +99,7 @@ public class PhoneVerificationService {
         verificationCode.markVerified();
         user.verifyPhone(request.phone());
         userTrustRepository.findById(userId).ifPresent(UserTrust::markPhoneVerified);
+        phoneVerificationCache.evict(userId, request.phone());
 
         return new PhoneVerificationStatusResponse(true);
     }
@@ -98,6 +118,37 @@ public class PhoneVerificationService {
         if (!verificationCode.canAttempt(properties.maxAttempts())) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드 입력 횟수를 초과했습니다.");
         }
+    }
+
+    private void validateAttemptAvailable(PhoneVerificationState verificationState) {
+        if (verificationState.isExpired()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "만료된 인증 코드입니다.");
+        }
+
+        if (!verificationState.canAttempt(properties.maxAttempts())) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드 입력 횟수를 초과했습니다.");
+        }
+    }
+
+    private PhoneVerificationCode getVerificationCode(
+            Long userId,
+            String phone,
+            PhoneVerificationState verificationState
+    ) {
+        if (verificationState.verificationCodeId() != null) {
+            return phoneVerificationCodeRepository.findByIdAndUserIdAndPhoneAndVerifiedFalse(
+                            verificationState.verificationCodeId(),
+                            userId,
+                            phone
+                    )
+                    .orElseThrow(() -> {
+                        phoneVerificationCache.evict(userId, phone);
+                        return new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드를 먼저 요청해 주세요.");
+                    });
+        }
+        return phoneVerificationCodeRepository
+                .findTopByUserIdAndPhoneAndVerifiedFalseOrderByCreatedAtDesc(userId, phone)
+                .orElseThrow(() -> new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드를 먼저 요청해 주세요."));
     }
 
     private User getActiveUser(Long userId) {

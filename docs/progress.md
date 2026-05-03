@@ -45,13 +45,25 @@ All documents are consistent with each other.
 - [x] Frontend lint/build checks pass
 - [x] CI updated for current frontend-first state and future backend Gradle project
 - [x] Agent harness now requires next recommended task and matching reasoning level after work
+- [x] Agent workflow skill added to adapt local andrej-skills guidance under Honeytong rules
 - [x] Backend Spring Boot project initialized
 - [x] Backend Gradle Wrapper generated and verified
 - [x] Backend default DB schema set to `honey`
+- [x] Backend application context startup verified after admin dashboard constructor injection fix
+- [x] Backend CORS is enabled through Spring Security and allows local frontend dev origins
+- [x] Backend application logging baseline configured with environment-driven levels, file output, rotation, and safe SQL bind defaults
+- [x] Backend health readiness baseline configured with Spring Boot Actuator `/actuator/health`
+- [x] Backend production profile baseline added with external DB/JWT requirements and schema auto-update disabled by default
+- [x] Backend Flyway migration baseline added for production schema management
+- [x] Backend Redis connection baseline added with Redis-backed behavior disabled by default
+- [x] Windows tool session bootstrap added for consistent Git, Node/npm, Java, Gradle, and Codex command behavior
 
 ### Authentication
 - [x] Local signup API implemented
 - [x] Local login API implemented
+- [x] OAuth login API implemented for Kakao, Naver, and Google
+- [x] OAuth provider token verification is separated behind replaceable provider clients
+- [x] OAuth first login creates user, user_auth, user_trust, and user_level rows
 - [x] Access token / refresh token structure implemented
 - [x] Refresh token rotation implemented
 - [x] Logout revokes refresh token
@@ -60,24 +72,27 @@ All documents are consistent with each other.
 - [x] Phone verification status API implemented
 - [x] Phone verification guard annotation/aspect implemented for future core actions
 - [x] Phone verification unit tests added
-- [ ] OAuth not implemented yet
+- [x] Frontend login/signup token storage flow connected to local auth APIs
 - [ ] Real SMS provider not connected yet
 
 ### Phone Verification
 - [x] DB-backed verification code state implemented
 - [x] Development sender logs verification code
 - [x] Server-side phone verification guard mechanism implemented
+- [x] Phone verification guard coverage verified for implemented core actions
+- [x] Place owner updates enforce phone verification and blocking-sanction checks while admin overrides remain allowed
+- [x] Phone verification code lookup and attempt tracking can use Redis when `APP_REDIS_ENABLED=true`
+- [x] Frontend phone verification send, verify, and status flow connected from My Page
 - [ ] Production SMS provider integration pending
-- [ ] Phone verification guard for future core actions pending
 
 ### User System
 - [x] User profile API implemented
 - [x] User profile update API implemented
 - [x] User status API implemented
 - [x] User growth API implemented
-- [x] User activity summary API implemented with replaceable reader
+- [x] User activity summary API implemented with replaceable repository-backed reader
 - [x] User service unit tests added
-- [ ] Activity summary still returns zero until place/recommendation/visit/comment domains are implemented
+- [x] Activity summary counts active recommendations, valid visits, visible comments, and non-deleted registered places
 
 ### Region System
 - [x] Region city/district/dong entities and repositories implemented
@@ -98,6 +113,7 @@ All documents are consistent with each other.
 - [x] Region service unit tests added
 - [x] Kakao region resolver unit test added
 - [x] Production seed file aligns `region_dong.code` with Korean administrative dong codes used by Kakao
+- [x] Frontend region verification flow connected from My Page
 
 ### Policy System
 - [x] `system_policies` entity and repository implemented
@@ -106,8 +122,9 @@ All documents are consistent with each other.
 - [x] Required string policy loader implemented
 - [x] Admin policy list/update API implemented at `/api/admin/policies`
 - [x] Admin region policy API implemented at `/api/admin/policies/region`
+- [x] Admin policy frontend management flow connected at `/admin/policies`
 - [x] Opt-in policy seed import path added with `POLICY_SEED_ENABLED`
-- [ ] Redis policy cache pending
+- [x] Redis policy cache boundary implemented with DB fallback and admin update invalidation
 
 ### Place System
 - [x] `places`, `place_images`, and `place_stats` entities/repositories implemented
@@ -122,7 +139,16 @@ All documents are consistent with each other.
 - [x] Place search API implemented at `GET /api/places/search`
 - [x] Place registration policy API implemented at `GET /api/places/registration-policy`
 - [x] Frontend mock place list removed and connected to real `/api/places`
-- [ ] Update/delete APIs pending
+- [x] Frontend place registration flow connected from Home to `POST /api/places`
+- [x] My registered places API implemented at `GET /api/users/me/places`
+- [x] Frontend My Page registered places read flow connected
+- [x] Frontend owner edit/delete flow connected from My Page to existing place update/delete APIs
+- [x] Place update API implemented at `PATCH /api/places/{placeId}`
+- [x] Place logical delete API implemented at `DELETE /api/places/{placeId}`
+- [x] Place update/delete require owner or admin permission
+- [x] Normal owner updates require phone verification and no active blocking sanction
+- [x] Place region changes validate `system_policies.region.registration_scope`
+- [x] Admin place update/delete actions through the user endpoint are logged to `admin_action_logs`
 
 ### Recommendation System
 - [x] `recommendations` entity and repository implemented
@@ -133,8 +159,10 @@ All documents are consistent with each other.
 - [x] Recommendation requires phone verification via `@RequirePhoneVerified`
 - [x] One active recommendation per user/place is enforced
 - [x] Daily recommendation limit reads `system_policies.recommend.daily_limit`
+- [x] Daily recommendation count checks can use Redis when `APP_REDIS_ENABLED=true` and fall back to recommendation rows when disabled
 - [x] User trust recommendation weight is applied
 - [x] `place_stats.recommend_count`, `score_total`, and `trust_weighted_score` update on recommend/cancel
+- [x] Place detail frontend recommendation action connected to backend recommend/cancel APIs
 
 ### Visit System
 - [x] `visits` entity/repository implemented
@@ -145,8 +173,26 @@ All documents are consistent with each other.
 - [x] Visit verification requires phone verification via `@RequirePhoneVerified`
 - [x] GPS distance validation reads `system_policies.visit.radius_meter`
 - [x] Visit cooldown reads `system_policies.visit.cooldown_hour`
+- [x] Visit cooldown checks can use Redis when `APP_REDIS_ENABLED=true` and fall back to visit rows when disabled
 - [x] Valid visits update `place_stats.visit_count`, `score_total`, and `trust_weighted_score`
-- [ ] User trust/level update on visit pending
+- [x] Valid visits update user EXP and trust score through `UserGrowthService`
+- [x] Visit EXP reads `system_policies.growth.visit_exp`
+- [x] Valid-visit trust score reads `system_policies.trust.valid_visit_score`
+- [x] Visit response `expGained` returns the policy-driven EXP granted by the visit
+- [x] Place detail frontend visit verification action connected to browser GPS and backend visit API
+
+### Trust & Level System
+- [x] Signup initializes user trust and level rows
+- [x] Phone verification marks the trust phone signal
+- [x] Region verification marks the trust region signal
+- [x] Valid visits add policy-driven EXP to `user_level.exp` and `user_level.total_exp`
+- [x] Valid visits add policy-driven score to `user_trust.trust_score`
+- [x] Level-up reads `system_policies.growth.level_exp_thresholds`
+- [x] Level-up subtracts consumed EXP and keeps remaining EXP toward the next level
+- [x] Level changes write `user_level_history` with reason `VALID_VISIT`
+- [x] Trust grade reads `system_policies.trust.grade_thresholds`
+- [x] Recommendation weight reads `system_policies.trust.recommend_weight_by_grade`
+- [x] User status `nextLevelExp` reads growth policy thresholds
 
 ### Comment System
 - [x] `comments` entity/repository implemented
@@ -159,6 +205,7 @@ All documents are consistent with each other.
 - [x] One visible comment per user/place is enforced
 - [x] Deleted comments can be restored by writing again without violating the DB unique key
 - [x] Valid visible comments update `place_stats.comment_count`, `score_total`, and `trust_weighted_score`
+- [x] Place detail frontend comment list, create, update, and delete actions connected to backend comment APIs
 
 ### Ranking System
 - [x] `seasons`, `place_season_scores`, and `place_ranking_history` entities/repositories implemented
@@ -170,15 +217,128 @@ All documents are consistent with each other.
 - [x] Admin ranking recalculation API implemented at `POST /api/admin/rankings/recalculate`
 - [x] Ranking aggregation writes `place_season_scores` from `place_stats`
 - [x] Ranking aggregation reads `ranking.recommend_weight`, `ranking.visit_weight`, and `ranking.comment_weight`
-- [ ] Automated scheduler for ranking aggregation pending
-- [ ] Ranking exclusion control pending
+- [x] Ranking aggregation applies audited `place_stats.manual_adjustment_score` after automatic score components
+- [x] Ranking aggregation skips places with `places.ranking_excluded = true`
+- [x] Public place ranking reads can use Redis when `APP_REDIS_ENABLED=true` while `place_season_scores` remains authoritative
+- [x] Disabled-by-default ranking scheduler foundation implemented with environment-driven schedule settings
+- [x] Ranking history finalization foundation implemented by rewriting `place_ranking_history` from `place_season_scores` for a selected season
+- [x] Place ranking history read API implemented at `GET /api/places/{placeId}/ranking-history`
+- [x] Place ranking history reads finalized `place_ranking_history` rows and returns empty items when no history exists
+- [x] Hidden or deleted places are rejected from public ranking history reads
+- [x] Ranking query index migration added for public ranking reads, history finalization, and place history reads
+- [x] Ranking exclusion control implemented
+- [x] Ranking frontend read views connected to current season, regional ranking, and place ranking history APIs
+
+### Report System
+- [x] `reports` entity/repository implemented
+- [x] Report target/status enums implemented for PLACE, COMMENT, USER and PENDING/APPROVED/REJECTED
+- [x] Create report API implemented at `POST /api/reports`
+- [x] My reports API implemented at `GET /api/users/me/reports`
+- [x] Report creation validates active reporter and existing visible target
+- [x] User self-reporting is rejected
+- [x] Admin report list API implemented at `GET /api/admin/reports`
+- [x] Admin report detail API implemented at `GET /api/admin/reports/{reportId}`
+- [x] Admin report processing API implemented at `PATCH /api/admin/reports/{reportId}`
+- [x] Admin report processing logs `REPORT_PROCESS` to `admin_action_logs`
+- [x] Admin report follow-up action API implemented at `POST /api/admin/reports/{reportId}/actions`
+- [x] Approved reports can trigger explicit follow-up actions for place hide/delete, comment blind/delete, or user sanction
+- [x] Report follow-up actions delegate to existing admin domain workflows and log `REPORT_FOLLOW_UP` for report traceability
+- [x] Report processing still applies no automatic hide/delete/sanction action
+- [x] Frontend report create flow connected from place detail place/comment surfaces
+- [x] Frontend my report read flow connected from My Page
+- [x] Frontend admin report list/detail/process/follow-up flow connected
 
 ### Admin System
 - [x] Admin API route protection added for `/api/admin/**`
 - [x] Policy updates restricted to `SUPER_ADMIN`
 - [x] Admin policy changes are logged in `admin_action_logs`
 - [x] Disabled-by-default local admin bootstrap/test account flow added
-- [ ] Dashboard/report/user/place admin tools pending
+- [x] Admin report list/detail/processing foundation implemented
+- [x] Admin report management frontend flow connected at `/admin/reports`
+- [x] Admin dashboard metrics API implemented at `GET /api/admin/dashboard`
+- [x] Dashboard metrics read today new users, active recommendations, valid visits, pending reports, and new places
+- [x] Admin dashboard frontend read flow connected at `/admin` and `/admin/dashboard`
+- [x] Admin policy frontend management flow connected to general and region policy update APIs
+- [x] Admin user list/detail read foundation implemented at `/api/admin/users`
+- [x] Admin user sanction creation API implemented at `POST /api/admin/users/{userId}/sanctions`
+- [x] Admin user management frontend flow connected at `/admin/users`
+- [x] User sanction creation logs `USER_SANCTION` to `admin_action_logs`
+- [x] User sanction creation increments `user_trust.sanction_count` when trust data exists
+- [x] Active TEMPORARY_RESTRICTION and PERMANENT_RESTRICTION sanctions block core write actions
+- [x] WARNING sanctions remain non-blocking trust/audit signals
+- [x] Admin trust score/grade adjustment API implemented at `PATCH /api/admin/users/{userId}/trust`
+- [x] Admin recommendation weight adjustment API implemented at `PATCH /api/admin/users/{userId}/recommend-weight`
+- [x] Trust and recommendation weight adjustments are logged to `admin_action_logs`
+- [x] Admin place list/detail read foundation implemented at `/api/admin/places`
+- [x] Admin place read responses include approval, exposure, franchise review, creator, region, image, and aggregate stats data
+- [x] Admin place exposure status control implemented at `PATCH /api/admin/places/{placeId}/exposure`
+- [x] Admin place approval status control implemented at `PATCH /api/admin/places/{placeId}/approval`
+- [x] Admin place franchise review status control implemented at `PATCH /api/admin/places/{placeId}/franchise-status`
+- [x] Place moderation status changes are logged to `admin_action_logs`
+- [x] Admin place score adjustment implemented at `PATCH /api/admin/places/{placeId}/score-adjustment`
+- [x] Place score adjustment updates `place_stats.manual_adjustment_score` without changing automatic `score_total`
+- [x] Place score adjustments are logged to `admin_action_logs`
+- [x] Admin place management frontend flow connected at `/admin/places`
+- [x] Admin ranking exclusion API implemented at `PATCH /api/admin/rankings/places/{placeId}/exclude`
+- [x] Ranking exclusion is independent from place exposure and resets current star level to 0 when enabled
+- [x] Ranking exclusion changes are logged to `admin_action_logs`
+- [x] Admin ranking history finalization API implemented at `POST /api/admin/rankings/seasons/{seasonId}/finalize-history`
+- [x] Ranking history finalization logs `RANKING_HISTORY_FINALIZE` to `admin_action_logs`
+- [x] Admin recommendation log read API implemented at `GET /api/admin/recommendations`
+- [x] Admin visit log read API implemented at `GET /api/admin/visits`
+- [x] Recommendation and visit admin read APIs return latest 50 rows with user/place investigation context
+- [x] Admin recommendation invalidation API implemented at `PATCH /api/admin/recommendations/{recommendationId}/invalidate`
+- [x] Admin visit invalidation API implemented at `PATCH /api/admin/visits/{visitId}/invalidate`
+- [x] Recommendation and visit invalidation update `place_stats` and log actual changes to `admin_action_logs`
+- [x] Admin recommendation and visit moderation frontend flow connected at `/admin/activities`
+- [x] Admin comment list API implemented at `GET /api/admin/comments`
+- [x] Admin comment blind API implemented at `PATCH /api/admin/comments/{commentId}/blind`
+- [x] Admin comment delete API implemented at `DELETE /api/admin/comments/{commentId}`
+- [x] Comment blind/delete update `place_stats` when removing visible comments and log actual changes to `admin_action_logs`
+- [x] Admin comment moderation frontend flow connected at `/admin/activities`
+- [x] Admin action log read API implemented at `GET /api/admin/action-logs`
+- [x] Admin action log read returns latest 50 audit rows with admin, target, before/after, memo, and timestamp
+- [x] Admin report follow-up action API implemented for explicit hide/delete/sanction workflows from approved reports
+
+### Logging System
+- [x] Application runtime logging baseline configured for diagnostics
+- [x] SQL bind logging is disabled by default to avoid sensitive data exposure
+- [x] Development phone verification sender no longer logs raw verification codes at INFO level
+- [x] `user_action_logs` entity and repository implemented
+- [x] User action log writer stores telemetry in a separate transaction after the domain transaction commits
+- [x] User action log failures are swallowed so completed domain actions are not broken by telemetry storage
+- [x] Admin user action log read API implemented at `GET /api/admin/user-action-logs`
+- [x] Admin user action log read returns latest 50 user action rows with user, target, metadata, client context, and timestamp
+- [x] Place creation logs `PLACE_CREATE`
+- [x] Recommendation create/cancel logs `RECOMMENDATION_CREATE` and `RECOMMENDATION_CANCEL`
+- [x] Visit verification logs `VISIT_VERIFY`
+- [x] Comment create/update/delete logs `COMMENT_CREATE`, `COMMENT_UPDATE`, and `COMMENT_DELETE`
+- [x] Report creation logs `REPORT_CREATE`
+- [x] Focused user action log and representative domain service tests added
+
+### Monitoring System
+- [x] Spring Boot Actuator added for operational health checks
+- [x] `/actuator/health` is exposed without authentication for deployment and load balancer probes
+- [x] Actuator web exposure is limited to `health` by default
+- [x] Health details are hidden by default while liveness/readiness probe support is enabled
+
+### Deployment Preparation
+- [x] `application-prod.yml` added as the explicit production profile baseline
+- [x] Production profile requires `DB_URL`, `DB_USERNAME`, `DB_PASSWORD`, and `JWT_SECRET` from the environment
+- [x] Production profile defaults JPA schema handling to `validate` instead of schema auto-update
+- [x] Production profile keeps region seed import, policy seed import, and local admin bootstrap disabled by default
+- [x] Flyway is selected for schema migrations with migration files under `classpath:db/migration`
+- [x] Local development keeps Flyway disabled by default while production enables it before Hibernate schema validation
+- [x] `V1__baseline_schema.sql` captures the current backend core schema baseline
+- [x] Redis connection properties are environment-driven through `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DATABASE`, and `REDIS_TIMEOUT`
+- [x] Redis cache type, app Redis usage, Redis repositories, and Redis health checks remain disabled by default until a domain explicitly adopts Redis
+- [x] PolicyService can use Redis for policy-value caching when `APP_REDIS_ENABLED=true`
+- [x] Admin policy updates evict the changed policy cache key while DB policy rows remain the source of truth
+- [x] Recommendation daily limit count checks can use Redis while recommendation rows remain the durable source of truth
+- [x] Visit cooldown checks can use Redis while visit rows remain the durable source of truth
+- [x] Phone verification code state can use Redis while verification rows remain the durable source of truth
+- [x] Public place ranking reads can use Redis while `place_season_scores` remains the authoritative read model
+- [x] Ranking scheduler settings are environment-driven and disabled by default through `RANKING_SCHEDULER_ENABLED=false`
 
 ---
 
@@ -235,11 +395,12 @@ Next implementation order:
 
 Next task:
 
-Start Report System Foundation
+Connect Admin Audit Log Frontend Flow
 
-- create report entity and user report APIs
-- keep report handling ready for admin moderation workflow
-- report targets should support place, comment, and user without applying automated sanctions yet
+- add admin action log and user action log read views
+- connect audit filters for action type, target, and user/place investigation
+- keep log creation read-only and server-side from domain workflows
+- recommended reasoning level: high
 
 ---
 

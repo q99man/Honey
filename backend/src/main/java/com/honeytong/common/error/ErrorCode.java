@@ -8,6 +8,7 @@ public enum ErrorCode {
     INVALID_REQUEST(HttpStatus.BAD_REQUEST, "요청 값이 올바르지 않습니다."),
     RESOURCE_NOT_FOUND(HttpStatus.NOT_FOUND, "요청한 리소스를 찾을 수 없습니다."),
     PHONE_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, "전화 인증이 필요합니다."),
+    USER_SANCTION_ACTIVE(HttpStatus.FORBIDDEN, "활성 제재로 인해 이 작업을 수행할 수 없습니다."),
     REGION_VERIFICATION_REQUIRED(HttpStatus.FORBIDDEN, "지역 인증이 필요합니다."),
     INVALID_REGION_CHANGE(HttpStatus.BAD_REQUEST, "지역 변경 요청이 올바르지 않습니다."),
     PLACE_REGISTRATION_LIMIT_EXCEEDED(HttpStatus.BAD_REQUEST, "장소 등록 가능 횟수를 초과했습니다."),

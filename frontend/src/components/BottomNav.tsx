@@ -6,22 +6,22 @@ export default function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 h-[80px] border-t bg-white">
       <div className="mx-auto flex h-full max-w-[430px] items-center justify-around">
-        <NavItem to="/" icon="홈" label="홈" active={location.pathname === "/"} />
+        <NavItem to="/" icon="⌂" label="홈" active={location.pathname === "/"} />
         <NavItem
           to="/ranking"
-          icon="순위"
+          icon="★"
           label="랭킹"
           active={location.pathname === "/ranking"}
         />
         <NavItem
           to="/wishlist"
-          icon="찜"
+          icon="♡"
           label="찜"
           active={location.pathname === "/wishlist"}
         />
         <NavItem
           to="/my"
-          icon="나"
+          icon="●"
           label="마이"
           active={location.pathname === "/my"}
         />

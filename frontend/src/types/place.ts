@@ -1,5 +1,9 @@
 export type Place = {
   id: number;
+  cityId: number;
+  districtId: number;
+  dongId: number;
+  regionName: string;
   title: string;
   desc: string;
   distance: string;
@@ -12,4 +16,5 @@ export type Place = {
   imageUrl?: string;
   recommendCount: number;
   visitCount: number;
+  commentCount: number;
 };

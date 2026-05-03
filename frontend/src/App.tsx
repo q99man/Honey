@@ -5,6 +5,13 @@ import HomePage from "./pages/HomePage";
 import DetailPage from "./pages/DetailPage";
 import RankingPage from "./pages/RankingPage";
 import MyPage from "./pages/MyPage";
+import AdminActivitiesPage from "./pages/AdminActivitiesPage";
+import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminPoliciesPage from "./pages/AdminPoliciesPage";
+import AdminPlacesPage from "./pages/AdminPlacesPage";
+import AdminReportsPage from "./pages/AdminReportsPage";
+import AdminUsersPage from "./pages/AdminUsersPage";
+import PlaceRegisterPage from "./pages/PlaceRegisterPage";
 import WishlistPage from "./pages/WishlistPage";
 import type { Place } from "./types/place";
 
@@ -54,7 +61,6 @@ function App() {
 
   useEffect(() => {
     let mounted = true;
-    setLoading(true);
     loadPlaces(undefined, initialWishedIdsRef.current!)
       .catch(() => {
         if (mounted) {
@@ -77,8 +83,7 @@ function App() {
       WISHLIST_STORAGE_KEY,
       JSON.stringify(Array.from(wishedIds)),
     );
-    setPlaces((prev) => applyWishlist(prev, wishedIds));
-  }, [applyWishlist, wishedIds]);
+  }, [wishedIds]);
 
   const search = async (keyword: string) => {
     setLoading(true);
@@ -92,16 +97,38 @@ function App() {
   };
 
   const toggleWish = (id: number) => {
+    const next = new Set(wishedIds);
+    if (next.has(id)) {
+      next.delete(id);
+    } else {
+      next.add(id);
+    }
+    setWishedIds(next);
+    setPlaces((prev) => applyWishlist(prev, next));
+  };
+
+  const updatePlace = (updatedPlace: Place) => {
+    setPlaces((prev) =>
+      prev.map((place) =>
+        place.id === updatedPlace.id
+          ? { ...updatedPlace, isWished: wishedIds.has(updatedPlace.id) }
+          : place,
+      ),
+    );
+  };
+
+  const removePlace = (placeId: number) => {
+    setPlaces((prev) => prev.filter((place) => place.id !== placeId));
     setWishedIds((prev) => {
       const next = new Set(prev);
-      if (next.has(id)) {
-        next.delete(id);
-      } else {
-        next.add(id);
-      }
+      next.delete(placeId);
       return next;
     });
   };
+
+  const refreshPlaces = useCallback(async () => {
+    await loadPlaces(undefined, wishedIds);
+  }, [loadPlaces, wishedIds]);
 
   return (
     <BrowserRouter>
@@ -120,17 +147,44 @@ function App() {
         />
         <Route
           path="/places/:id"
-          element={<DetailPage wishedIds={wishedIds} onToggleWish={toggleWish} />}
+          element={
+            <DetailPage
+              wishedIds={wishedIds}
+              onToggleWish={toggleWish}
+              onPlaceUpdated={updatePlace}
+            />
+          }
         />
         <Route
           path="/ranking"
-          element={<RankingPage places={places} onToggleWish={toggleWish} />}
+          element={<RankingPage places={places} />}
+        />
+        <Route
+          path="/places/new"
+          element={<PlaceRegisterPage onPlaceCreated={refreshPlaces} />}
+        />
+        <Route
+          path="/places/:id/edit"
+          element={
+            <PlaceRegisterPage
+              mode="edit"
+              onPlaceCreated={refreshPlaces}
+              onPlaceUpdated={updatePlace}
+            />
+          }
         />
         <Route
           path="/wishlist"
           element={<WishlistPage places={places} onToggleWish={toggleWish} />}
         />
-        <Route path="/my" element={<MyPage />} />
+        <Route path="/my" element={<MyPage onPlaceDeleted={removePlace} />} />
+        <Route path="/admin" element={<AdminDashboardPage />} />
+        <Route path="/admin/activities" element={<AdminActivitiesPage />} />
+        <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
+        <Route path="/admin/policies" element={<AdminPoliciesPage />} />
+        <Route path="/admin/places" element={<AdminPlacesPage />} />
+        <Route path="/admin/reports" element={<AdminReportsPage />} />
+        <Route path="/admin/users" element={<AdminUsersPage />} />
       </Routes>
     </BrowserRouter>
   );

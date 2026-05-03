@@ -11,6 +11,15 @@ public class DevPhoneVerificationSender implements PhoneVerificationSender {
 
     @Override
     public void send(String phone, String code) {
-        log.info("Phone verification code issued. phone={}, code={}", phone, code);
+        String maskedPhone = maskPhone(phone);
+        log.info("Phone verification code issued. phone={}", maskedPhone);
+        log.debug("Development phone verification code issued. phone={}, code={}", maskedPhone, code);
+    }
+
+    private String maskPhone(String phone) {
+        if (phone == null || phone.length() < 4) {
+            return "****";
+        }
+        return "****" + phone.substring(phone.length() - 4);
     }
 }

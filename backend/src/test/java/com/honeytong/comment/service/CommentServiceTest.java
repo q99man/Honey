@@ -23,6 +23,7 @@ import com.honeytong.region.entity.RegionDistrict;
 import com.honeytong.region.entity.RegionDong;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
+import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -56,6 +57,9 @@ class CommentServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private UserActionLogService userActionLogService;
+
     private CommentService commentService;
     private User user;
     private User otherUser;
@@ -69,7 +73,8 @@ class CommentServiceTest {
                 placeRepository,
                 placeStatsRepository,
                 userRepository,
-                policyService
+                policyService,
+                userActionLogService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -123,6 +128,13 @@ class CommentServiceTest {
         assertThat(response.commentId()).isEqualTo(COMMENT_ID);
         assertThat(stats.getCommentCount()).isEqualTo(1);
         verify(commentRepository).save(any(Comment.class));
+        verify(userActionLogService).record(
+                org.mockito.Mockito.eq(USER_ID),
+                org.mockito.Mockito.eq(UserActionLogService.ACTION_COMMENT_CREATE),
+                org.mockito.Mockito.eq(UserActionLogService.TARGET_COMMENT),
+                org.mockito.Mockito.eq(COMMENT_ID),
+                org.mockito.Mockito.any()
+        );
     }
 
     @Test
