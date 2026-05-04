@@ -374,6 +374,7 @@ All documents are consistent with each other.
 - [x] Release branch packaging prepared on `codex/prepare-mvp-release-packaging`; reviewed the dirty worktree, confirmed tracked changes are limited to release-runbook/progress/tasks docs, confirmed `.env`, local logs, build output, Gradle caches, frontend `dist`, and `node_modules` remain ignored, reran the release gate, and found no smoke credential or secret scan matches in tracked files
 - [x] Release candidate documentation commit created and pushed to `origin/codex/prepare-mvp-release-packaging`; pushed branch is ready for PR creation at `https://github.com/q99man/Honey/pull/new/codex/prepare-mvp-release-packaging`
 - [x] Release candidate PR draft added at `docs/mvp-release-pr-draft.md` because the local environment has no `gh` CLI or authenticated GitHub connector for direct PR creation
+- [x] Release candidate PR creation page opened in the local browser and the prepared PR body was copied to the clipboard for manual submission through the user's authenticated GitHub session
 
 ---
 
@@ -430,10 +431,10 @@ Next implementation order:
 
 Next task:
 
-Open release candidate PR in GitHub
+Submit release candidate PR in GitHub
 
-- create a PR from `codex/prepare-mvp-release-packaging` to `main`
-- use `docs/mvp-release-pr-draft.md` for the PR title and body
+- submit the already-open GitHub PR page from `codex/prepare-mvp-release-packaging` to `main`
+- paste the clipboard body from `docs/mvp-release-pr-draft.md` and use title `docs: prepare MVP release runbook`
 - confirm CI status and reviewer feedback after the PR opens
 - recommended reasoning level: medium
 
