@@ -373,6 +373,7 @@ All documents are consistent with each other.
 - [x] MVP release runbook added at `docs/mvp-release-runbook.md`; it fixes the pre-release command order from tool normalization through backend tests, `bootJar`, frontend build/lint, document and encoding checks, staging smoke, browser smoke, stop cleanup, rollback, and rerun notes for port conflicts, missing schemas, and provider credentials
 - [x] Release branch packaging prepared on `codex/prepare-mvp-release-packaging`; reviewed the dirty worktree, confirmed tracked changes are limited to release-runbook/progress/tasks docs, confirmed `.env`, local logs, build output, Gradle caches, frontend `dist`, and `node_modules` remain ignored, reran the release gate, and found no smoke credential or secret scan matches in tracked files
 - [x] Release candidate documentation commit created and pushed to `origin/codex/prepare-mvp-release-packaging`; pushed branch is ready for PR creation at `https://github.com/q99man/Honey/pull/new/codex/prepare-mvp-release-packaging`
+- [x] Release candidate PR draft added at `docs/mvp-release-pr-draft.md` because the local environment has no `gh` CLI or authenticated GitHub connector for direct PR creation
 
 ---
 
@@ -429,10 +430,10 @@ Next implementation order:
 
 Next task:
 
-Open release candidate PR
+Open release candidate PR in GitHub
 
 - create a PR from `codex/prepare-mvp-release-packaging` to `main`
-- use the MVP release notes and verification summary from the runbook/checklist
+- use `docs/mvp-release-pr-draft.md` for the PR title and body
 - confirm CI status and reviewer feedback after the PR opens
 - recommended reasoning level: medium
 

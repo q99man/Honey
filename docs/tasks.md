@@ -330,6 +330,7 @@ The goal is:
 - [x] Add MVP release runbook
 - [x] Prepare release branch packaging
 - [x] Create and push release candidate documentation commit
+- [x] Add release candidate PR draft
 
 ---
 
