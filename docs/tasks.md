@@ -41,6 +41,10 @@ The goal is:
 - [x] Store verification state
 - [x] Enforce phone verification in core actions
 - [x] Connect frontend phone verification flow
+- [x] Add production SMS provider adapter
+- [x] Add SOLAPI SMS provider adapter
+- [x] Add live SMS delivery smoke script
+- [x] Verify live SMS delivery with provider credentials
 
 ---
 
@@ -302,11 +306,11 @@ The goal is:
 ## 18. Testing
 
 - [ ] Unit test for core services
-- [ ] Test recommendation rules
-- [ ] Test visit validation
-- [ ] Test policy-based logic
-- [ ] Test duplication prevention
-- [ ] Test ranking logic
+- [x] Test recommendation rules
+- [x] Test visit validation
+- [x] Test policy-based logic
+- [x] Test duplication prevention
+- [x] Test ranking logic
 
 ---
 
@@ -318,6 +322,11 @@ The goal is:
 - [x] Setup logging for production
 - [x] Setup monitoring basics
 - [x] Add environment-driven ranking scheduler settings
+- [x] Add MVP release candidate and deployment checklist
+- [x] Run production-profile startup rehearsal with Flyway and schema validation
+- [x] Run staging-like seed/bootstrap and core API smoke rehearsal
+- [x] Run frontend browser smoke against staging-like backend
+- [x] Add one-command local staging smoke wrapper
 
 ---
 
@@ -338,6 +347,7 @@ The goal is:
 - [x] Add admin user management UI
 - [x] Add admin place management UI
 - [x] Add admin activity moderation UI
+- [x] Add admin audit log read UI
 
 ---
 
@@ -345,17 +355,17 @@ The goal is:
 
 MVP is complete when:
 
-- [ ] user can sign up and login
-- [ ] phone verification works
-- [ ] region verification works
-- [ ] user can register place
-- [ ] user can recommend place
-- [ ] user can verify visit
-- [ ] user can comment
-- [ ] ranking works per region
-- [ ] admin can manage reports
+- [x] user can sign up and login
+- [x] phone verification works
+- [x] region verification works
+- [x] user can register place
+- [x] user can recommend place
+- [x] user can verify visit
+- [x] user can comment
+- [x] ranking works per region
+- [x] admin can manage reports
 - [x] admin can adjust policies
-- [ ] system prevents basic abuse
+- [x] system prevents basic abuse
 
 ---
 

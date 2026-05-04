@@ -325,6 +325,32 @@ export type AdminModerationMemoRequest = {
   memo: string | null;
 };
 
+export type AdminActionLog = {
+  logId: number;
+  adminUserId: number;
+  adminNickname: string;
+  actionType: string;
+  targetType: string;
+  targetId: number;
+  beforeValue: string | null;
+  afterValue: string | null;
+  memo: string | null;
+  createdAt: string;
+};
+
+export type AdminUserActionLog = {
+  logId: number;
+  userId: number;
+  nickname: string;
+  actionType: string;
+  targetType: string | null;
+  targetId: number | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  metadataJson: string | null;
+  createdAt: string;
+};
+
 export const getAdminDashboard = async () => {
   const res = await api.get<ApiResponse<AdminDashboard>>(
     "/api/admin/dashboard",
@@ -506,6 +532,20 @@ export const deleteAdminComment = async (
   const res = await api.delete<ApiResponse<AdminCommentModerationResponse>>(
     `/api/admin/comments/${commentId}`,
     { data: request },
+  );
+  return res.data.data;
+};
+
+export const getAdminActionLogs = async () => {
+  const res = await api.get<ApiResponse<AdminActionLog[]>>(
+    "/api/admin/action-logs",
+  );
+  return res.data.data;
+};
+
+export const getAdminUserActionLogs = async () => {
+  const res = await api.get<ApiResponse<AdminUserActionLog[]>>(
+    "/api/admin/user-action-logs",
   );
   return res.data.data;
 };

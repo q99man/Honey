@@ -2,9 +2,16 @@ package com.honeytong.auth.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 @Component
+@ConditionalOnProperty(
+        prefix = "app.security.phone-verification.sender",
+        name = "provider",
+        havingValue = "dev",
+        matchIfMissing = true
+)
 public class DevPhoneVerificationSender implements PhoneVerificationSender {
 
     private static final Logger log = LoggerFactory.getLogger(DevPhoneVerificationSender.class);

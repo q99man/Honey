@@ -57,6 +57,17 @@ All documents are consistent with each other.
 - [x] Backend Flyway migration baseline added for production schema management
 - [x] Backend Redis connection baseline added with Redis-backed behavior disabled by default
 - [x] Windows tool session bootstrap added for consistent Git, Node/npm, Java, Gradle, and Codex command behavior
+- [x] Local MVP smoke confirmed backend health, frontend route loading, signup/login, user status, policy-dependent status APIs, and GPS region verification after local policy and region seed bootstrap
+- [x] Local place creation smoke confirmed unauthenticated phone state is blocked before write actions
+- [x] Local phone-verified bootstrap account smoke confirmed place creation, place detail, my registered places, dong place list, and audit log reads
+- [x] Local phone-verified participation smoke confirmed recommendation, visit verification, comment creation, place aggregate counters, and user action log reads
+- [x] Local ranking smoke confirmed season creation, admin recalculation, dong/district/city ranking reads, history finalization, and public place ranking history reads
+- [x] Local moderation smoke confirmed report creation, admin approval, report follow-up hide action, public hidden-state behavior, exposure restore, and admin action log reads
+- [x] Public place ranking history security rule aligned with the documented public read API
+- [x] Local abuse-prevention smoke confirmed duplicate recommendation rejection, visit cooldown rejection, duplicate comment rejection, and server-side aggregate preservation
+- [x] Local admin activity moderation smoke confirmed recommendation invalidation, visit invalidation, comment blind, aggregate counter rollback, public comment hiding, and admin action log reads
+- [x] Full local regression passed after accumulated MVP smoke testing: backend tests, frontend build, frontend lint, diff check, UI language check, Korean encoding check, and document sync check
+- [x] Final MVP release-readiness regression passed after live SOLAPI SMS smoke: backend tests, frontend build, frontend lint, diff check, UI language check, Korean encoding check, doc sync check, and sensitive smoke-data scan
 
 ### Authentication
 - [x] Local signup API implemented
@@ -73,17 +84,26 @@ All documents are consistent with each other.
 - [x] Phone verification guard annotation/aspect implemented for future core actions
 - [x] Phone verification unit tests added
 - [x] Frontend login/signup token storage flow connected to local auth APIs
-- [ ] Real SMS provider not connected yet
+- [x] Naver Cloud SENS production SMS sender adapter implemented behind `PhoneVerificationSender`
+- [x] SOLAPI production SMS sender adapter implemented behind `PhoneVerificationSender`
+- [x] SOLAPI and Naver SENS sender beans verified with explicit Spring constructor injection coverage
+- [x] Live SOLAPI SMS delivery smoke passed against local backend and real handset
 
 ### Phone Verification
 - [x] DB-backed verification code state implemented
-- [x] Development sender logs verification code
+- [x] Development sender logs code issuance without raw code at INFO level
 - [x] Server-side phone verification guard mechanism implemented
 - [x] Phone verification guard coverage verified for implemented core actions
 - [x] Place owner updates enforce phone verification and blocking-sanction checks while admin overrides remain allowed
 - [x] Phone verification code lookup and attempt tracking can use Redis when `APP_REDIS_ENABLED=true`
 - [x] Frontend phone verification send, verify, and status flow connected from My Page
-- [ ] Production SMS provider integration pending
+- [x] Production SMS provider integration added for Naver Cloud SENS through `PHONE_VERIFICATION_SENDER_PROVIDER=naver-sens`
+- [x] Production SMS provider integration added for SOLAPI through `PHONE_VERIFICATION_SENDER_PROVIDER=solapi`
+- [x] Production profile defaults phone verification delivery to SOLAPI instead of the development sender
+- [x] SMS delivery failure no longer writes the latest verification code state to cache
+- [x] Live phone verification smoke runbook and PowerShell script added without logging raw codes or full phone numbers
+- [x] Spring bean creation coverage added for SOLAPI and Naver SENS sender adapters
+- [x] Live SMS delivery smoke with SOLAPI provider credentials passed
 
 ### User System
 - [x] User profile API implemented
@@ -124,6 +144,7 @@ All documents are consistent with each other.
 - [x] Admin region policy API implemented at `/api/admin/policies/region`
 - [x] Admin policy frontend management flow connected at `/admin/policies`
 - [x] Opt-in policy seed import path added with `POLICY_SEED_ENABLED`
+- [x] Local development seeds missing default policies by default while production remains opt-in
 - [x] Redis policy cache boundary implemented with DB fallback and admin update invalidation
 
 ### Place System
@@ -299,6 +320,10 @@ All documents are consistent with each other.
 - [x] Admin action log read API implemented at `GET /api/admin/action-logs`
 - [x] Admin action log read returns latest 50 audit rows with admin, target, before/after, memo, and timestamp
 - [x] Admin report follow-up action API implemented for explicit hide/delete/sanction workflows from approved reports
+- [x] Admin audit log frontend flow connected at `/admin/audit-logs`
+- [x] Admin audit log page reads admin action logs and user action logs as read-only data
+- [x] Admin audit log page filters loaded records by action type, target type, keyword, user/admin, and target ids
+- [x] Existing admin screens expose a Korean `감사 로그` navigation label for audit review
 
 ### Logging System
 - [x] Application runtime logging baseline configured for diagnostics
@@ -329,6 +354,7 @@ All documents are consistent with each other.
 - [x] Production profile keeps region seed import, policy seed import, and local admin bootstrap disabled by default
 - [x] Flyway is selected for schema migrations with migration files under `classpath:db/migration`
 - [x] Local development keeps Flyway disabled by default while production enables it before Hibernate schema validation
+- [x] Local development enables missing-only default policy seed import to support empty DB login and setup flows
 - [x] `V1__baseline_schema.sql` captures the current backend core schema baseline
 - [x] Redis connection properties are environment-driven through `REDIS_HOST`, `REDIS_PORT`, `REDIS_PASSWORD`, `REDIS_DATABASE`, and `REDIS_TIMEOUT`
 - [x] Redis cache type, app Redis usage, Redis repositories, and Redis health checks remain disabled by default until a domain explicitly adopts Redis
@@ -339,6 +365,11 @@ All documents are consistent with each other.
 - [x] Phone verification code state can use Redis while verification rows remain the durable source of truth
 - [x] Public place ranking reads can use Redis while `place_season_scores` remains the authoritative read model
 - [x] Ranking scheduler settings are environment-driven and disabled by default through `RANKING_SCHEDULER_ENABLED=false`
+- [x] MVP release candidate and deployment checklist added at `docs/mvp-release-candidate-checklist.md`
+- [x] Production-profile startup rehearsal passed against disposable MySQL schema `honey_prod_rehearsal_20260504164117` with Flyway migrations V1/V2 successful, `JPA_DDL_AUTO=validate`, seed/bootstrap disabled, and `/actuator/health` returning `UP`
+- [x] Staging-like seed/bootstrap rehearsal passed against disposable MySQL schema `honey_stage_rehearsal_20260504164730`; first boot imported region/policy/admin seed data, restart with seed/bootstrap disabled reached `/actuator/health`, and core auth, region, place, recommendation, visit, comment, and admin dashboard smoke APIs passed
+- [x] Frontend browser smoke passed against the staging-like backend on isolated ports `18083` and `5174`; verified Korean home UI, login, My Page phone/region/status data, place detail participation surfaces, admin dashboard, and admin policy navigation with no browser console errors or warnings
+- [x] One-command local staging smoke wrapper added at `scripts/run-local-staging-smoke.ps1`; it selects a staging rehearsal schema, checks occupied ports, starts backend/frontend with normalized paths, records backend/frontend/listener PIDs and log paths, and `-Stop` cleans up the recorded processes without disturbing the existing 8080 backend
 
 ---
 
@@ -395,12 +426,12 @@ Next implementation order:
 
 Next task:
 
-Connect Admin Audit Log Frontend Flow
+Add MVP Release Runbook
 
-- add admin action log and user action log read views
-- connect audit filters for action type, target, and user/place investigation
-- keep log creation read-only and server-side from domain workflows
-- recommended reasoning level: high
+- document the exact pre-release command order from environment check through backend build, staging smoke, browser smoke, and stop cleanup
+- include rollback and rerun notes for port conflicts, missing schema, and provider credentials
+- keep secret handling explicit so `.env` values are never copied into docs or logs
+- recommended reasoning level: medium
 
 ---
 

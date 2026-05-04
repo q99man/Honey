@@ -2,6 +2,7 @@ package com.honeytong;
 
 import com.honeytong.auth.config.SecurityProperties;
 import com.honeytong.auth.config.PhoneVerificationProperties;
+import com.honeytong.auth.config.PhoneVerificationSenderProperties;
 import com.honeytong.auth.config.OAuthProperties;
 import com.honeytong.admin.bootstrap.AdminBootstrapProperties;
 import com.honeytong.map.config.MapProperties;
@@ -20,6 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableConfigurationProperties({
         SecurityProperties.class,
         PhoneVerificationProperties.class,
+        PhoneVerificationSenderProperties.class,
         OAuthProperties.class,
         MapProperties.class,
         PolicyRedisProperties.class,

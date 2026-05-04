@@ -53,6 +53,15 @@ powershell -ExecutionPolicy Bypass -File .\scripts\run-frontend-npm.ps1 run lint
 powershell -ExecutionPolicy Bypass -File .\scripts\run-frontend-npm.ps1 run build
 ```
 
+Local staging smoke:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-local-staging-smoke.ps1
+powershell -ExecutionPolicy Bypass -File .\scripts\run-local-staging-smoke.ps1 -Stop
+```
+
+The smoke wrapper uses the latest `honey_stage_rehearsal_*` schema by default, checks that its backend and frontend ports are free, starts the backend and Vite with isolated ports, writes PID and URL state to `.tmp\local-staging-smoke\state.json`, and stops only the recorded processes when `-Stop` is used.
+
 For a long-running frontend dev server, first run the session setup, then:
 
 ```powershell

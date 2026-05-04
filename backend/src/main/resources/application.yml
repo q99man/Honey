@@ -82,6 +82,25 @@ app:
       code-length: ${PHONE_VERIFICATION_CODE_LENGTH:6}
       code-ttl-minutes: ${PHONE_VERIFICATION_CODE_TTL_MINUTES:5}
       max-attempts: ${PHONE_VERIFICATION_MAX_ATTEMPTS:5}
+      sender:
+        provider: ${PHONE_VERIFICATION_SENDER_PROVIDER:dev}
+        message-template: ${PHONE_VERIFICATION_MESSAGE_TEMPLATE:[Honeytong] 인증번호 {code}를 입력해 주세요.}
+        naver-sens:
+          service-id: ${NAVER_SENS_SERVICE_ID:}
+          access-key: ${NAVER_SENS_ACCESS_KEY:}
+          secret-key: ${NAVER_SENS_SECRET_KEY:}
+          from: ${NAVER_SENS_FROM:}
+          base-url: ${NAVER_SENS_BASE_URL:https://sens.apigw.ntruss.com}
+          country-code: ${NAVER_SENS_COUNTRY_CODE:82}
+          connect-timeout: ${NAVER_SENS_CONNECT_TIMEOUT:3s}
+          read-timeout: ${NAVER_SENS_READ_TIMEOUT:5s}
+        solapi:
+          api-key: ${SOLAPI_API_KEY:}
+          api-secret: ${SOLAPI_API_SECRET:}
+          from: ${SOLAPI_FROM:}
+          base-url: ${SOLAPI_BASE_URL:https://api.solapi.com}
+          connect-timeout: ${SOLAPI_CONNECT_TIMEOUT:3s}
+          read-timeout: ${SOLAPI_READ_TIMEOUT:5s}
   oauth:
     kakao:
       user-info-url: ${KAKAO_OAUTH_USER_INFO_URL:https://kapi.kakao.com/v2/user/me}
@@ -101,7 +120,7 @@ app:
       location: ${REGION_SEED_LOCATION:classpath:region/region-seed.csv}
   policies:
     seed:
-      enabled: ${POLICY_SEED_ENABLED:false}
+      enabled: ${POLICY_SEED_ENABLED:true}
       location: ${POLICY_SEED_LOCATION:classpath:policy/policy-defaults.csv}
   admin:
     bootstrap:

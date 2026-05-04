@@ -54,6 +54,9 @@ app:
   security:
     jwt:
       secret: ${JWT_SECRET}
+    phone-verification:
+      sender:
+        provider: ${PHONE_VERIFICATION_SENDER_PROVIDER:solapi}
   regions:
     seed:
       enabled: ${REGION_SEED_ENABLED:false}

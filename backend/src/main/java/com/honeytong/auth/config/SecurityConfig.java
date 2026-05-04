@@ -40,6 +40,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/places/nearby").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/places/search").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/places/*/comments").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/places/*/ranking-history").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/places/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rankings/places").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rankings/seasons/current").permitAll()

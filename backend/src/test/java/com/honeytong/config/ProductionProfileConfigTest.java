@@ -28,12 +28,27 @@ class ProductionProfileConfigTest {
     }
 
     @Test
+    void localDevelopmentProfileSeedsMissingPoliciesByDefault() {
+        Map<String, String> properties = loadYaml("application.yml");
+
+        assertThat(properties.get("app.policies.seed.enabled")).isEqualTo("${POLICY_SEED_ENABLED:true}");
+    }
+
+    @Test
     void productionProfile_keepsOperationalBootstrapAndSeedImportsDisabledByDefault() {
         Map<String, String> properties = loadYaml("application-prod.yml");
 
         assertThat(properties.get("app.regions.seed.enabled")).isEqualTo("${REGION_SEED_ENABLED:false}");
         assertThat(properties.get("app.policies.seed.enabled")).isEqualTo("${POLICY_SEED_ENABLED:false}");
         assertThat(properties.get("app.admin.bootstrap.enabled")).isEqualTo("${ADMIN_BOOTSTRAP_ENABLED:false}");
+    }
+
+    @Test
+    void productionProfile_defaultsPhoneVerificationSenderToSolapi() {
+        Map<String, String> properties = loadYaml("application-prod.yml");
+
+        assertThat(properties.get("app.security.phone-verification.sender.provider"))
+                .isEqualTo("${PHONE_VERIFICATION_SENDER_PROVIDER:solapi}");
     }
 
     @Test

@@ -293,6 +293,7 @@ export default function AdminActivitiesPage() {
             <AdminLink to="/admin" label="대시보드" />
             <AdminLink to="/admin/places" label="장소 관리" />
             <AdminLink to="/admin/users" label="사용자 관리" />
+            <AdminLink to="/admin/audit-logs" label="감사 로그" />
             <AdminLink to="/admin/reports" label="신고 관리" danger />
             <AdminLink to="/admin/policies" label="정책 관리" />
           </div>

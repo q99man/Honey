@@ -1,8 +1,10 @@
 package com.honeytong.auth.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -95,6 +97,22 @@ class PhoneVerificationServiceTest {
     }
 
     @Test
+    void sendCode_doesNotCacheCodeWhenDeliveryFails() {
+        sender.fail = true;
+        when(phoneVerificationCodeRepository.save(any(PhoneVerificationCode.class)))
+                .thenAnswer(invocation -> {
+                    PhoneVerificationCode verificationCode = invocation.getArgument(0);
+                    ReflectionTestUtils.setField(verificationCode, "id", VERIFICATION_CODE_ID);
+                    return verificationCode;
+                });
+
+        assertThatThrownBy(() -> phoneVerificationService.sendCode(USER_ID, new PhoneVerificationSendRequest(PHONE)))
+                .isInstanceOf(RuntimeException.class);
+
+        verify(phoneVerificationCache, never()).put(eq(USER_ID), eq(PHONE), any(PhoneVerificationState.class));
+    }
+
+    @Test
     void verifyCode_marksUserAndTrustAsPhoneVerifiedAndEvictsCache() {
         PhoneVerificationCode verificationCode = issuedVerificationCode();
         when(phoneVerificationCache.getLatestUnverified(eq(USER_ID), eq(PHONE), any()))
@@ -131,9 +149,13 @@ class PhoneVerificationServiceTest {
 
         private String phone;
         private String code;
+        private boolean fail;
 
         @Override
         public void send(String phone, String code) {
+            if (fail) {
+                throw new RuntimeException("delivery failed");
+            }
             this.phone = phone;
             this.code = code;
         }

@@ -367,6 +367,12 @@ export default function AdminPlacesPage() {
               사용자 관리
             </Link>
             <Link
+              to="/admin/audit-logs"
+              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
+            >
+              감사 로그
+            </Link>
+            <Link
               to="/admin/reports"
               className="h-10 rounded-lg border border-red-100 px-4 pt-2 text-center text-sm font-bold text-red-500"
             >

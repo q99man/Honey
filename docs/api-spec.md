@@ -163,6 +163,10 @@ These APIs require a valid access token.
 MVP note:
 Verification code rows remain the durable source of truth.
 When `APP_REDIS_ENABLED=true`, the backend can cache the latest unverified code state and attempt count in Redis while preserving DB fallback behavior.
+Phone code delivery defaults to the development sender in local development.
+Production delivery defaults to the SOLAPI sender and can be enabled explicitly with `PHONE_VERIFICATION_SENDER_PROVIDER=solapi` plus `SOLAPI_API_KEY`, `SOLAPI_API_SECRET`, and `SOLAPI_FROM`.
+Naver Cloud SENS remains available with `PHONE_VERIFICATION_SENDER_PROVIDER=naver-sens` when a business account can provide `NAVER_SENS_SERVICE_ID`, `NAVER_SENS_ACCESS_KEY`, `NAVER_SENS_SECRET_KEY`, and `NAVER_SENS_FROM`.
+The sender uses the configured message template and must not write raw verification codes to normal application logs.
 
 2.1 Send Verification Code
 POST /api/auth/phone/send-code

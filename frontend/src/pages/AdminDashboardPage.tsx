@@ -1,9 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import {
-  getAdminDashboard,
-  type AdminDashboard,
-} from "../api/adminApi";
+import { getAdminDashboard, type AdminDashboard } from "../api/adminApi";
 import { getApiErrorMessage } from "../api/http";
 
 const LOAD_ERROR = "관리자 대시보드를 불러오지 못했습니다.";
@@ -75,63 +72,34 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[920px] px-5 py-8">
+      <main className="mx-auto max-w-[960px] px-5 py-8">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
             <h1 className="mt-1 text-2xl font-bold">운영 대시보드</h1>
             <p className="mt-2 text-sm text-gray-500">
-              오늘의 핵심 활동과 대기 중인 신고를 빠르게 확인합니다.
+              오늘의 참여 흐름과 운영 대기 항목을 확인합니다.
             </p>
           </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin/activities"
-              className="h-10 rounded-lg bg-white px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              활동 관리
-            </Link>
-            <Link
-              to="/admin/places"
-              className="h-10 rounded-lg bg-white px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              장소 관리
-            </Link>
-            <Link
-              to="/admin/users"
-              className="h-10 rounded-lg bg-white px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              사용자 관리
-            </Link>
-            <Link
-              to="/admin/policies"
-              className="h-10 rounded-lg bg-[#2f6f5f] px-4 pt-2 text-center text-sm font-bold text-white"
-            >
-              정책 관리
-            </Link>
-            <Link
-              to="/admin/reports"
-              className="h-10 rounded-lg bg-yellow-400 px-4 pt-2 text-center text-sm font-bold text-black"
-            >
-              신고 관리
-            </Link>
-            <Link
-              to="/"
-              className="h-10 rounded-lg border border-yellow-300 px-4 pt-2 text-center text-sm font-bold"
-            >
-              사용자 홈
-            </Link>
-          </div>
+          <nav className="flex flex-wrap gap-2">
+            <AdminLink to="/admin/activities" label="활동 관리" />
+            <AdminLink to="/admin/places" label="장소 관리" />
+            <AdminLink to="/admin/users" label="사용자 관리" />
+            <AdminLink to="/admin/audit-logs" label="감사 로그" />
+            <AdminLink to="/admin/policies" label="정책 관리" primary />
+            <AdminLink to="/admin/reports" label="신고 관리" warning />
+            <AdminLink to="/" label="사용자 홈" />
+          </nav>
         </header>
 
         {loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
+          <section className="mt-6 rounded-lg bg-white p-5 text-sm text-gray-500 shadow-sm">
             대시보드를 불러오는 중입니다.
           </section>
         )}
 
         {!loading && message && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm font-semibold text-red-500 shadow-sm">
+          <section className="mt-6 rounded-lg bg-white p-5 text-sm font-semibold text-red-500 shadow-sm">
             {message}
           </section>
         )}
@@ -142,7 +110,7 @@ export default function AdminDashboardPage() {
               {cards.map((card) => (
                 <article
                   key={card.label}
-                  className={`rounded-xl p-4 shadow-sm ${card.tone}`}
+                  className={`rounded-lg p-4 shadow-sm ${card.tone}`}
                 >
                   <p className="text-sm font-semibold">{card.label}</p>
                   <p className="mt-3 text-3xl font-bold">
@@ -152,19 +120,19 @@ export default function AdminDashboardPage() {
               ))}
             </section>
 
-            <section className="mt-5 rounded-xl bg-white p-5 shadow-sm">
+            <section className="mt-5 rounded-lg bg-white p-5 shadow-sm">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-lg font-bold">운영 우선순위</h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    신고 대기 건수와 오늘 참여량을 기준으로 운영 상태를 확인합니다.
+                    신고 대기 건수와 오늘 참여량을 기준으로 점검 대상을 고릅니다.
                   </p>
                 </div>
                 <Link
-                  to="/admin/places"
-                  className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
+                  to="/admin/audit-logs"
+                  className="h-10 rounded-lg bg-[#2f6f5f] px-4 pt-2 text-center text-sm font-bold text-white"
                 >
-                  장소 관리 열기
+                  감사 로그 보기
                 </Link>
               </div>
 
@@ -191,17 +159,53 @@ export default function AdminDashboardPage() {
                   }
                 />
               </div>
-              <Link
-                to="/admin/activities"
-                className="mt-4 block h-10 rounded-lg bg-yellow-400 px-4 pt-2 text-center text-sm font-bold text-black"
-              >
-                활동 관리 열기
-              </Link>
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <Link
+                  to="/admin/reports"
+                  className="h-10 rounded-lg bg-yellow-400 px-4 pt-2 text-center text-sm font-bold text-black"
+                >
+                  신고 관리 열기
+                </Link>
+                <Link
+                  to="/admin/activities"
+                  className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
+                >
+                  활동 관리 열기
+                </Link>
+              </div>
             </section>
           </>
         )}
       </main>
     </div>
+  );
+}
+
+function AdminLink({
+  to,
+  label,
+  primary = false,
+  warning = false,
+}: {
+  to: string;
+  label: string;
+  primary?: boolean;
+  warning?: boolean;
+}) {
+  let className =
+    "h-10 rounded-lg border px-4 pt-2 text-center text-sm font-bold";
+  if (primary) {
+    className += " border-[#2f6f5f] bg-[#2f6f5f] text-white";
+  } else if (warning) {
+    className += " border-yellow-300 bg-yellow-400 text-black";
+  } else {
+    className += " border-emerald-100 bg-white text-[#2f6f5f]";
+  }
+
+  return (
+    <Link to={to} className={className}>
+      {label}
+    </Link>
   );
 }
 

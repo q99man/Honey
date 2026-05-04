@@ -272,19 +272,28 @@ Use short-lived JWT access tokens and server-managed refresh tokens.
 Use a sender interface for phone verification code delivery.
 
 ### Current Implementation
-- development sender logs verification codes
+- development sender logs code issuance without the raw code at INFO level
+- `PHONE_VERIFICATION_SENDER_PROVIDER=dev` keeps local delivery on the development sender by default
+- `PHONE_VERIFICATION_SENDER_PROVIDER=solapi` enables the SOLAPI SMS adapter
+- `PHONE_VERIFICATION_SENDER_PROVIDER=naver-sens` enables the Naver Cloud SENS SMS adapter
+- the production profile defaults the sender provider to `solapi` so production does not silently use the development sender and can support non-business-account MVP testing
+- the SOLAPI adapter signs requests with HMAC-SHA256 using the configured API secret and posts to `/messages/v4/send-many/detail`
+- the SENS adapter signs requests with the provider's Signature V2 HMAC-SHA256 headers and posts to `/sms/v2/services/{serviceId}/messages`
+- provider credentials, sender number, country code, API base URL, timeouts, and message template are environment-driven
 - verification codes are stored as hashes
 - code length, expiry, and max attempts are configurable
 - core actions can use the server-side `@RequirePhoneVerified` guard
+- the verification code cache is written only after sender delivery succeeds, so failed SMS delivery does not leave a latest-code cache entry
 
 ### Future Plan
-- replace development sender with a production SMS provider adapter
-- required external values will include provider access key, secret key, sender number, and message template settings
+- run a live credential smoke test before marking MVP phone verification complete
+- keep the sender interface so another provider can replace SENS if cost, reliability, or compliance requirements change
 
 ### Reason
 - backend validation can be built before choosing the SMS provider
 - production credentials do not need to be committed to the repository
 - sender implementation can change without changing controller or service logic
+- SOLAPI personal accounts can be used for early MVP validation when Naver Cloud SENS business-account restrictions block setup
 
 ---
 
@@ -365,10 +374,11 @@ Region change cooldown must be read from `system_policies`.
 ## 16.7 Policy Seed Import and Admin Policy Management
 
 ### Decision
-Default system policies can be imported from an opt-in UTF-8 CSV seed file, and admins manage policies through separated admin APIs.
+Default system policies can be imported from a UTF-8 CSV seed file, and admins manage policies through separated admin APIs.
 
 ### Current Implementation
-- `POLICY_SEED_ENABLED=true` enables missing-only policy seed import on backend startup
+- Local development enables missing-only policy seed import by default so empty development databases have required policies after startup
+- Production keeps policy seed import disabled by default unless `POLICY_SEED_ENABLED=true` is set
 - `POLICY_SEED_LOCATION` defaults to `classpath:policy/policy-defaults.csv`
 - `GET /api/admin/policies` is available to ADMIN and SUPER_ADMIN users
 - policy updates are restricted to SUPER_ADMIN users
@@ -378,6 +388,7 @@ Default system policies can be imported from an opt-in UTF-8 CSV seed file, and 
 - business policy values must live in the database, not application logic
 - seed import gives local and initial environments a repeatable bootstrap path
 - missing-only import avoids overwriting values changed by admins
+- missing-only import prevents login/setup flows from failing on empty local databases
 - policy changes need an audit trail because they affect platform rules
 
 ---
@@ -1548,6 +1559,27 @@ Expose the existing admin recommendation, visit, and comment moderation APIs thr
 - Activity-level moderation is the operator path for fixing manipulation or unsafe content after place and report workflows are connected.
 - Recommendation, visit, and comment actions directly influence place stats and rankings, so the backend must remain authoritative for side effects.
 - Keeping the route under `/admin` preserves separation from user-facing participation and place detail flows.
+
+---
+
+## 16.67 Admin Audit Log Frontend Flow
+
+### Decision
+Expose administrator and user action logs through a separated read-only admin frontend route at `/admin/audit-logs`.
+
+### Current Implementation
+- The admin audit page reads `GET /api/admin/action-logs` and `GET /api/admin/user-action-logs`.
+- Operators can switch between administrator action logs and user participation logs.
+- Loaded records can be filtered by action type, target type, keyword, user/admin nickname, and target id.
+- Log detail views show before/after snapshots, metadata JSON, memo, actor, target, and created time.
+- The page does not create, update, or delete logs; all log creation remains inside existing backend domain workflows.
+- The admin dashboard links to the audit log route as an operator investigation entry point.
+- Existing admin pages include a Korean `감사 로그` navigation label so operators can reach audit review from any admin workflow.
+
+### Reason
+- Audit review is an operations workflow and must remain separated from user-facing pages.
+- Filtering on the loaded latest records is enough for the MVP while preserving the existing backend read contract.
+- Keeping the page read-only prevents accidental audit mutation and keeps domain services responsible for log creation.
 
 ---
 

@@ -827,15 +827,16 @@ the trust evaluation flow requires `policy_group = trust` keys `grade_thresholds
 
 9.2 Policy Seed Import
 
-The backend supports an opt-in UTF-8 CSV import for default policy rows.
+The backend supports a UTF-8 CSV import for default policy rows.
 
 CSV columns:
 
 policy_group,policy_key,policy_value,value_type,description
 
 Rules:
-- import is disabled by default
-- set POLICY_SEED_ENABLED=true to run import on backend startup
+- local development enables missing-only policy seed import by default
+- production keeps policy seed import disabled by default
+- set POLICY_SEED_ENABLED=true or false to control import on backend startup
 - set POLICY_SEED_LOCATION to a classpath or file resource
 - import inserts missing policies only and never overwrites admin-edited values
 - list-style policy values use semicolon-separated `key:value` entries so CSV parsing remains stable

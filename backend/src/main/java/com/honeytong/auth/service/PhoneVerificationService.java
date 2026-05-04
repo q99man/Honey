@@ -66,8 +66,8 @@ public class PhoneVerificationService {
                 expiresAt
         );
         phoneVerificationCodeRepository.save(verificationCode);
-        phoneVerificationCache.put(userId, request.phone(), PhoneVerificationState.from(verificationCode));
         phoneVerificationSender.send(request.phone(), code);
+        phoneVerificationCache.put(userId, request.phone(), PhoneVerificationState.from(verificationCode));
 
         return new PhoneVerificationSendResponse(true);
     }

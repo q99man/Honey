@@ -6,6 +6,7 @@ import DetailPage from "./pages/DetailPage";
 import RankingPage from "./pages/RankingPage";
 import MyPage from "./pages/MyPage";
 import AdminActivitiesPage from "./pages/AdminActivitiesPage";
+import AdminAuditLogsPage from "./pages/AdminAuditLogsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
 import AdminPoliciesPage from "./pages/AdminPoliciesPage";
 import AdminPlacesPage from "./pages/AdminPlacesPage";
@@ -180,6 +181,7 @@ function App() {
         <Route path="/my" element={<MyPage onPlaceDeleted={removePlace} />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/activities" element={<AdminActivitiesPage />} />
+        <Route path="/admin/audit-logs" element={<AdminAuditLogsPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin/policies" element={<AdminPoliciesPage />} />
         <Route path="/admin/places" element={<AdminPlacesPage />} />

@@ -334,6 +334,11 @@ Phone verification current implementation:
 - verification code hashes, expiry, and verified state are stored in `phone_verification_codes`
 - `PhoneVerificationCache` can cache the latest unverified code state in Redis when enabled
 - successful verification evicts the cached phone verification key after the DB row and user state are updated
+- phone code delivery is selected by `PHONE_VERIFICATION_SENDER_PROVIDER`
+- the default development sender logs issuance without the raw code at INFO level
+- the SOLAPI sender can send production SMS messages with environment-provided API key, API secret, registered sender number, and message template
+- the Naver Cloud SENS sender can send production SMS messages with environment-provided service id, access key, secret key, sender number, and message template
+- the production profile defaults `PHONE_VERIFICATION_SENDER_PROVIDER` to `solapi`; local development defaults to `dev`
 11.2 Authorization
 role-based access control
 admin APIs protected
