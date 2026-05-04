@@ -375,6 +375,7 @@ All documents are consistent with each other.
 - [x] Release candidate documentation commit created and pushed to `origin/codex/prepare-mvp-release-packaging`; pushed branch is ready for PR creation at `https://github.com/q99man/Honey/pull/new/codex/prepare-mvp-release-packaging`
 - [x] Release candidate PR draft added at `docs/mvp-release-pr-draft.md` because the local environment has no `gh` CLI or authenticated GitHub connector for direct PR creation
 - [x] Release candidate PR creation page opened in the local browser and the prepared PR body was copied to the clipboard for manual submission through the user's authenticated GitHub session
+- [x] Release candidate PR opened at `https://github.com/q99man/Honey/pull/1`; PR is open, not draft, currently mergeable, and the latest check-run poll found one `test` check successful and one `test` check still in progress
 
 ---
 
@@ -431,11 +432,11 @@ Next implementation order:
 
 Next task:
 
-Submit release candidate PR in GitHub
+Monitor release candidate PR CI
 
-- submit the already-open GitHub PR page from `codex/prepare-mvp-release-packaging` to `main`
-- paste the clipboard body from `docs/mvp-release-pr-draft.md` and use title `docs: prepare MVP release runbook`
-- confirm CI status and reviewer feedback after the PR opens
+- monitor `https://github.com/q99man/Honey/pull/1` until all CI checks finish
+- address any CI or reviewer feedback without changing release policy behavior
+- merge only after CI is green and the release runbook is accepted
 - recommended reasoning level: medium
 
 ---

@@ -331,6 +331,7 @@ The goal is:
 - [x] Prepare release branch packaging
 - [x] Create and push release candidate documentation commit
 - [x] Add release candidate PR draft
+- [x] Open release candidate PR
 
 ---
 
