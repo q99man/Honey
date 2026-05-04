@@ -1,0 +1,5 @@
+# Kakao administrative dong code sample.
+# Copy this file to region-seed.csv or point REGION_SEED_LOCATION to your full seed file.
+city_code,city_name_ko,district_code,district_name_ko,dong_code,dong_name_ko
+1100000000,서울특별시,1144000000,마포구,1144066000,서교동
+4100000000,경기도,4113500000,성남시 분당구,4113565500,삼평동

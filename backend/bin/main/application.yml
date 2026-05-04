@@ -1,0 +1,144 @@
+spring:
+  config:
+    import:
+      - optional:file:.env[.properties]
+      - optional:file:../.env[.properties]
+  application:
+    name: honeytong-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/honey?serverTimezone=Asia/Seoul&characterEncoding=UTF-8}
+    username: ${DB_USERNAME:}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  cache:
+    type: ${CACHE_TYPE:none}
+  data:
+    redis:
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
+      database: ${REDIS_DATABASE:0}
+      timeout: ${REDIS_TIMEOUT:2s}
+      repositories:
+        enabled: false
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+        jdbc:
+          time_zone: Asia/Seoul
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+    locations: ${FLYWAY_LOCATIONS:classpath:db/migration}
+    baseline-on-migrate: ${FLYWAY_BASELINE_ON_MIGRATE:false}
+    validate-on-migrate: ${FLYWAY_VALIDATE_ON_MIGRATE:true}
+
+logging:
+  level:
+    root: ${LOG_LEVEL_ROOT:INFO}
+    com.honeytong: ${LOG_LEVEL_APP:INFO}
+    org.springframework.security: ${LOG_LEVEL_SECURITY:WARN}
+    org.hibernate.SQL: ${LOG_LEVEL_SQL:WARN}
+    org.hibernate.orm.jdbc.bind: ${LOG_LEVEL_SQL_BIND:OFF}
+  file:
+    name: ${LOG_FILE:logs/honeytong-backend.log}
+  logback:
+    rollingpolicy:
+      max-file-size: ${LOG_FILE_MAX_SIZE:10MB}
+      max-history: ${LOG_FILE_MAX_HISTORY:14}
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS,Asia/Seoul} %-5level [%thread] %logger{36} - %msg%n"
+    file: "%d{yyyy-MM-dd HH:mm:ss.SSS,Asia/Seoul} %-5level [%thread] %logger{36} - %msg%n"
+
+server:
+  port: ${SERVER_PORT:8080}
+
+management:
+  health:
+    redis:
+      enabled: ${REDIS_HEALTH_ENABLED:false}
+  endpoints:
+    web:
+      exposure:
+        include: ${MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE:health}
+  endpoint:
+    health:
+      probes:
+        enabled: ${MANAGEMENT_HEALTH_PROBES_ENABLED:true}
+      show-details: ${MANAGEMENT_HEALTH_SHOW_DETAILS:never}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:5173,http://127.0.0.1:5173}
+  security:
+    jwt:
+      secret: ${JWT_SECRET:dev-only-honeytong-jwt-secret-key-must-be-replaced}
+      access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:15}
+      refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:14}
+    phone-verification:
+      code-length: ${PHONE_VERIFICATION_CODE_LENGTH:6}
+      code-ttl-minutes: ${PHONE_VERIFICATION_CODE_TTL_MINUTES:5}
+      max-attempts: ${PHONE_VERIFICATION_MAX_ATTEMPTS:5}
+      sender:
+        provider: ${PHONE_VERIFICATION_SENDER_PROVIDER:dev}
+        message-template: ${PHONE_VERIFICATION_MESSAGE_TEMPLATE:[Honeytong] 인증번호 {code}를 입력해 주세요.}
+        naver-sens:
+          service-id: ${NAVER_SENS_SERVICE_ID:}
+          access-key: ${NAVER_SENS_ACCESS_KEY:}
+          secret-key: ${NAVER_SENS_SECRET_KEY:}
+          from: ${NAVER_SENS_FROM:}
+          base-url: ${NAVER_SENS_BASE_URL:https://sens.apigw.ntruss.com}
+          country-code: ${NAVER_SENS_COUNTRY_CODE:82}
+          connect-timeout: ${NAVER_SENS_CONNECT_TIMEOUT:3s}
+          read-timeout: ${NAVER_SENS_READ_TIMEOUT:5s}
+        solapi:
+          api-key: ${SOLAPI_API_KEY:}
+          api-secret: ${SOLAPI_API_SECRET:}
+          from: ${SOLAPI_FROM:}
+          base-url: ${SOLAPI_BASE_URL:https://api.solapi.com}
+          connect-timeout: ${SOLAPI_CONNECT_TIMEOUT:3s}
+          read-timeout: ${SOLAPI_READ_TIMEOUT:5s}
+  oauth:
+    kakao:
+      user-info-url: ${KAKAO_OAUTH_USER_INFO_URL:https://kapi.kakao.com/v2/user/me}
+    naver:
+      user-info-url: ${NAVER_OAUTH_USER_INFO_URL:https://openapi.naver.com/v1/nid/me}
+    google:
+      user-info-url: ${GOOGLE_OAUTH_USER_INFO_URL:https://www.googleapis.com/oauth2/v3/userinfo}
+  maps:
+    provider: ${MAP_PROVIDER:kakao}
+    kakao:
+      rest-api-key: ${KAKAO_REST_API_KEY:}
+      javascript-key: ${KAKAO_JAVASCRIPT_KEY:}
+      local-base-url: ${KAKAO_LOCAL_BASE_URL:https://dapi.kakao.com}
+  regions:
+    seed:
+      enabled: ${REGION_SEED_ENABLED:false}
+      location: ${REGION_SEED_LOCATION:classpath:region/region-seed.csv}
+  policies:
+    seed:
+      enabled: ${POLICY_SEED_ENABLED:true}
+      location: ${POLICY_SEED_LOCATION:classpath:policy/policy-defaults.csv}
+  admin:
+    bootstrap:
+      enabled: ${ADMIN_BOOTSTRAP_ENABLED:false}
+      email: ${ADMIN_BOOTSTRAP_EMAIL:}
+      password: ${ADMIN_BOOTSTRAP_PASSWORD:}
+      nickname: ${ADMIN_BOOTSTRAP_NICKNAME:local-admin}
+      role: ${ADMIN_BOOTSTRAP_ROLE:SUPER_ADMIN}
+      phone: ${ADMIN_BOOTSTRAP_PHONE:}
+      phone-verified: ${ADMIN_BOOTSTRAP_PHONE_VERIFIED:true}
+      reset-password: ${ADMIN_BOOTSTRAP_RESET_PASSWORD:false}
+  redis:
+    enabled: ${APP_REDIS_ENABLED:false}
+    policy-cache-ttl: ${POLICY_CACHE_TTL:10m}
+    ranking-cache-ttl: ${RANKING_CACHE_TTL:5m}
+  ranking:
+    scheduler:
+      enabled: ${RANKING_SCHEDULER_ENABLED:false}
+      cron: ${RANKING_SCHEDULER_CRON:0 0 4 * * *}
+      zone: ${RANKING_SCHEDULER_ZONE:Asia/Seoul}
+      season-code: ${RANKING_SCHEDULER_SEASON_CODE:}
