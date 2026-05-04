@@ -329,6 +329,7 @@ The goal is:
 - [x] Add one-command local staging smoke wrapper
 - [x] Add MVP release runbook
 - [x] Prepare release branch packaging
+- [x] Create and push release candidate documentation commit
 
 ---
 

@@ -372,6 +372,7 @@ All documents are consistent with each other.
 - [x] One-command local staging smoke wrapper added at `scripts/run-local-staging-smoke.ps1`; it selects a staging rehearsal schema, checks occupied ports, starts backend/frontend with normalized paths, records backend/frontend/listener PIDs and log paths, and `-Stop` cleans up the recorded processes without disturbing the existing 8080 backend
 - [x] MVP release runbook added at `docs/mvp-release-runbook.md`; it fixes the pre-release command order from tool normalization through backend tests, `bootJar`, frontend build/lint, document and encoding checks, staging smoke, browser smoke, stop cleanup, rollback, and rerun notes for port conflicts, missing schemas, and provider credentials
 - [x] Release branch packaging prepared on `codex/prepare-mvp-release-packaging`; reviewed the dirty worktree, confirmed tracked changes are limited to release-runbook/progress/tasks docs, confirmed `.env`, local logs, build output, Gradle caches, frontend `dist`, and `node_modules` remain ignored, reran the release gate, and found no smoke credential or secret scan matches in tracked files
+- [x] Release candidate documentation commit created and pushed to `origin/codex/prepare-mvp-release-packaging`; pushed branch is ready for PR creation at `https://github.com/q99man/Honey/pull/new/codex/prepare-mvp-release-packaging`
 
 ---
 
@@ -428,11 +429,11 @@ Next implementation order:
 
 Next task:
 
-Create release candidate commit
+Open release candidate PR
 
-- commit the staged release documentation package with a concise release-prep message
-- push `codex/prepare-mvp-release-packaging`
-- open a PR using the MVP release notes and verification summary from the runbook/checklist
+- create a PR from `codex/prepare-mvp-release-packaging` to `main`
+- use the MVP release notes and verification summary from the runbook/checklist
+- confirm CI status and reviewer feedback after the PR opens
 - recommended reasoning level: medium
 
 ---
