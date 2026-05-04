@@ -370,6 +370,8 @@ All documents are consistent with each other.
 - [x] Staging-like seed/bootstrap rehearsal passed against disposable MySQL schema `honey_stage_rehearsal_20260504164730`; first boot imported region/policy/admin seed data, restart with seed/bootstrap disabled reached `/actuator/health`, and core auth, region, place, recommendation, visit, comment, and admin dashboard smoke APIs passed
 - [x] Frontend browser smoke passed against the staging-like backend on isolated ports `18083` and `5174`; verified Korean home UI, login, My Page phone/region/status data, place detail participation surfaces, admin dashboard, and admin policy navigation with no browser console errors or warnings
 - [x] One-command local staging smoke wrapper added at `scripts/run-local-staging-smoke.ps1`; it selects a staging rehearsal schema, checks occupied ports, starts backend/frontend with normalized paths, records backend/frontend/listener PIDs and log paths, and `-Stop` cleans up the recorded processes without disturbing the existing 8080 backend
+- [x] MVP release runbook added at `docs/mvp-release-runbook.md`; it fixes the pre-release command order from tool normalization through backend tests, `bootJar`, frontend build/lint, document and encoding checks, staging smoke, browser smoke, stop cleanup, rollback, and rerun notes for port conflicts, missing schemas, and provider credentials
+- [x] Release branch packaging prepared on `codex/prepare-mvp-release-packaging`; reviewed the dirty worktree, confirmed tracked changes are limited to release-runbook/progress/tasks docs, confirmed `.env`, local logs, build output, Gradle caches, frontend `dist`, and `node_modules` remain ignored, reran the release gate, and found no smoke credential or secret scan matches in tracked files
 
 ---
 
@@ -426,11 +428,11 @@ Next implementation order:
 
 Next task:
 
-Add MVP Release Runbook
+Create release candidate commit
 
-- document the exact pre-release command order from environment check through backend build, staging smoke, browser smoke, and stop cleanup
-- include rollback and rerun notes for port conflicts, missing schema, and provider credentials
-- keep secret handling explicit so `.env` values are never copied into docs or logs
+- commit the staged release documentation package with a concise release-prep message
+- push `codex/prepare-mvp-release-packaging`
+- open a PR using the MVP release notes and verification summary from the runbook/checklist
 - recommended reasoning level: medium
 
 ---
