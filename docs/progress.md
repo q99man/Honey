@@ -443,14 +443,15 @@ Recent update:
 - [x] MVP release go/no-go handoff added at `docs/mvp-release-go-no-go-handoff.md`
 - [x] Target-environment go/no-go checklist added at `docs/mvp-target-go-no-go-checklist.md`
 - [x] Target go/no-go execution result placeholder added at `docs/mvp-target-go-no-go-result.md`; actual target smoke is blocked until the release operator provides approved target details
+- [x] Local target go/no-go rehearsal completed with backend health, frontend response, SOLAPI verify, Kakao GPS region verify, core user flow, admin/report flow, ranking recalculation/read, log pattern check, and process cleanup
 
 Next task:
 
-Provide approved target-environment details and execute go/no-go checklist
+Prepare deployed target environment or release archive handoff
 
-- provide target backend/frontend URLs, DB backup confirmation, previous artifact locations, rollback owner, operator account, approved phone smoke recipient, Kakao GPS test location, and log access owner
-- have the release operator fill `docs/mvp-target-go-no-go-checklist.md` and `docs/mvp-target-go-no-go-result.md` against the approved target environment
-- confirm target DB backup, previous artifacts, secret injection, target smoke, normal log safety, rollback owner, and final GO/NO-GO decision
+- if a deployed target is available, provide target backend/frontend URLs, DB backup confirmation, previous artifact locations, rollback owner, operator account, approved phone smoke recipient, Kakao GPS test location, and log access owner
+- if no deployed target is available, package the current release docs and local rehearsal evidence for handoff
+- do not treat local target rehearsal as production/staging approval
 - do not include raw secrets, recipient phone, verification code, or provider credentials
 - recommended reasoning level: low
 

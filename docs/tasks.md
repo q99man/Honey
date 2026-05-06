@@ -339,6 +339,7 @@ The goal is:
 - [x] Prepare MVP release go/no-go handoff
 - [x] Prepare target-environment go/no-go checklist
 - [x] Record target go/no-go execution blocker and required inputs
+- [x] Execute local target go/no-go rehearsal
 
 ---
 
