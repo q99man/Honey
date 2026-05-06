@@ -433,13 +433,21 @@ Next implementation order:
 
 ## 7. Current Next Step
 
+Recent update:
+- [x] Disposable operator release rehearsal completed on `main` with schema `honey_stage_rehearsal_20260506153715`
+- [x] Seed/bootstrap startup completed with Flyway and schema validation, then local staging backend/frontend smoke started from the wrapper
+- [x] Health, frontend HTTP 200, admin login, `/api/users/me`, `/api/users/me/status`, region lookup, GPS region verify, place registration policy, place create, recommendation, visit verification, ranking season creation, ranking recalculation, ranking read, admin dashboard, admin action logs, and admin user action logs were verified against disposable data
+- [x] Wrapper stop cleanup completed for recorded backend/frontend/listener processes
+- [x] Rollback readiness artifacts were present: backend boot jar and frontend dist output
+- [ ] Live SOLAPI send/verify was not executed because no approved recipient phone and release operator code-entry step were available in this session
+
 Next task:
 
-Run operator release rehearsal
+Run approved live SOLAPI phone smoke with release operator
 
-- follow `docs/mvp-release-runbook.md` in an approved staging or disposable environment
-- confirm seed/bootstrap, SOLAPI smoke, rollback preparation, and stop cleanup with the release operator
-- do not run rehearsal against production data until release approval
+- follow `docs/phone-verification-live-smoke.md`
+- use only an approved staging/disposable backend and an approved recipient phone
+- confirm `POST /api/auth/phone/send-code` and `POST /api/auth/phone/verify-code` without recording the raw phone, code, or provider credentials
 - recommended reasoning level: medium
 
 ---

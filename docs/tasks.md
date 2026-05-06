@@ -334,6 +334,8 @@ The goal is:
 - [x] Open release candidate PR
 - [x] Merge release candidate PR after CI success
 - [x] Run post-merge release readiness check and clean merged branch
+- [x] Run disposable operator release rehearsal
+- [ ] Run approved live SOLAPI phone smoke with release operator
 
 ---
 
