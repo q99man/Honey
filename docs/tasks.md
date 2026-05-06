@@ -333,6 +333,7 @@ The goal is:
 - [x] Add release candidate PR draft
 - [x] Open release candidate PR
 - [x] Merge release candidate PR after CI success
+- [x] Run post-merge release readiness check and clean merged branch
 
 ---
 

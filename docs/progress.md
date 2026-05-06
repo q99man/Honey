@@ -377,6 +377,8 @@ All documents are consistent with each other.
 - [x] Release candidate PR creation page opened in the local browser and the prepared PR body was copied to the clipboard for manual submission through the user's authenticated GitHub session
 - [x] Release candidate PR opened at `https://github.com/q99man/Honey/pull/1`; PR is open, not draft, currently mergeable, and the latest check-run poll found one `test` check successful and one `test` check still in progress
 - [x] Release candidate PR #1 passed both `test` check runs and was squash-merged into `main` as `7759ca6 docs: prepare MVP release runbook`; local `main` was fast-forwarded to the merged remote state
+- [x] Post-merge release readiness check passed on `main`: backend tests, backend `bootJar`, frontend build, frontend lint, diff check, UI language check, Korean encoding check, doc sync check, secret pattern scan, release runbook presence, and PR draft presence all passed
+- [x] Merged release branch `codex/prepare-mvp-release-packaging` was deleted from `origin` and from the local repository after confirming the squash-merged content is on `main`
 
 ---
 
@@ -433,11 +435,11 @@ Next implementation order:
 
 Next task:
 
-Run post-merge release readiness check
+Run operator release rehearsal
 
-- run a final post-merge verification on `main`
-- confirm the release runbook and PR draft are available from `main`
-- decide whether to delete the remote release branch after confirming no follow-up PR changes are needed
+- follow `docs/mvp-release-runbook.md` in an approved staging or disposable environment
+- confirm seed/bootstrap, SOLAPI smoke, rollback preparation, and stop cleanup with the release operator
+- do not run rehearsal against production data until release approval
 - recommended reasoning level: medium
 
 ---
