@@ -442,12 +442,14 @@ Recent update:
 - [x] Live SOLAPI send/verify completed against the disposable backend without recording raw phone, code, or provider credentials
 - [x] MVP release go/no-go handoff added at `docs/mvp-release-go-no-go-handoff.md`
 - [x] Target-environment go/no-go checklist added at `docs/mvp-target-go-no-go-checklist.md`
+- [x] Target go/no-go execution result placeholder added at `docs/mvp-target-go-no-go-result.md`; actual target smoke is blocked until the release operator provides approved target details
 
 Next task:
 
-Execute approved target-environment go/no-go checklist
+Provide approved target-environment details and execute go/no-go checklist
 
-- have the release operator fill `docs/mvp-target-go-no-go-checklist.md` against the approved target environment
+- provide target backend/frontend URLs, DB backup confirmation, previous artifact locations, rollback owner, operator account, approved phone smoke recipient, Kakao GPS test location, and log access owner
+- have the release operator fill `docs/mvp-target-go-no-go-checklist.md` and `docs/mvp-target-go-no-go-result.md` against the approved target environment
 - confirm target DB backup, previous artifacts, secret injection, target smoke, normal log safety, rollback owner, and final GO/NO-GO decision
 - do not include raw secrets, recipient phone, verification code, or provider credentials
 - recommended reasoning level: low

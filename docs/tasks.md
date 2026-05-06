@@ -338,6 +338,7 @@ The goal is:
 - [x] Run approved live SOLAPI phone smoke with release operator
 - [x] Prepare MVP release go/no-go handoff
 - [x] Prepare target-environment go/no-go checklist
+- [x] Record target go/no-go execution blocker and required inputs
 
 ---
 
