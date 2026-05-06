@@ -337,6 +337,7 @@ The goal is:
 - [x] Run disposable operator release rehearsal
 - [x] Run approved live SOLAPI phone smoke with release operator
 - [x] Prepare MVP release go/no-go handoff
+- [x] Prepare target-environment go/no-go checklist
 
 ---
 

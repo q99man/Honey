@@ -441,13 +441,14 @@ Recent update:
 - [x] Rollback readiness artifacts were present: backend boot jar and frontend dist output
 - [x] Live SOLAPI send/verify completed against the disposable backend without recording raw phone, code, or provider credentials
 - [x] MVP release go/no-go handoff added at `docs/mvp-release-go-no-go-handoff.md`
+- [x] Target-environment go/no-go checklist added at `docs/mvp-target-go-no-go-checklist.md`
 
 Next task:
 
-Operator target-environment go/no-go checklist
+Execute approved target-environment go/no-go checklist
 
-- have the release operator fill `docs/mvp-release-go-no-go-handoff.md` checklist against the approved target environment
-- confirm target DB backup, previous artifacts, secret injection, target smoke, normal log safety, and rollback owner
+- have the release operator fill `docs/mvp-target-go-no-go-checklist.md` against the approved target environment
+- confirm target DB backup, previous artifacts, secret injection, target smoke, normal log safety, rollback owner, and final GO/NO-GO decision
 - do not include raw secrets, recipient phone, verification code, or provider credentials
 - recommended reasoning level: low
 
