@@ -439,16 +439,15 @@ Recent update:
 - [x] Health, frontend HTTP 200, admin login, `/api/users/me`, `/api/users/me/status`, region lookup, GPS region verify, place registration policy, place create, recommendation, visit verification, ranking season creation, ranking recalculation, ranking read, admin dashboard, admin action logs, and admin user action logs were verified against disposable data
 - [x] Wrapper stop cleanup completed for recorded backend/frontend/listener processes
 - [x] Rollback readiness artifacts were present: backend boot jar and frontend dist output
-- [ ] Live SOLAPI send/verify was not executed because no approved recipient phone and release operator code-entry step were available in this session
+- [x] Live SOLAPI send/verify completed against the disposable backend without recording raw phone, code, or provider credentials
 
 Next task:
 
-Run approved live SOLAPI phone smoke with release operator
+Prepare MVP release go/no-go handoff
 
-- follow `docs/phone-verification-live-smoke.md`
-- use only an approved staging/disposable backend and an approved recipient phone
-- confirm `POST /api/auth/phone/send-code` and `POST /api/auth/phone/verify-code` without recording the raw phone, code, or provider credentials
-- recommended reasoning level: medium
+- summarize release gates, CI, rehearsal results, remaining operational risks, and rollback readiness for the release operator
+- do not include raw secrets, recipient phone, verification code, or provider credentials
+- recommended reasoning level: low
 
 ---
 
