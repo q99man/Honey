@@ -340,6 +340,7 @@ The goal is:
 - [x] Prepare target-environment go/no-go checklist
 - [x] Record target go/no-go execution blocker and required inputs
 - [x] Execute local target go/no-go rehearsal
+- [x] Prepare MVP backend completion handoff
 
 ---
 
@@ -361,6 +362,7 @@ The goal is:
 - [x] Add admin place management UI
 - [x] Add admin activity moderation UI
 - [x] Add admin audit log read UI
+- [ ] Run frontend MVP polish and QA pass against latest local target backend
 
 ---
 
