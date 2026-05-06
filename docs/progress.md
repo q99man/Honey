@@ -370,6 +370,12 @@ All documents are consistent with each other.
 - [x] Staging-like seed/bootstrap rehearsal passed against disposable MySQL schema `honey_stage_rehearsal_20260504164730`; first boot imported region/policy/admin seed data, restart with seed/bootstrap disabled reached `/actuator/health`, and core auth, region, place, recommendation, visit, comment, and admin dashboard smoke APIs passed
 - [x] Frontend browser smoke passed against the staging-like backend on isolated ports `18083` and `5174`; verified Korean home UI, login, My Page phone/region/status data, place detail participation surfaces, admin dashboard, and admin policy navigation with no browser console errors or warnings
 - [x] One-command local staging smoke wrapper added at `scripts/run-local-staging-smoke.ps1`; it selects a staging rehearsal schema, checks occupied ports, starts backend/frontend with normalized paths, records backend/frontend/listener PIDs and log paths, and `-Stop` cleans up the recorded processes without disturbing the existing 8080 backend
+- [x] MVP release runbook added at `docs/mvp-release-runbook.md`; it fixes the pre-release command order from tool normalization through backend tests, `bootJar`, frontend build/lint, document and encoding checks, staging smoke, browser smoke, stop cleanup, rollback, and rerun notes for port conflicts, missing schemas, and provider credentials
+- [x] Release branch packaging prepared on `codex/prepare-mvp-release-packaging`; reviewed the dirty worktree, confirmed tracked changes are limited to release-runbook/progress/tasks docs, confirmed `.env`, local logs, build output, Gradle caches, frontend `dist`, and `node_modules` remain ignored, reran the release gate, and found no smoke credential or secret scan matches in tracked files
+- [x] Release candidate documentation commit created and pushed to `origin/codex/prepare-mvp-release-packaging`; pushed branch is ready for PR creation at `https://github.com/q99man/Honey/pull/new/codex/prepare-mvp-release-packaging`
+- [x] Release candidate PR draft added at `docs/mvp-release-pr-draft.md` because the local environment has no `gh` CLI or authenticated GitHub connector for direct PR creation
+- [x] Release candidate PR creation page opened in the local browser and the prepared PR body was copied to the clipboard for manual submission through the user's authenticated GitHub session
+- [x] Release candidate PR opened at `https://github.com/q99man/Honey/pull/1`; PR is open, not draft, currently mergeable, and the latest check-run poll found one `test` check successful and one `test` check still in progress
 
 ---
 
@@ -426,11 +432,11 @@ Next implementation order:
 
 Next task:
 
-Add MVP Release Runbook
+Monitor release candidate PR CI
 
-- document the exact pre-release command order from environment check through backend build, staging smoke, browser smoke, and stop cleanup
-- include rollback and rerun notes for port conflicts, missing schema, and provider credentials
-- keep secret handling explicit so `.env` values are never copied into docs or logs
+- monitor `https://github.com/q99man/Honey/pull/1` until all CI checks finish
+- address any CI or reviewer feedback without changing release policy behavior
+- merge only after CI is green and the release runbook is accepted
 - recommended reasoning level: medium
 
 ---

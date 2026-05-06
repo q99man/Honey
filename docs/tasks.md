@@ -327,6 +327,11 @@ The goal is:
 - [x] Run staging-like seed/bootstrap and core API smoke rehearsal
 - [x] Run frontend browser smoke against staging-like backend
 - [x] Add one-command local staging smoke wrapper
+- [x] Add MVP release runbook
+- [x] Prepare release branch packaging
+- [x] Create and push release candidate documentation commit
+- [x] Add release candidate PR draft
+- [x] Open release candidate PR
 
 ---
 
