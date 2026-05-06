@@ -336,6 +336,7 @@ The goal is:
 - [x] Run post-merge release readiness check and clean merged branch
 - [x] Run disposable operator release rehearsal
 - [x] Run approved live SOLAPI phone smoke with release operator
+- [x] Prepare MVP release go/no-go handoff
 
 ---
 
