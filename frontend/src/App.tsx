@@ -17,8 +17,8 @@ import WishlistPage from "./pages/WishlistPage";
 import type { Place } from "./types/place";
 
 const WISHLIST_STORAGE_KEY = "honeytong-wished-place-ids";
-const LIST_LOAD_ERROR = "\uc7a5\uc18c \ubaa9\ub85d\uc744 \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.";
-const SEARCH_LOAD_ERROR = "\uac80\uc0c9 \uacb0\uacfc\ub97c \ubd88\ub7ec\uc624\uc9c0 \ubabb\ud588\uc2b5\ub2c8\ub2e4.";
+const LIST_LOAD_ERROR = "장소 목록을 불러오지 못했습니다.";
+const SEARCH_LOAD_ERROR = "검색 결과를 불러오지 못했습니다.";
 
 function App() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -158,7 +158,13 @@ function App() {
         />
         <Route
           path="/ranking"
-          element={<RankingPage places={places} />}
+          element={
+            <RankingPage
+              places={places}
+              placesLoading={loading}
+              placesErrorMessage={errorMessage}
+            />
+          }
         />
         <Route
           path="/places/new"
@@ -176,7 +182,14 @@ function App() {
         />
         <Route
           path="/wishlist"
-          element={<WishlistPage places={places} onToggleWish={toggleWish} />}
+          element={
+            <WishlistPage
+              places={places}
+              loading={loading}
+              errorMessage={errorMessage}
+              onToggleWish={toggleWish}
+            />
+          }
         />
         <Route path="/my" element={<MyPage onPlaceDeleted={removePlace} />} />
         <Route path="/admin" element={<AdminDashboardPage />} />

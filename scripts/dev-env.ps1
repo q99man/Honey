@@ -7,6 +7,43 @@ $ErrorActionPreference = "Stop"
 $RootDir = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $BackendDir = Join-Path $RootDir "backend"
 
+function Normalize-ProcessEnvironmentKeys {
+    $processEnv = [Environment]::GetEnvironmentVariables("Process")
+    $groups = @{}
+    foreach ($key in $processEnv.Keys) {
+        $lowerKey = $key.ToString().ToLowerInvariant()
+        if (-not $groups.ContainsKey($lowerKey)) {
+            $groups[$lowerKey] = @()
+        }
+        $groups[$lowerKey] += $key.ToString()
+    }
+
+    foreach ($group in $groups.GetEnumerator()) {
+        if ($group.Value.Count -le 1) {
+            continue
+        }
+
+        $canonical = if ($group.Key -eq "path") { "Path" } else { $group.Value[0] }
+        $value = [Environment]::GetEnvironmentVariable($canonical, "Process")
+        if ([string]::IsNullOrEmpty($value)) {
+            foreach ($key in $group.Value) {
+                $candidate = [Environment]::GetEnvironmentVariable($key, "Process")
+                if (-not [string]::IsNullOrEmpty($candidate)) {
+                    $value = $candidate
+                    break
+                }
+            }
+        }
+
+        foreach ($key in $group.Value) {
+            if ($key -cne $canonical) {
+                [Environment]::SetEnvironmentVariable($key, $null, "Process")
+            }
+        }
+        [Environment]::SetEnvironmentVariable($canonical, $value, "Process")
+    }
+}
+
 function Add-PathEntry {
     param([string]$PathEntry)
 
@@ -32,6 +69,8 @@ function Find-FirstExistingPath {
 
     return $null
 }
+
+Normalize-ProcessEnvironmentKeys
 
 $nodeHome = Find-FirstExistingPath @(
     $env:HONEY_NODE_HOME,

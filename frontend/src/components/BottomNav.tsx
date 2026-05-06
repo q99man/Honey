@@ -4,7 +4,10 @@ export default function BottomNav() {
   const location = useLocation();
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 h-[80px] border-t bg-white">
+    <nav
+      className="fixed bottom-0 left-0 right-0 z-50 h-[80px] border-t bg-white"
+      aria-label="하단 내비게이션"
+    >
       <div className="mx-auto flex h-full max-w-[430px] items-center justify-around">
         <NavItem to="/" icon="⌂" label="홈" active={location.pathname === "/"} />
         <NavItem
@@ -39,7 +42,11 @@ type NavItemProps = {
 
 function NavItem({ to, icon, label, active }: NavItemProps) {
   return (
-    <Link to={to} className="flex flex-col items-center gap-1">
+    <Link
+      to={to}
+      aria-current={active ? "page" : undefined}
+      className="flex min-w-14 flex-col items-center gap-1"
+    >
       <span className={active ? "text-sm text-black" : "text-sm text-gray-400"}>
         {icon}
       </span>

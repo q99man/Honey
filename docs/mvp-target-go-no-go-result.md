@@ -131,3 +131,15 @@ Notes:
 ## 5. Next step
 
 For a deployed target, provide the target environment details listed in section 2, then execute `docs/mvp-target-go-no-go-checklist.md` and append the deployed-target pass/fail status to this result file.
+
+---
+
+## 6. Deployed target input status
+
+Status: PENDING TARGET INPUT
+
+As of 2026-05-06, no approved deployed target backend URL, frontend URL, target database/schema identifier, release window, rollback owner, private admin operator account, approved SOLAPI smoke recipient, or target log review owner has been provided in this repository context.
+
+Codex prepared the exact input request in `docs/mvp-target-go-no-go-input-request.md`.
+
+Do not execute deployed target write or smoke actions until the release operator provides the required values through an approved private channel or run context.

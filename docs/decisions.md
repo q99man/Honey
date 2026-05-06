@@ -1400,6 +1400,7 @@ Use project-owned PowerShell bootstrap scripts to normalize local Windows tool p
 - `scripts/check-dev-env.ps1` verifies the resolved toolchain.
 - `scripts/run-backend-gradle.ps1` runs the backend Gradle wrapper after loading the normalized environment.
 - `scripts/run-frontend-npm.ps1` runs frontend npm commands through `npm.cmd` after loading the normalized environment.
+- `scripts/dev-env.ps1` normalizes duplicate process environment keys such as `PATH` and `Path` before wrappers run so Windows process launch APIs do not fail on case-insensitive key collisions.
 - `docs/dev-environment.md` documents the standard commands and restart rules for Codex, terminals, backend, Vite, and the in-app browser.
 
 ### Reason

@@ -434,26 +434,24 @@ Next implementation order:
 ## 7. Current Next Step
 
 Recent update:
-- [x] Disposable operator release rehearsal completed on `main` with schema `honey_stage_rehearsal_20260506153715`
-- [x] Seed/bootstrap startup completed with Flyway and schema validation, then local staging backend/frontend smoke started from the wrapper
-- [x] Health, frontend HTTP 200, admin login, `/api/users/me`, `/api/users/me/status`, region lookup, GPS region verify, place registration policy, place create, recommendation, visit verification, ranking season creation, ranking recalculation, ranking read, admin dashboard, admin action logs, and admin user action logs were verified against disposable data
-- [x] Wrapper stop cleanup completed for recorded backend/frontend/listener processes
-- [x] Rollback readiness artifacts were present: backend boot jar and frontend dist output
-- [x] Live SOLAPI send/verify completed against the disposable backend without recording raw phone, code, or provider credentials
-- [x] MVP release go/no-go handoff added at `docs/mvp-release-go-no-go-handoff.md`
-- [x] Target-environment go/no-go checklist added at `docs/mvp-target-go-no-go-checklist.md`
-- [x] Target go/no-go execution result placeholder added at `docs/mvp-target-go-no-go-result.md`; actual target smoke is blocked until the release operator provides approved target details
-- [x] Local target go/no-go rehearsal completed with backend health, frontend response, SOLAPI verify, Kakao GPS region verify, core user flow, admin/report flow, ranking recalculation/read, log pattern check, and process cleanup
-- [x] MVP backend completion handoff added at `docs/mvp-backend-completion-handoff.md`; backend MVP is ready for frontend-focused work while deployed target approval remains separate
+- [x] Wishlist UI/UX refactoring first pass completed within the limited `WishlistPage` scope
+- [x] Changed files: `frontend/src/pages/WishlistPage.tsx` and `docs/PROGRESS.md`
+- [x] Wishlist layout now uses the mobile app shell baseline with `max-w-[430px]`, `#fffaf0`, `px-4`, and `pb-24`
+- [x] Wishlist header copy was normalized to Korean Honeytong tone with `내 꿀단지` and a short saved-restaurant explanation
+- [x] Saved-count summary card now shows the current wished count and friendly guidance for both non-empty and empty states
+- [x] Wished restaurant list keeps the existing `SpaceCard` reuse and `Link` detail navigation to `/places/{placeId}`
+- [x] Loading, empty, and error states now use Korean Honeytong copy and rounded white message/skeleton cards
+- [x] Preserved existing wishlist filtering from `place.isWished`, `onToggleWish(place.id)` flow, localStorage-backed wishlist state in the parent app, and bottom navigation structure
+- [x] Verification passed: frontend lint, frontend build, TypeScript build step through `npm run build`, and `git diff --check`; no standalone `typecheck` script exists in `frontend/package.json`
 
 Next task:
 
-Frontend MVP polish and QA pass
+MyPage UI/UX refactoring first pass
 
-- run the frontend against the latest local target backend
-- verify Korean copy, mobile-first layout, loading/empty/error states, and admin/user flow usability
-- keep all policy and validation decisions server-driven
-- do not include raw secrets, recipient phone, verification code, or provider credentials
+- keep the refactor limited to `frontend/src/pages/MyPage.tsx` and only directly necessary shared component tweaks
+- align My Page header copy, profile summary, verification/status cards, activity summaries, empty/fallback copy, and mobile bottom spacing with the UI/UX Harness baseline
+- preserve existing profile/status/region/phone/place APIs, auth/logout flow, local UI state, and Korean UI copy
+- verify loading/error/non-login states, phone/region status display, and build/lint after the change
 - recommended reasoning level: medium
 
 ---
