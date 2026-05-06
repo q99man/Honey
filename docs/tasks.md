@@ -332,6 +332,7 @@ The goal is:
 - [x] Create and push release candidate documentation commit
 - [x] Add release candidate PR draft
 - [x] Open release candidate PR
+- [x] Merge release candidate PR after CI success
 
 ---
 

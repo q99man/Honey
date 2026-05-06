@@ -376,6 +376,7 @@ All documents are consistent with each other.
 - [x] Release candidate PR draft added at `docs/mvp-release-pr-draft.md` because the local environment has no `gh` CLI or authenticated GitHub connector for direct PR creation
 - [x] Release candidate PR creation page opened in the local browser and the prepared PR body was copied to the clipboard for manual submission through the user's authenticated GitHub session
 - [x] Release candidate PR opened at `https://github.com/q99man/Honey/pull/1`; PR is open, not draft, currently mergeable, and the latest check-run poll found one `test` check successful and one `test` check still in progress
+- [x] Release candidate PR #1 passed both `test` check runs and was squash-merged into `main` as `7759ca6 docs: prepare MVP release runbook`; local `main` was fast-forwarded to the merged remote state
 
 ---
 
@@ -432,11 +433,11 @@ Next implementation order:
 
 Next task:
 
-Monitor release candidate PR CI
+Run post-merge release readiness check
 
-- monitor `https://github.com/q99man/Honey/pull/1` until all CI checks finish
-- address any CI or reviewer feedback without changing release policy behavior
-- merge only after CI is green and the release runbook is accepted
+- run a final post-merge verification on `main`
+- confirm the release runbook and PR draft are available from `main`
+- decide whether to delete the remote release branch after confirming no follow-up PR changes are needed
 - recommended reasoning level: medium
 
 ---
