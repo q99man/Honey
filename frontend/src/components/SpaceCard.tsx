@@ -9,6 +9,7 @@ type Props = {
   isWished?: boolean;
   imageUrl?: string;
   onToggleWish?: (event: MouseEvent<HTMLButtonElement>) => void;
+  compact?: boolean;
 };
 
 export default function SpaceCard({
@@ -20,6 +21,7 @@ export default function SpaceCard({
   isWished = false,
   imageUrl,
   onToggleWish,
+  compact = false,
 }: Props) {
   const metaItems = [
     distance,
@@ -29,7 +31,7 @@ export default function SpaceCard({
 
   return (
     <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
-      <div className="relative h-36 bg-[#fff1bf]">
+      <div className={`relative bg-[#fff1bf] ${compact ? "h-28" : "h-36"}`}>
         {imageUrl ? (
           <img
             src={imageUrl}
@@ -58,14 +60,18 @@ export default function SpaceCard({
         )}
       </div>
 
-      <div className="p-4">
-        <h3 className="line-clamp-1 text-base font-bold text-[#2b210f]">
+      <div className={compact ? "p-3" : "p-4"}>
+        <h3 className="line-clamp-1 text-base font-bold leading-6 text-[#2b210f]">
           {title}
         </h3>
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">
+        <p
+          className={`${compact ? "mt-1" : "mt-2"} line-clamp-2 text-sm leading-6 text-gray-600`}
+        >
           {desc || "동네 사람들이 추천한 꿀맛집이에요."}
         </p>
-        <p className="mt-3 line-clamp-1 text-xs font-semibold text-gray-500">
+        <p
+          className={`${compact ? "mt-2" : "mt-3"} line-clamp-1 text-xs font-semibold text-gray-500`}
+        >
           {metaItems.join(" · ")}
         </p>
       </div>

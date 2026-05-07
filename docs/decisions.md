@@ -325,9 +325,13 @@ Use Kakao Map and Kakao Local API as the MVP map provider.
 - API keys are loaded from local environment variables
 - `.env` is ignored by Git and `.env.example` documents required variable names
 - backend reads `KAKAO_REST_API_KEY`, `KAKAO_JAVASCRIPT_KEY`, and `KAKAO_LOCAL_BASE_URL`
-- frontend can read `VITE_KAKAO_JAVASCRIPT_KEY`
-- Home uses Kakao Maps JavaScript SDK when `VITE_KAKAO_JAVASCRIPT_KEY` is present and renders markers from place API latitude/longitude fields
-- When the frontend map key is missing, Home shows a Korean configuration state instead of a fixed placeholder map
+- frontend reads `VITE_KAKAO_MAP_JAVASCRIPT_KEY` for the Kakao Maps JavaScript SDK, with `VITE_KAKAO_JAVASCRIPT_KEY` kept as a legacy local-development fallback
+- frontend `vite.config.ts` sets `envDir` to the repository root so `cd frontend && npm run dev` can read the root `.env`
+- Home and place Detail use a shared Kakao Maps JavaScript SDK loader when the frontend Kakao JavaScript key is present
+- Home renders markers from place API latitude/longitude fields, and Detail renders the selected place coordinate when available
+- When the frontend map key is missing, map surfaces show Korean configuration states instead of a fixed placeholder map
+- Kakao Developers JavaScript SDK domains must include the actual frontend origins that load the SDK, such as `http://localhost:5173` and `http://127.0.0.1:5173`; add any additional deployed, staging, LAN, or alternate dev-server origins before using them
+- After changing `.env` values for Vite, restart `npm run dev` because Vite only exposes environment variables from the dev-server process environment at startup
 
 ### Reason
 - Kakao Local API directly supports coordinate-to-region-code conversion

@@ -98,7 +98,7 @@ Optional ranking scheduler values:
 Set these values for the frontend build/deployment environment:
 
 - `VITE_API_BASE_URL`
-- `VITE_KAKAO_JAVASCRIPT_KEY`
+- `VITE_KAKAO_MAP_JAVASCRIPT_KEY`
 
 Confirm the frontend build is produced after environment values are set:
 

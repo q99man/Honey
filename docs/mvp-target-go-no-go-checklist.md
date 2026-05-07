@@ -51,7 +51,7 @@ Required backend secret/config:
 Required frontend config:
 
 - [ ] `VITE_API_BASE_URL`
-- [ ] `VITE_KAKAO_JAVASCRIPT_KEY`
+- [ ] `VITE_KAKAO_MAP_JAVASCRIPT_KEY`
 
 Safety defaults:
 

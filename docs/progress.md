@@ -438,14 +438,22 @@ Recent update:
 - [x] Place list-shaped API responses now include `latitude` and `longitude` so Home can render map markers from real backend data
 - [x] Frontend `Place` mapping now carries place coordinates through list, search, nearby, wishlist, ranking source data, and My Page registered-place reads
 - [x] Kakao map markers navigate to `/places/{id}` through the existing detail route and existing card/wishlist/search/category flows were preserved
-- [x] When `VITE_KAKAO_JAVASCRIPT_KEY` is missing, Home shows a Korean map configuration state instead of a fixed fake map
+- [x] Home now reads `VITE_KAKAO_MAP_JAVASCRIPT_KEY` for the Kakao Maps JavaScript SDK while keeping `VITE_KAKAO_JAVASCRIPT_KEY` as a legacy local-development fallback
+- [x] When the frontend Kakao JavaScript key is missing, Home shows a Korean map configuration state instead of a fixed fake map
+- [x] Kakao map setup docs now record JavaScript SDK domain registration requirements and the need to restart `npm run dev` after `.env` changes
+- [x] Local UI smoke restaurant sample SQL was regenerated with UTF-8 Korean place data, 10 map-ready sample places, representative images/fallback cases, and DEV ranking rows
+- [x] Kakao Maps JavaScript SDK loading was moved to a shared frontend loader, Vite now reads root `.env` through `envDir`, and Detail shows a Kakao map for place coordinates
+- [x] Home sample restaurant data regression was traced to root `.env` injecting `VITE_API_BASE_URL=http://localhost:5173`; Vite dev now proxies `/api` to the backend so existing list/search/category API flows keep working in local development
+- [x] Real-key mobile QA covered Home and Detail at 360px, 393px, and 430px; Home card density and Detail report-button wrapping were minimally adjusted while API, routing, backend, and Home/App data state flows remained unchanged
+- [x] Seeded mobile QA covered Ranking, Wishlist, and My Page at 360px, 393px, and 430px; no UI code changes were needed because list cards, ranking filters, authenticated/guest My Page states, Korean text, and bottom navigation spacing remained usable without horizontal overflow
+- [x] Mobile user-flow smoke covered Home map/list load, search result and empty states, category filtering, Home/Ranking to Detail navigation, Detail wishlist toggle, Wishlist add/remove and empty state, Ranking navigation, and My Page guest/authenticated long-nickname states at 360px, 393px, and 430px; no code changes were needed because API/routing/state flows and mobile layout remained stable
 - [x] API spec and architecture decision notes were updated for API-backed Home map markers
 
 Next task:
 
 2nd UI polish round
 
-- configure `VITE_KAKAO_JAVASCRIPT_KEY` locally and rerun seeded browser QA for Home at 393px, 430px, tablet, and desktop widths with the real map visible
+- configure `VITE_KAKAO_MAP_JAVASCRIPT_KEY` locally and rerun seeded browser QA for Home at 393px, 430px, tablet, and desktop widths with the real map visible
 - then polish Detail/Ranking/Wishlist/MyPage spacing only where the seeded QA pass shows real overlap or density issues
 - consider map marker labels or selected-place highlighting after the base Kakao map smoke passes
 - recommended reasoning level: medium

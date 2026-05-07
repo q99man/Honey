@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getApiErrorMessage, hasStoredAccessToken } from "../api/http";
 import {
@@ -22,6 +22,12 @@ import {
   type RankingRegionType,
 } from "../api/rankingApi";
 import { createReport, type ReportTargetType } from "../api/reportApi";
+import {
+  getKakaoMapJavaScriptKey,
+  loadKakaoMapSdk,
+  type KakaoMap,
+  type KakaoMarker,
+} from "../lib/loadKakaoMapSdk";
 import type { Place } from "../types/place";
 
 type Props = {
@@ -412,6 +418,7 @@ export default function DetailPage({
             <p className="mt-3 rounded-2xl bg-[#fffaf0] p-3 text-sm leading-6 text-[#2b210f]">
               {place.address || "주소 정보가 아직 준비되지 않았어요."}
             </p>
+            <PlaceLocationMap place={place} />
           </section>
 
           <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
@@ -446,7 +453,7 @@ export default function DetailPage({
                 onClick={() =>
                   setReportTarget({ type: "PLACE", id: place.id })
                 }
-                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600"
+                className="shrink-0 whitespace-nowrap rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600"
               >
                 신고
               </button>
@@ -678,6 +685,88 @@ function SectionHeader({ title, desc }: { title: string; desc: string }) {
     <div>
       <h2 className="text-lg font-bold text-[#2b210f]">{title}</h2>
       <p className="mt-1 text-sm leading-5 text-gray-500">{desc}</p>
+    </div>
+  );
+}
+
+function PlaceLocationMap({ place }: { place: Place }) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<KakaoMap | null>(null);
+  const markerRef = useRef<KakaoMarker | null>(null);
+  const [loadFailed, setLoadFailed] = useState(false);
+  const appKey = getKakaoMapJavaScriptKey();
+  const hasCoordinates =
+    Number.isFinite(place.latitude) && Number.isFinite(place.longitude);
+
+  useEffect(() => {
+    if (!appKey || !hasCoordinates || !containerRef.current) {
+      return;
+    }
+
+    let canceled = false;
+    setLoadFailed(false);
+
+    loadKakaoMapSdk(appKey)
+      .then((kakao) => {
+        if (canceled || !containerRef.current) {
+          return;
+        }
+
+        const center = new kakao.maps.LatLng(place.latitude, place.longitude);
+        const map =
+          mapRef.current ??
+          new kakao.maps.Map(containerRef.current, {
+            center,
+            level: 4,
+          });
+
+        markerRef.current?.setMap(null);
+        markerRef.current = new kakao.maps.Marker({
+          map,
+          position: center,
+          title: place.title,
+        });
+        map.setCenter(center);
+        mapRef.current = map;
+      })
+      .catch(() => {
+        if (!canceled) {
+          mapRef.current = null;
+          markerRef.current = null;
+          setLoadFailed(true);
+        }
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [appKey, hasCoordinates, place.latitude, place.longitude, place.title]);
+
+  if (!hasCoordinates) {
+    return <MapStatus title="위치 정보가 준비되지 않았어요." />;
+  }
+
+  if (!appKey) {
+    return <MapStatus title="카카오맵 키가 설정되지 않았어요." />;
+  }
+
+  if (loadFailed) {
+    return <MapStatus title="지도를 불러오지 못했어요." />;
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      aria-label={`${place.title} 지도`}
+      className="mt-3 h-48 overflow-hidden rounded-2xl bg-[#eaf2e4]"
+    />
+  );
+}
+
+function MapStatus({ title }: { title: string }) {
+  return (
+    <div className="mt-3 flex h-48 items-center justify-center rounded-2xl bg-[#eaf2e4] px-4 text-center">
+      <p className="text-sm font-semibold text-[#2b210f]">{title}</p>
     </div>
   );
 }

@@ -69,6 +69,8 @@ cd frontend
 npm run dev -- --host 127.0.0.1
 ```
 
+The Vite config points `envDir` at the repository root, so the standard local dev server reads the root `.env` even when it is started from `frontend`. The frontend only exposes variables prefixed with `VITE_`; Kakao Maps uses `VITE_KAKAO_MAP_JAVASCRIPT_KEY` first and accepts `VITE_KAKAO_JAVASCRIPT_KEY` only as a legacy fallback. If you run Vite with a different config or from another working directory, create a private `frontend/.env.local` from `frontend/.env.example` and restart `npm run dev`. Do not commit real key files.
+
 ## Restart Rule
 
 After changing Windows system environment variables:
@@ -76,5 +78,7 @@ After changing Windows system environment variables:
 - restart the backend process
 - restart the Vite dev server
 - reload the in-app browser page
+
+After changing `.env` or `.env.local`, restart the Vite dev server; browser reload alone does not update `import.meta.env` values.
 
 Do not rely on Git hooks for local verification. Run explicit project commands instead.

@@ -168,7 +168,7 @@ Recommended explicit backend environment:
 Required frontend environment:
 
 - `VITE_API_BASE_URL`
-- `VITE_KAKAO_JAVASCRIPT_KEY`
+- `VITE_KAKAO_MAP_JAVASCRIPT_KEY`
 
 ---
 
