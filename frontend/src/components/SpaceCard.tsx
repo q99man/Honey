@@ -1,4 +1,4 @@
-import { useState } from "react";
+import type { MouseEvent } from "react";
 
 type Props = {
   title: string;
@@ -6,9 +6,9 @@ type Props = {
   distance: string;
   rating: number;
   price: string;
-  imageUrl?: string;
   isWished?: boolean;
-  onToggleWish?: () => void;
+  imageUrl?: string;
+  onToggleWish?: (event: MouseEvent<HTMLButtonElement>) => void;
 };
 
 export default function SpaceCard({
@@ -17,79 +17,58 @@ export default function SpaceCard({
   distance,
   rating,
   price,
-  imageUrl,
   isWished = false,
+  imageUrl,
   onToggleWish,
 }: Props) {
-  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
-  const showImage = Boolean(imageUrl && imageUrl !== failedImageUrl);
-  const metaItems = [distance, `별 ${rating}`].filter(Boolean);
+  const metaItems = [
+    distance,
+    rating > 0 ? `별점 ${rating}` : "별점 준비 중",
+    price,
+  ].filter(Boolean);
 
   return (
-    <div className="relative rounded-3xl border border-gray-100 bg-white p-3 text-left shadow-sm transition duration-200 active:scale-[0.98]">
-      <div className="flex gap-3">
-        <div className="flex aspect-[4/3] w-28 max-w-[34%] shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-[#fff1bf] text-center text-xs font-semibold leading-4 text-[#5c3b13]">
-          {showImage ? (
-            <img
-              src={imageUrl}
-              alt={`${title} 대표 이미지`}
-              className="h-full w-full object-cover"
-              loading="lazy"
-              onError={() => setFailedImageUrl(imageUrl ?? null)}
-            />
-          ) : (
-            <span>
-              꿀맛집
-              <br />
-              이미지 준비 중
-            </span>
-          )}
-        </div>
+    <article className="overflow-hidden rounded-3xl bg-white shadow-sm">
+      <div className="relative h-36 bg-[#fff1bf]">
+        {imageUrl ? (
+          <img
+            src={imageUrl}
+            alt={`${title} 대표 이미지`}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm font-semibold leading-6 text-[#8a6315]">
+            꿀맛집 이미지 준비 중
+          </div>
+        )}
 
-        <div
-          className={`flex min-w-0 flex-1 flex-col gap-1 ${
-            onToggleWish ? "pr-9" : ""
-          }`}
-        >
-          <div className="line-clamp-1 text-base font-semibold text-[#2b210f]">
-            {title}
-          </div>
-          <div className="line-clamp-2 text-sm leading-5 text-gray-600">
-            {desc || "동네 사람들이 추천한 맛집이에요."}
-          </div>
-
-          <div className="mt-auto flex flex-wrap items-center gap-1.5 text-xs text-gray-500">
-            {metaItems.map((item) => (
-              <span key={item} className="max-w-full truncate">
-                {item}
-              </span>
-            ))}
-            {price && (
-              <span className="max-w-full truncate rounded-full bg-[#fff1bf] px-2 py-0.5 font-semibold text-[#5c3b13]">
-                {price}
-              </span>
-            )}
-          </div>
-        </div>
+        {onToggleWish && (
+          <button
+            type="button"
+            aria-label={isWished ? "찜 해제" : "찜하기"}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              onToggleWish(event);
+            }}
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-[#d99a00] shadow-sm transition active:scale-95"
+          >
+            {isWished ? "♥" : "♡"}
+          </button>
+        )}
       </div>
 
-      {onToggleWish && (
-        <button
-          type="button"
-          aria-label={isWished ? "찜 해제" : "찜하기"}
-          aria-pressed={isWished}
-          onClick={(event) => {
-            event.preventDefault();
-            event.stopPropagation();
-            onToggleWish();
-          }}
-          className={`absolute right-3 top-3 flex h-11 w-11 items-center justify-center rounded-full bg-white text-lg shadow-sm transition duration-200 active:scale-[0.96] ${
-            isWished ? "text-[#d99a00]" : "text-gray-400"
-          }`}
-        >
-          {isWished ? "♥" : "♡"}
-        </button>
-      )}
-    </div>
+      <div className="p-4">
+        <h3 className="line-clamp-1 text-base font-bold text-[#2b210f]">
+          {title}
+        </h3>
+        <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">
+          {desc || "동네 사람들이 추천한 꿀맛집이에요."}
+        </p>
+        <p className="mt-3 line-clamp-1 text-xs font-semibold text-gray-500">
+          {metaItems.join(" · ")}
+        </p>
+      </div>
+    </article>
   );
 }

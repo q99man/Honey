@@ -1,30 +1,46 @@
-export default function CategoryTabs() {
-  return (
-    <div className="mt-4 flex gap-2 overflow-x-auto px-4 pb-1">
-      <Tab active label="전체" />
-      <Tab label="한식" />
-      <Tab label="분식" />
-      <Tab label="카페" />
-      <Tab label="일식" />
-    </div>
-  );
-}
-
-type TabProps = {
+type CategoryOption = {
   label: string;
-  active?: boolean;
+  value: string;
 };
 
-function Tab({ label, active = false }: TabProps) {
+const categoryOptions: CategoryOption[] = [
+  { label: "전체", value: "ALL" },
+  { label: "한식", value: "KOREAN" },
+  { label: "분식", value: "SNACK" },
+  { label: "카페", value: "CAFE" },
+  { label: "일식", value: "JAPANESE" },
+];
+
+type Props = {
+  selectedCategory: string;
+  onSelectCategory: (value: string) => void;
+};
+
+export default function CategoryTabs({
+  selectedCategory,
+  onSelectCategory,
+}: Props) {
   return (
-    <div
-      className={`flex h-10 shrink-0 items-center rounded-full border px-4 ${
-        active
-          ? "border-[#f6b800] bg-[#f6b800] text-[#2b210f]"
-          : "border-gray-200 bg-white text-gray-600"
-      }`}
-    >
-      <span className="text-sm font-semibold">{label}</span>
+    <div className="flex gap-2 overflow-x-auto pb-1">
+      {categoryOptions.map((category) => {
+        const active = selectedCategory === category.value;
+
+        return (
+          <button
+            key={category.value}
+            type="button"
+            aria-pressed={active}
+            onClick={() => onSelectCategory(category.value)}
+            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+              active
+                ? "bg-[#f6b800] text-[#2b210f]"
+                : "bg-white text-gray-500"
+            }`}
+          >
+            {category.label}
+          </button>
+        );
+      })}
     </div>
   );
 }

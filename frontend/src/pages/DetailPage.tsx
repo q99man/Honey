@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { getApiErrorMessage, hasStoredAccessToken } from "../api/http";
 import {
@@ -19,10 +19,9 @@ import { getPlace } from "../api/placeApi";
 import {
   getPlaceRankingHistory,
   type PlaceRankingHistory,
+  type RankingRegionType,
 } from "../api/rankingApi";
 import { createReport, type ReportTargetType } from "../api/reportApi";
-import { getMyProfile } from "../api/userApi";
-import BottomNav from "../components/BottomNav";
 import type { Place } from "../types/place";
 
 type Props = {
@@ -35,27 +34,22 @@ type BusyAction =
   | "recommend"
   | "visit"
   | "comment"
-  | "delete"
+  | "comment-delete"
   | "report"
   | null;
-
-type ReportTarget = {
-  type: ReportTargetType;
-  id: number;
-  label: string;
-};
 
 const PLACE_NOT_FOUND = "해당 맛집을 찾을 수 없어요.";
 const PLACE_LOAD_ERROR = "맛집 정보를 불러오지 못했어요.";
 const LOGIN_REQUIRED = "로그인이 필요한 기능이에요.";
 const GEOLOCATION_UNAVAILABLE = "현재 위치를 확인할 수 없어요.";
 const PLACE_IMAGE_FALLBACK = "꿀맛집 이미지 준비 중";
-const REPORT_REASON_OPTIONS = [
-  { value: "FAKE_INFO", label: "잘못된 정보" },
-  { value: "FRANCHISE", label: "프랜차이즈 의심" },
-  { value: "SPAM", label: "스팸/홍보" },
-  { value: "ABUSE", label: "부적절한 내용" },
-  { value: "OTHER", label: "기타" },
+
+const reportReasons = [
+  { code: "FAKE_INFO", label: "잘못된 정보" },
+  { code: "FRANCHISE", label: "프랜차이즈로 보여요" },
+  { code: "SPAM", label: "스팸 또는 홍보" },
+  { code: "ABUSE", label: "부적절한 내용" },
+  { code: "OTHER", label: "기타" },
 ];
 
 export default function DetailPage({
@@ -66,34 +60,55 @@ export default function DetailPage({
   const { id } = useParams();
   const navigate = useNavigate();
   const placeId = Number(id);
-  const invalidPlaceId = !placeId;
+  const invalidPlaceId = !Number.isFinite(placeId);
+  const authenticated = hasStoredAccessToken();
+
   const [place, setPlace] = useState<Place | null>(null);
-  const [history, setHistory] = useState<PlaceRankingHistory | null>(null);
-  const [comments, setComments] = useState<CommentItem[]>([]);
-  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
   const [recommendationPolicy, setRecommendationPolicy] =
     useState<RecommendationPolicy | null>(null);
   const [visitPolicy, setVisitPolicy] = useState<VisitPolicy | null>(null);
-  const [commentText, setCommentText] = useState("");
-  const [reportTarget, setReportTarget] = useState<ReportTarget | null>(null);
-  const [reportReasonCode, setReportReasonCode] = useState("OTHER");
-  const [reportReasonText, setReportReasonText] = useState("");
-  const [loading, setLoading] = useState(!invalidPlaceId);
-  const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [history, setHistory] = useState<PlaceRankingHistory | null>(null);
+  const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [actionMessage, setActionMessage] = useState<string | null>(null);
-  const [failedImageUrl, setFailedImageUrl] = useState<string | null>(null);
+  const [message, setMessage] = useState<string | null>(null);
+  const [busyAction, setBusyAction] = useState<BusyAction>(null);
+  const [commentText, setCommentText] = useState("");
+  const [editingCommentId, setEditingCommentId] = useState<number | null>(null);
+  const [reportTarget, setReportTarget] = useState<{
+    type: ReportTargetType;
+    id: number;
+  } | null>(null);
+  const [reportReason, setReportReason] = useState(reportReasons[0].code);
+  const [reportText, setReportText] = useState("");
 
-  const authenticated = hasStoredAccessToken();
-  const myComment = useMemo(
-    () => comments.find((comment) => comment.userId === currentUserId) ?? null,
-    [comments, currentUserId],
-  );
-  const alreadyRecommended =
-    recommendationPolicy?.reason === "ALREADY_RECOMMENDED";
-  const showHeroImage = Boolean(
-    place?.imageUrl && place.imageUrl !== failedImageUrl,
-  );
+  const refreshPlace = useCallback(async () => {
+    const nextPlace = await getPlace(placeId);
+    const nextPlaceWithWish = {
+      ...nextPlace,
+      isWished: wishedIds.has(nextPlace.id),
+    };
+    setPlace(nextPlaceWithWish);
+    onPlaceUpdated(nextPlaceWithWish);
+    return nextPlaceWithWish;
+  }, [onPlaceUpdated, placeId, wishedIds]);
+
+  const loadParticipation = useCallback(async () => {
+    const [nextRecommendationPolicy, nextVisitPolicy, nextComments, nextHistory] =
+      await Promise.all([
+        settle(authenticated ? getRecommendationPolicy(placeId) : null),
+        settle(authenticated ? getVisitPolicy(placeId) : null),
+        settle(getPlaceComments(placeId)),
+        settle(getPlaceRankingHistory(placeId)),
+      ]);
+
+    setRecommendationPolicy(
+      nextRecommendationPolicy.ok ? nextRecommendationPolicy.value : null,
+    );
+    setVisitPolicy(nextVisitPolicy.ok ? nextVisitPolicy.value : null);
+    setComments(nextComments.ok ? nextComments.value : []);
+    setHistory(nextHistory.ok ? nextHistory.value : null);
+  }, [authenticated, placeId]);
 
   useEffect(() => {
     if (invalidPlaceId) {
@@ -103,57 +118,12 @@ export default function DetailPage({
     let mounted = true;
     Promise.resolve()
       .then(async () => {
-        setLoading(true);
-        const [item, rankingHistory, commentItems] = await Promise.all([
-          getPlace(placeId),
-          getPlaceRankingHistory(placeId),
-          getPlaceComments(placeId),
-        ]);
-
-        const optional = authenticated
-          ? await Promise.allSettled([
-              getMyProfile(),
-              getRecommendationPolicy(placeId),
-              getVisitPolicy(placeId),
-            ])
-          : [];
-
-        return { item, rankingHistory, commentItems, optional };
-      })
-      .then(({ item, rankingHistory, commentItems, optional }) => {
-        if (!mounted) {
-          return;
+        if (mounted) {
+          setLoading(true);
+          setErrorMessage(null);
         }
-
-        const nextPlace = { ...item, isWished: wishedIds.has(item.id) };
-        setPlace(nextPlace);
-        setHistory(rankingHistory);
-        setComments(commentItems);
-        setErrorMessage(null);
-
-        const profileResult = optional[0];
-        const recommendationResult = optional[1];
-        const visitResult = optional[2];
-
-        if (profileResult?.status === "fulfilled") {
-          setCurrentUserId(profileResult.value.id);
-          const ownComment = commentItems.find(
-            (comment) => comment.userId === profileResult.value.id,
-          );
-          setCommentText(ownComment?.content ?? "");
-        } else {
-          setCurrentUserId(null);
-        }
-        if (recommendationResult?.status === "fulfilled") {
-          setRecommendationPolicy(recommendationResult.value);
-        } else {
-          setRecommendationPolicy(null);
-        }
-        if (visitResult?.status === "fulfilled") {
-          setVisitPolicy(visitResult.value);
-        } else {
-          setVisitPolicy(null);
-        }
+        await refreshPlace();
+        await loadParticipation();
       })
       .catch((error) => {
         if (mounted) {
@@ -169,435 +139,466 @@ export default function DetailPage({
     return () => {
       mounted = false;
     };
-  }, [authenticated, invalidPlaceId, placeId, wishedIds]);
+  }, [invalidPlaceId, loadParticipation, refreshPlace]);
 
-  if (invalidPlaceId) {
-    return (
-      <div className="min-h-screen bg-neutral-100">
-        <main className="mx-auto flex min-h-screen max-w-[430px] items-center justify-center bg-[#fffaf0] px-4 pb-24 text-center">
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-[#2b210f]">
-              해당 맛집을 찾을 수 없어요.
-            </p>
-            <button
-              type="button"
-              onClick={() => navigate("/")}
-              className="mt-4 rounded-full bg-[#f6b800] px-5 py-3 text-sm font-semibold text-[#2b210f] transition duration-200 active:scale-[0.98]"
-            >
-              홈으로 돌아가기
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
+  const isWished = place ? wishedIds.has(place.id) : false;
+  const alreadyRecommended =
+    recommendationPolicy?.reason === "ALREADY_RECOMMENDED";
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-neutral-100">
-        <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] pb-24">
-          <div className="animate-pulse">
-            <div className="aspect-[16/10] w-full rounded-b-3xl bg-[#fff1bf]" />
-            <div className="space-y-4 px-4 pt-5">
-              <div className="rounded-3xl bg-white p-5 text-sm text-gray-500 shadow-sm">
-                맛집 정보를 불러오는 중이에요...
-              </div>
-              <div className="rounded-3xl bg-white p-4 shadow-sm">
-                <div className="h-5 w-2/3 rounded-full bg-gray-100" />
-                <div className="mt-3 h-3 w-full rounded-full bg-gray-100" />
-                <div className="mt-2 h-3 w-1/2 rounded-full bg-gray-100" />
-              </div>
-            </div>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  if (!place || errorMessage) {
-    return (
-      <div className="min-h-screen bg-neutral-100">
-        <main className="mx-auto flex min-h-screen max-w-[430px] items-center justify-center bg-[#fffaf0] px-4 pb-24 text-center">
-          <div className="rounded-3xl bg-white p-6 shadow-sm">
-            <p className="text-sm font-semibold text-[#2b210f]">
-              {errorMessage
-                ? "맛집 정보를 불러오지 못했어요."
-                : PLACE_NOT_FOUND}
-            </p>
-            <p className="mt-2 text-sm text-gray-500">
-              {errorMessage ?? "홈에서 다른 맛집을 둘러볼 수 있어요."}
-            </p>
-            <button
-              type="button"
-              onClick={() => (errorMessage ? navigate(0) : navigate("/"))}
-              className="mt-4 rounded-full bg-[#f6b800] px-5 py-3 text-sm font-semibold text-[#2b210f] transition duration-200 active:scale-[0.98]"
-            >
-              {errorMessage ? "다시 불러오기" : "홈으로 돌아가기"}
-            </button>
-          </div>
-        </main>
-      </div>
-    );
-  }
-
-  const handleRecommendation = async () => {
+  const recommendationStatusText = useMemo(() => {
     if (!authenticated) {
-      setActionMessage(LOGIN_REQUIRED);
+      return LOGIN_REQUIRED;
+    }
+    if (!recommendationPolicy) {
+      return "추천 가능 여부를 확인하고 있어요.";
+    }
+    if (alreadyRecommended) {
+      return "이미 추천한 맛집이에요.";
+    }
+    if (!recommendationPolicy.canRecommend) {
+      return recommendationPolicy.reason ?? "지금은 추천할 수 없어요.";
+    }
+    return `오늘 추천 가능 ${recommendationPolicy.dailyRemainingCount}회`;
+  }, [alreadyRecommended, authenticated, recommendationPolicy]);
+
+  const visitStatusText = useMemo(() => {
+    if (!authenticated) {
+      return LOGIN_REQUIRED;
+    }
+    if (!visitPolicy) {
+      return "방문 인증 가능 여부를 확인하고 있어요.";
+    }
+    if (visitPolicy.canVisitNow) {
+      return `방문 인증 반경 ${visitPolicy.radiusMeter}m`;
+    }
+    if (visitPolicy.cooldownUntil) {
+      return `다음 방문 가능: ${formatDateTime(visitPolicy.cooldownUntil)}`;
+    }
+    return "지금은 방문 인증할 수 없어요.";
+  }, [authenticated, visitPolicy]);
+
+  const handleRecommend = async () => {
+    if (!place) {
+      return;
+    }
+    if (!authenticated) {
+      setMessage(LOGIN_REQUIRED);
       return;
     }
 
     setBusyAction("recommend");
-    setActionMessage(null);
+    setMessage(null);
     try {
       const result = alreadyRecommended
         ? await cancelRecommendation(place.id)
         : await recommendPlace(place.id);
-      const nextPolicy = await getRecommendationPolicy(place.id);
       const nextPlace = {
         ...place,
         recommendCount: result.recommendCount,
+        isWished,
       };
       setPlace(nextPlace);
-      setRecommendationPolicy(nextPolicy);
       onPlaceUpdated(nextPlace);
-      setActionMessage(
-        result.recommended
-          ? "추천을 남겼어요."
-          : "추천을 취소했어요.",
-      );
+      await loadParticipation();
+      setMessage(result.recommended ? "추천을 남겼어요." : "추천을 취소했어요.");
     } catch (error) {
-      setActionMessage(
-        getApiErrorMessage(error, "추천 요청을 처리하지 못했어요."),
-      );
+      setMessage(getApiErrorMessage(error, "추천을 처리하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
   };
 
   const handleVisit = async () => {
+    if (!place) {
+      return;
+    }
     if (!authenticated) {
-      setActionMessage(LOGIN_REQUIRED);
+      setMessage(LOGIN_REQUIRED);
       return;
     }
     if (!navigator.geolocation) {
-      setActionMessage(GEOLOCATION_UNAVAILABLE);
+      setMessage(GEOLOCATION_UNAVAILABLE);
       return;
     }
 
     setBusyAction("visit");
-    setActionMessage(null);
-    try {
-      const position = await getCurrentPosition();
-      const result = await verifyVisit(
-        place.id,
-        position.coords.latitude,
-        position.coords.longitude,
-      );
-      const nextPolicy = await getVisitPolicy(place.id);
-      const nextPlace = {
-        ...place,
-        visitCount: result.visitCount,
-      };
-      setPlace(nextPlace);
-      setVisitPolicy(nextPolicy);
-      onPlaceUpdated(nextPlace);
-      setActionMessage(
-        `방문 인증 완료: ${result.distanceMeter}m, EXP +${result.expGained}`,
-      );
-    } catch (error) {
-      setActionMessage(
-        getApiErrorMessage(error, "방문 인증을 처리하지 못했어요."),
-      );
-    } finally {
-      setBusyAction(null);
-    }
+    setMessage(null);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const result = await verifyVisit(
+            place.id,
+            position.coords.latitude,
+            position.coords.longitude,
+          );
+          const nextPlace = {
+            ...place,
+            visitCount: result.visitCount,
+            isWished,
+          };
+          setPlace(nextPlace);
+          onPlaceUpdated(nextPlace);
+          await loadParticipation();
+          setMessage(
+            `방문 인증 완료: ${Math.round(result.distanceMeter)}m, 경험치 +${result.expGained}`,
+          );
+        } catch (error) {
+          setMessage(getApiErrorMessage(error, "방문 인증을 처리하지 못했어요."));
+        } finally {
+          setBusyAction(null);
+        }
+      },
+      () => {
+        setBusyAction(null);
+        setMessage("위치 권한을 허용하면 방문 인증을 할 수 있어요.");
+      },
+      { enableHighAccuracy: true, timeout: 10000 },
+    );
   };
 
-  const handleSubmitComment = async () => {
+  const handleCommentSubmit = async () => {
     if (!authenticated) {
-      setActionMessage(LOGIN_REQUIRED);
+      setMessage(LOGIN_REQUIRED);
       return;
     }
-
     const content = commentText.trim();
     if (!content) {
-      setActionMessage("평가 내용을 입력해 주세요.");
+      setMessage("댓글 내용을 입력해주세요.");
       return;
     }
 
     setBusyAction("comment");
-    setActionMessage(null);
+    setMessage(null);
     try {
-      if (myComment) {
-        await updateComment(myComment.commentId, content);
+      if (editingCommentId) {
+        await updateComment(editingCommentId, content);
+        setMessage("댓글을 수정했어요.");
       } else {
-        await createComment(place.id, content);
+        await createComment(placeId, content);
+        setMessage("댓글을 남겼어요.");
       }
-      await refreshPlaceAndComments();
-      setActionMessage(myComment ? "평가를 수정했어요." : "평가를 남겼어요.");
-    } catch (error) {
-      setActionMessage(
-        getApiErrorMessage(error, "평가 요청을 처리하지 못했어요."),
-      );
-    } finally {
-      setBusyAction(null);
-    }
-  };
-
-  const handleDeleteComment = async () => {
-    if (!myComment) {
-      return;
-    }
-
-    setBusyAction("delete");
-    setActionMessage(null);
-    try {
-      await deleteComment(myComment.commentId);
       setCommentText("");
-      await refreshPlaceAndComments();
-      setActionMessage("평가를 삭제했어요.");
+      setEditingCommentId(null);
+      await refreshPlace();
+      await loadParticipation();
     } catch (error) {
-      setActionMessage(
-        getApiErrorMessage(error, "평가 삭제를 처리하지 못했어요."),
-      );
+      setMessage(getApiErrorMessage(error, "댓글을 저장하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
   };
 
-  const handleOpenReport = (target: ReportTarget) => {
-    if (!authenticated) {
-      setActionMessage(LOGIN_REQUIRED);
-      return;
+  const handleCommentDelete = async (commentId: number) => {
+    setBusyAction("comment-delete");
+    setMessage(null);
+    try {
+      await deleteComment(commentId);
+      setMessage("댓글을 삭제했어요.");
+      await refreshPlace();
+      await loadParticipation();
+    } catch (error) {
+      setMessage(getApiErrorMessage(error, "댓글을 삭제하지 못했어요."));
+    } finally {
+      setBusyAction(null);
     }
-
-    setReportTarget(target);
-    setReportReasonCode("OTHER");
-    setReportReasonText("");
-    setActionMessage(null);
   };
 
-  const handleSubmitReport = async () => {
-    if (!authenticated) {
-      setActionMessage(LOGIN_REQUIRED);
+  const handleReport = async () => {
+    if (!reportTarget) {
       return;
     }
-    if (!reportTarget) {
+    if (!authenticated) {
+      setMessage(LOGIN_REQUIRED);
       return;
     }
 
     setBusyAction("report");
-    setActionMessage(null);
+    setMessage(null);
     try {
       await createReport({
         targetType: reportTarget.type,
         targetId: reportTarget.id,
-        reasonCode: reportReasonCode,
-        reasonText: reportReasonText.trim() || null,
+        reasonCode: reportReason,
+        reasonText: reportText.trim() || null,
       });
       setReportTarget(null);
-      setReportReasonText("");
-      setActionMessage("신고를 접수했어요. 운영자가 확인할게요.");
+      setReportText("");
+      setReportReason(reportReasons[0].code);
+      setMessage("신고를 접수했어요. 운영자가 확인할게요.");
     } catch (error) {
-      setActionMessage(
-        getApiErrorMessage(error, "신고 요청을 처리하지 못했어요."),
-      );
+      setMessage(getApiErrorMessage(error, "신고를 접수하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
   };
 
-  const refreshPlaceAndComments = async () => {
-    const [nextPlaceResponse, nextComments] = await Promise.all([
-      getPlace(place.id),
-      getPlaceComments(place.id),
-    ]);
-    const nextPlace = {
-      ...nextPlaceResponse,
-      isWished: wishedIds.has(nextPlaceResponse.id),
-    };
-    setPlace(nextPlace);
-    setComments(nextComments);
-    onPlaceUpdated(nextPlace);
-  };
+  if (invalidPlaceId) {
+    return (
+      <Shell
+        message={PLACE_NOT_FOUND}
+        actionLabel="홈으로 돌아가기"
+        onAction={() => navigate("/")}
+      />
+    );
+  }
+
+  if (loading) {
+    return <Shell message="맛집 정보를 불러오는 중이에요." />;
+  }
+
+  if (errorMessage || !place) {
+    return (
+      <Shell
+        message={errorMessage ?? PLACE_NOT_FOUND}
+        actionLabel="홈으로 돌아가기"
+        onAction={() => navigate("/")}
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-neutral-100">
       <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] pb-24">
-        <div className="relative flex aspect-[16/10] w-full items-center justify-center overflow-hidden rounded-b-3xl bg-[#fff1bf] text-center text-sm font-semibold leading-5 text-[#5c3b13]">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="absolute left-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-lg font-semibold text-[#2b210f] shadow-sm transition duration-200 active:scale-[0.96]"
-            aria-label="뒤로가기"
-          >
-            ←
-          </button>
-
-          <button
-            type="button"
-            onClick={(event) => {
-              event.preventDefault();
-              event.stopPropagation();
-              onToggleWish(place.id);
-            }}
-            className={`absolute right-4 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-full bg-white/90 text-lg shadow-sm transition duration-200 active:scale-[0.96] ${
-              place.isWished ? "text-[#d99a00]" : "text-gray-500"
-            }`}
-            aria-label={place.isWished ? "찜 해제" : "찜하기"}
-            aria-pressed={place.isWished}
-          >
-            {place.isWished ? "♥" : "♡"}
-          </button>
-
-          {showHeroImage ? (
+        <section className="relative h-64 bg-[#fff1bf]">
+          {place.imageUrl ? (
             <img
               src={place.imageUrl}
               alt={`${place.title} 대표 이미지`}
               className="h-full w-full object-cover"
-              onError={() => setFailedImageUrl(place.imageUrl ?? null)}
             />
           ) : (
-            <span>{PLACE_IMAGE_FALLBACK}</span>
+            <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-[#8a6315]">
+              {PLACE_IMAGE_FALLBACK}
+            </div>
+          )}
+          <button
+            type="button"
+            aria-label="뒤로가기"
+            onClick={() => navigate(-1)}
+            className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#2b210f] shadow-sm"
+          >
+            ‹
+          </button>
+          <button
+            type="button"
+            aria-label={isWished ? "찜 해제" : "찜하기"}
+            onClick={() => onToggleWish(place.id)}
+            className="absolute right-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#d99a00] shadow-sm"
+          >
+            {isWished ? "♥" : "♡"}
+          </button>
+        </section>
+
+        <div className="px-4">
+          <section className="-mt-8 rounded-3xl bg-white p-5 shadow-sm">
+            <p className="text-xs font-semibold text-[#d99a00]">
+              {place.regionName || "우리 동네"}
+            </p>
+            <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
+              {place.title}
+            </h1>
+            <p className="mt-3 text-sm leading-6 text-gray-600">
+              {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
+            </p>
+            <div className="mt-4 grid grid-cols-3 gap-2 text-center">
+              <Metric label="별점" value={`${place.rating || 0}`} />
+              <Metric label="추천" value={`${place.recommendCount}`} />
+              <Metric label="댓글" value={`${place.commentCount}`} />
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+            <SectionHeader title="위치 정보" desc="방문 전에 주소를 확인해보세요." />
+            <p className="mt-3 rounded-2xl bg-[#fffaf0] p-3 text-sm leading-6 text-[#2b210f]">
+              {place.address || "주소 정보가 아직 준비되지 않았어요."}
+            </p>
+          </section>
+
+          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+            <SectionHeader
+              title="참여"
+              desc="추천과 방문 인증으로 동네 랭킹에 힘을 보탤 수 있어요."
+            />
+            <div className="mt-4 grid grid-cols-2 gap-3">
+              <ActionButton
+                label={alreadyRecommended ? "추천 취소" : "추천하기"}
+                status={recommendationStatusText}
+                busy={busyAction === "recommend"}
+                onClick={handleRecommend}
+              />
+              <ActionButton
+                label="방문 인증"
+                status={visitStatusText}
+                busy={busyAction === "visit"}
+                onClick={handleVisit}
+              />
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+            <div className="flex items-start justify-between gap-3">
+              <SectionHeader
+                title="신고하기"
+                desc="잘못된 정보가 있다면 운영자에게 알려주세요."
+              />
+              <button
+                type="button"
+                onClick={() =>
+                  setReportTarget({ type: "PLACE", id: place.id })
+                }
+                className="rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600"
+              >
+                신고
+              </button>
+            </div>
+          </section>
+
+          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+            <SectionHeader title="댓글" desc="동네 이웃들의 한마디를 확인해보세요." />
+            <div className="mt-4 flex flex-col gap-3">
+              <textarea
+                value={commentText}
+                onChange={(event) => setCommentText(event.target.value)}
+                disabled={!authenticated}
+                placeholder={
+                  authenticated
+                    ? "이 맛집의 좋은 점을 짧게 남겨주세요."
+                    : "로그인하면 댓글을 남길 수 있어요."
+                }
+                className="min-h-24 rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm leading-6 outline-none focus:border-[#f6b800] disabled:opacity-60"
+              />
+              <button
+                type="button"
+                onClick={handleCommentSubmit}
+                disabled={busyAction !== null || !authenticated}
+                className="h-11 rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {busyAction === "comment"
+                  ? "저장 중..."
+                  : editingCommentId
+                    ? "댓글 수정"
+                    : "댓글 남기기"}
+              </button>
+            </div>
+
+            {comments.length === 0 ? (
+              <p className="mt-5 text-sm leading-6 text-gray-500">
+                아직 남겨진 댓글이 없어요.
+              </p>
+            ) : (
+              <div className="mt-5 space-y-3">
+                {comments.map((comment) => (
+                  <article
+                    key={comment.commentId}
+                    className="rounded-2xl bg-[#fffaf0] p-3 text-sm"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div>
+                        <p className="font-bold text-[#2b210f]">
+                          {comment.nickname || "꿀벌님"}
+                        </p>
+                        <p className="mt-1 text-xs text-gray-400">
+                          {formatDateTime(comment.createdAt)}
+                        </p>
+                      </div>
+                      <div className="flex shrink-0 gap-2">
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setEditingCommentId(comment.commentId);
+                            setCommentText(comment.content);
+                          }}
+                          className="text-xs font-semibold text-gray-500"
+                        >
+                          수정
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleCommentDelete(comment.commentId)}
+                          disabled={busyAction !== null}
+                          className="text-xs font-semibold text-red-500 disabled:opacity-50"
+                        >
+                          삭제
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setReportTarget({
+                              type: "COMMENT",
+                              id: comment.commentId,
+                            })
+                          }
+                          className="text-xs font-semibold text-gray-500"
+                        >
+                          신고
+                        </button>
+                      </div>
+                    </div>
+                    <p className="mt-3 leading-6 text-gray-700">
+                      {comment.content}
+                    </p>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+
+          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+            <SectionHeader
+              title="랭킹 히스토리"
+              desc="확정된 시즌 랭킹 기록을 모아봤어요."
+            />
+            {!history || history.items.length === 0 ? (
+              <p className="mt-4 text-sm leading-6 text-gray-500">
+                아직 확정된 랭킹 기록이 없어요.
+              </p>
+            ) : (
+              <div className="mt-4 space-y-3">
+                {history.items.slice(0, 5).map((item) => (
+                  <div
+                    key={`${item.seasonId}-${item.regionType}-${item.regionId}`}
+                    className="rounded-2xl bg-[#fffaf0] p-3 text-sm"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="font-bold text-[#2b210f]">
+                        {item.seasonName}
+                      </p>
+                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#8a6315]">
+                        {regionTypeLabel(item.regionType)} {item.rank}위
+                      </span>
+                    </div>
+                    <p className="mt-2 text-xs text-gray-500">
+                      별 {item.starLevel} · {item.totalScore}점
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+          </section>
+
+          {message && (
+            <p className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+              {message}
+            </p>
           )}
         </div>
 
-        <div className="space-y-5 px-4 pt-5">
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <div className="flex flex-wrap gap-2">
-              {place.regionName && (
-                <span className="rounded-full bg-[#fff1bf] px-3 py-1 text-xs font-semibold text-[#5c3b13]">
-                  {place.regionName}
-                </span>
-              )}
-              {place.category && (
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
-                  {place.category}
-                </span>
-              )}
-            </div>
-            <h1 className="mt-3 break-words text-2xl font-bold leading-8 text-[#2b210f]">
-              {place.title}
-            </h1>
-
-            <p className="mt-2 text-sm text-gray-500">
-              {place.distance} · 별 {place.rating} · 평가 {place.reviewCount}개
-            </p>
-
-            <p className="mt-4 inline-flex rounded-full bg-[#fff1bf] px-3 py-1 text-sm font-semibold text-[#5c3b13]">
-              {place.price}
-            </p>
-            <p className="mt-3 break-words text-sm leading-5 text-gray-700">
-              {place.desc || "동네 사람들이 추천한 맛집이에요."}
-            </p>
-            <button
-              type="button"
-              onClick={() =>
-                handleOpenReport({
-                  type: "PLACE",
-                  id: place.id,
-                  label: place.title,
-                })
-              }
-              disabled={busyAction !== null}
-              className="mt-4 rounded-full border border-red-100 bg-white px-4 py-2 text-sm font-semibold text-red-500 transition duration-200 active:scale-[0.98] disabled:opacity-50"
-            >
-              맛집 신고
-            </button>
-          </section>
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">이 맛집은요</h2>
-            <p className="mt-3 break-words text-sm leading-6 text-gray-700">
-              {place.desc || "아직 상세 정보가 준비되지 않았어요."}
-            </p>
-          </section>
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">위치 정보</h2>
-            <p className="mt-3 break-words text-sm leading-6 text-gray-700">
-              {place.address || "아직 위치 정보가 준비되지 않았어요."}
-            </p>
-          </section>
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">추천 정보</h2>
-            <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-              <div className="rounded-2xl bg-[#fffaf0] px-2 py-3">
-                <p className="text-xl font-bold text-[#2b210f]">
-                  {place.recommendCount}
-                </p>
-                <p className="text-xs text-gray-500">추천</p>
-              </div>
-              <div className="rounded-2xl bg-[#fffaf0] px-2 py-3">
-                <p className="text-xl font-bold text-[#2b210f]">
-                  {place.visitCount}
-                </p>
-                <p className="text-xs text-gray-500">방문</p>
-              </div>
-              <div className="rounded-2xl bg-[#fffaf0] px-2 py-3">
-                <p className="text-xl font-bold text-[#2b210f]">
-                  {place.commentCount}
-                </p>
-                <p className="text-xs text-gray-500">평가</p>
-              </div>
-            </div>
-          </section>
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">참여</h2>
-            <div className="mt-4 grid grid-cols-2 gap-3">
-              <button
-                type="button"
-                onClick={handleRecommendation}
-                disabled={busyAction !== null}
-                className="h-12 rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition duration-200 active:scale-[0.98] disabled:opacity-50"
-              >
-                {busyAction === "recommend"
-                  ? "처리 중"
-                  : alreadyRecommended
-                    ? "추천 취소"
-                    : "추천하기"}
-              </button>
-              <button
-                type="button"
-                onClick={handleVisit}
-                disabled={busyAction !== null}
-                className="h-12 rounded-full bg-[#2f6f5f] text-sm font-semibold text-white transition duration-200 active:scale-[0.98] disabled:opacity-50"
-              >
-                {busyAction === "visit" ? "확인 중" : "방문 인증"}
-              </button>
-            </div>
-
-            <div className="mt-3 text-sm text-gray-500">
-              {recommendationPolicy && (
-                <p>{recommendationStatusText(recommendationPolicy)}</p>
-              )}
-              {visitPolicy && <p>{visitStatusText(visitPolicy)}</p>}
-              {actionMessage && (
-                <p className="mt-2 font-semibold text-[#2f6f5f]">
-                  {actionMessage}
-                </p>
-              )}
-            </div>
-          </section>
-
-          {reportTarget && (
-            <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
+        {reportTarget && (
+          <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 px-4">
+            <section className="w-full max-w-[430px] rounded-t-3xl bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
                 <div>
                   <h2 className="text-lg font-bold text-[#2b210f]">
-                    신고하기
+                    {reportTargetLabel(reportTarget.type)} 신고
                   </h2>
                   <p className="mt-1 text-sm text-gray-500">
-                    {targetTypeLabel(reportTarget.type)} · {reportTarget.label}
+                    운영자가 확인할 수 있도록 사유를 남겨주세요.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setReportTarget(null)}
-                  disabled={busyAction !== null}
-                  className="rounded-full px-3 py-1 text-sm font-bold text-gray-400 transition duration-200 active:scale-[0.98] disabled:opacity-50"
+                  className="rounded-full border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-500"
                 >
                   닫기
                 </button>
@@ -606,228 +607,155 @@ export default function DetailPage({
               <label className="mt-4 block text-sm font-semibold text-[#2b210f]">
                 신고 사유
                 <select
-                  value={reportReasonCode}
-                  onChange={(event) => setReportReasonCode(event.target.value)}
+                  value={reportReason}
+                  onChange={(event) => setReportReason(event.target.value)}
                   className="mt-2 h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
                 >
-                  {REPORT_REASON_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
+                  {reportReasons.map((reason) => (
+                    <option key={reason.code} value={reason.code}>
+                      {reason.label}
                     </option>
                   ))}
                 </select>
               </label>
 
               <textarea
-                value={reportReasonText}
-                onChange={(event) => setReportReasonText(event.target.value)}
-                maxLength={255}
-                placeholder="운영자가 확인할 내용을 입력해 주세요."
-                className="mt-3 min-h-24 w-full resize-none rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm outline-none focus:border-[#f6b800]"
+                value={reportText}
+                onChange={(event) => setReportText(event.target.value)}
+                placeholder="운영자가 확인할 내용을 입력해주세요."
+                className="mt-3 min-h-24 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm leading-6 outline-none focus:border-[#f6b800]"
               />
 
               <button
                 type="button"
-                onClick={handleSubmitReport}
+                onClick={handleReport}
                 disabled={busyAction !== null}
-                className="mt-3 h-11 w-full rounded-full bg-red-500 text-sm font-bold text-white transition duration-200 active:scale-[0.98] disabled:opacity-50"
+                className="mt-3 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busyAction === "report" ? "접수 중" : "신고 접수"}
+                {busyAction === "report" ? "접수 중..." : "신고 접수"}
               </button>
             </section>
-          )}
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">평가</h2>
-
-            <div className="mt-4">
-              <textarea
-                value={commentText}
-                onChange={(event) => setCommentText(event.target.value)}
-                placeholder={
-                  authenticated
-                    ? "이 맛집의 좋은 점을 짧게 남겨 주세요."
-                    : "로그인하면 평가를 남길 수 있어요."
-                }
-                className="min-h-24 w-full resize-none rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm outline-none focus:border-[#f6b800]"
-              />
-              <div className="mt-3 flex gap-2">
-                <button
-                  type="button"
-                  onClick={handleSubmitComment}
-                  disabled={busyAction !== null}
-                  className="h-10 flex-1 rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f] transition duration-200 active:scale-[0.98] disabled:opacity-50"
-                >
-                  {busyAction === "comment"
-                    ? "저장 중"
-                    : myComment
-                      ? "평가 수정"
-                      : "평가 남기기"}
-                </button>
-                {myComment && (
-                  <button
-                    type="button"
-                    onClick={handleDeleteComment}
-                    disabled={busyAction !== null}
-                    className="h-10 rounded-full border border-red-100 px-4 text-sm font-bold text-red-500 transition duration-200 active:scale-[0.98] disabled:opacity-50"
-                  >
-                    삭제
-                  </button>
-                )}
-              </div>
-            </div>
-
-            {comments.length === 0 && (
-              <p className="mt-5 text-sm text-gray-500">
-                아직 남겨진 평가가 없어요.
-              </p>
-            )}
-
-            <div className="mt-5 flex flex-col gap-4">
-              {comments.map((comment) => (
-                <article
-                  key={comment.commentId}
-                  className="border-t border-gray-100 pt-4"
-                >
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-[#2b210f]">
-                      {comment.nickname}
-                    </p>
-                    <div className="flex shrink-0 items-center gap-2">
-                      <p className="text-xs text-gray-400">
-                        {formatDate(comment.updatedAt)}
-                      </p>
-                      {comment.userId !== currentUserId && (
-                        <button
-                          type="button"
-                          onClick={() =>
-                            handleOpenReport({
-                              type: "COMMENT",
-                              id: comment.commentId,
-                              label: `${comment.nickname}님의 평가`,
-                            })
-                          }
-                          disabled={busyAction !== null}
-                          className="text-xs font-bold text-red-500 transition duration-200 active:scale-[0.98] disabled:opacity-50"
-                        >
-                          신고
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                  <p className="mt-2 break-words text-sm leading-5 text-gray-600">
-                    {comment.content}
-                  </p>
-                </article>
-              ))}
-            </div>
-          </section>
-
-          <section className="rounded-3xl bg-white p-4 text-left shadow-sm">
-            <h2 className="text-lg font-bold text-[#2b210f]">랭킹 히스토리</h2>
-
-            {history?.items.length === 0 && (
-              <p className="mt-3 text-sm text-gray-500">
-                아직 확정된 랭킹 기록이 없어요.
-              </p>
-            )}
-
-            <div className="mt-4 flex flex-col gap-3">
-              {history?.items.slice(0, 6).map((item) => (
-                <div
-                  key={`${item.seasonId}-${item.regionType}-${item.regionId}`}
-                  className="flex items-center justify-between gap-4 border-t border-gray-100 pt-3 text-sm"
-                >
-                  <div>
-                    <p className="font-semibold text-[#2b210f]">
-                      {item.seasonName}
-                    </p>
-                    <p className="mt-1 text-gray-500">
-                      {regionLabel(item.regionType)} · {item.rank}위
-                    </p>
-                  </div>
-                  <div className="text-right">
-                    <p className="font-bold text-[#2b210f]">
-                      별 {item.starLevel}
-                    </p>
-                    <p className="mt-1 text-gray-500">
-                      {formatScore(item.totalScore)}점
-                    </p>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </section>
-        </div>
+          </div>
+        )}
       </main>
-
-      <BottomNav />
     </div>
   );
 }
 
-function getCurrentPosition(): Promise<GeolocationPosition> {
-  return new Promise((resolve, reject) => {
-    navigator.geolocation.getCurrentPosition(resolve, reject, {
-      enableHighAccuracy: true,
-      timeout: 10000,
-    });
-  });
+function Shell({
+  message,
+  actionLabel,
+  onAction,
+}: {
+  message: string;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <div className="min-h-screen bg-neutral-100">
+      <main className="mx-auto flex min-h-screen max-w-[430px] items-center justify-center bg-[#fffaf0] px-4 pb-24">
+        <section className="w-full rounded-3xl bg-white p-5 text-center shadow-sm">
+          <p className="text-sm font-semibold leading-6 text-[#2b210f]">
+            {message}
+          </p>
+          {actionLabel && onAction && (
+            <button
+              type="button"
+              onClick={onAction}
+              className="mt-4 h-11 rounded-full bg-[#f6b800] px-5 text-sm font-semibold text-[#2b210f]"
+            >
+              {actionLabel}
+            </button>
+          )}
+        </section>
+      </main>
+    </div>
+  );
 }
 
-function recommendationStatusText(policy: RecommendationPolicy) {
-  if (policy.reason === "ALREADY_RECOMMENDED") {
-    return "이미 추천한 맛집이에요.";
-  }
-  if (!policy.canRecommend) {
-    return "지금은 추천할 수 없어요.";
-  }
-  return `오늘 추천 가능 ${policy.dailyRemainingCount}회`;
+function SectionHeader({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div>
+      <h2 className="text-lg font-bold text-[#2b210f]">{title}</h2>
+      <p className="mt-1 text-sm leading-5 text-gray-500">{desc}</p>
+    </div>
+  );
 }
 
-function visitStatusText(policy: VisitPolicy) {
-  if (policy.canVisitNow) {
-    return `방문 인증 반경 ${policy.radiusMeter}m`;
-  }
-  if (policy.cooldownUntil) {
-    return `다음 방문 가능: ${formatDate(policy.cooldownUntil)}`;
-  }
-  return "지금은 방문 인증할 수 없어요.";
+function Metric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="rounded-2xl bg-[#fffaf0] p-3">
+      <p className="text-lg font-bold text-[#2b210f]">{value}</p>
+      <p className="mt-1 text-xs font-semibold text-gray-500">{label}</p>
+    </div>
+  );
 }
 
-function regionLabel(regionType: string) {
-  if (regionType === "dong") {
-    return "동";
-  }
-  if (regionType === "district") {
-    return "구";
-  }
-  return "시";
+function ActionButton({
+  label,
+  status,
+  busy,
+  onClick,
+}: {
+  label: string;
+  status: string;
+  busy: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={busy}
+      className="rounded-2xl bg-[#fffaf0] p-3 text-left transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+    >
+      <span className="block text-sm font-bold text-[#2b210f]">
+        {busy ? "처리 중..." : label}
+      </span>
+      <span className="mt-2 block text-xs leading-5 text-gray-500">
+        {status}
+      </span>
+    </button>
+  );
 }
 
-function targetTypeLabel(targetType: ReportTargetType) {
-  switch (targetType) {
+function reportTargetLabel(value: ReportTargetType) {
+  switch (value) {
     case "PLACE":
       return "맛집";
     case "COMMENT":
-      return "평가";
+      return "댓글";
     case "USER":
       return "사용자";
   }
 }
 
-function formatScore(score: number) {
-  return Number(score).toLocaleString("ko-KR", {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 2,
+function regionTypeLabel(value: RankingRegionType) {
+  switch (value) {
+    case "dong":
+      return "동네";
+    case "district":
+      return "구";
+    case "city":
+      return "시";
+  }
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 }
 
-function formatDate(value: string) {
-  return new Date(value).toLocaleString("ko-KR", {
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  });
+async function settle<T>(promise: Promise<T> | null) {
+  if (!promise) {
+    return { ok: false as const };
+  }
+
+  try {
+    return { ok: true as const, value: await promise };
+  } catch {
+    return { ok: false as const };
+  }
 }

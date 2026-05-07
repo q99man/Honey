@@ -1,24 +1,24 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { getPlaces, searchPlaces } from "./api/placeApi";
-import HomePage from "./pages/HomePage";
-import DetailPage from "./pages/DetailPage";
-import RankingPage from "./pages/RankingPage";
-import MyPage from "./pages/MyPage";
 import AdminActivitiesPage from "./pages/AdminActivitiesPage";
 import AdminAuditLogsPage from "./pages/AdminAuditLogsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
-import AdminPoliciesPage from "./pages/AdminPoliciesPage";
 import AdminPlacesPage from "./pages/AdminPlacesPage";
+import AdminPoliciesPage from "./pages/AdminPoliciesPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import DetailPage from "./pages/DetailPage";
+import HomePage from "./pages/HomePage";
+import MyPage from "./pages/MyPage";
 import PlaceRegisterPage from "./pages/PlaceRegisterPage";
+import RankingPage from "./pages/RankingPage";
 import WishlistPage from "./pages/WishlistPage";
 import type { Place } from "./types/place";
 
 const WISHLIST_STORAGE_KEY = "honeytong-wished-place-ids";
-const LIST_LOAD_ERROR = "장소 목록을 불러오지 못했습니다.";
-const SEARCH_LOAD_ERROR = "검색 결과를 불러오지 못했습니다.";
+const LIST_LOAD_ERROR = "맛집 목록을 불러오지 못했어요.";
+const SEARCH_LOAD_ERROR = "검색 결과를 불러오지 못했어요.";
 
 function App() {
   const [places, setPlaces] = useState<Place[]>([]);
@@ -86,46 +86,55 @@ function App() {
     );
   }, [wishedIds]);
 
-  const search = async (keyword: string) => {
-    setLoading(true);
-    try {
-      await loadPlaces(keyword, wishedIds);
-    } catch {
-      setErrorMessage(SEARCH_LOAD_ERROR);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const search = useCallback(
+    async (keyword: string) => {
+      setLoading(true);
+      try {
+        await loadPlaces(keyword, wishedIds);
+      } catch {
+        setErrorMessage(SEARCH_LOAD_ERROR);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [loadPlaces, wishedIds],
+  );
 
-  const toggleWish = (id: number) => {
-    const next = new Set(wishedIds);
-    if (next.has(id)) {
-      next.delete(id);
-    } else {
-      next.add(id);
-    }
-    setWishedIds(next);
-    setPlaces((prev) => applyWishlist(prev, next));
-  };
+  const toggleWish = useCallback(
+    (id: number) => {
+      const next = new Set(wishedIds);
+      if (next.has(id)) {
+        next.delete(id);
+      } else {
+        next.add(id);
+      }
+      setWishedIds(next);
+      setPlaces((prev) => applyWishlist(prev, next));
+    },
+    [applyWishlist, wishedIds],
+  );
 
-  const updatePlace = (updatedPlace: Place) => {
-    setPlaces((prev) =>
-      prev.map((place) =>
-        place.id === updatedPlace.id
-          ? { ...updatedPlace, isWished: wishedIds.has(updatedPlace.id) }
-          : place,
-      ),
-    );
-  };
+  const updatePlace = useCallback(
+    (updatedPlace: Place) => {
+      setPlaces((prev) =>
+        prev.map((place) =>
+          place.id === updatedPlace.id
+            ? { ...updatedPlace, isWished: wishedIds.has(updatedPlace.id) }
+            : place,
+        ),
+      );
+    },
+    [wishedIds],
+  );
 
-  const removePlace = (placeId: number) => {
+  const removePlace = useCallback((placeId: number) => {
     setPlaces((prev) => prev.filter((place) => place.id !== placeId));
     setWishedIds((prev) => {
       const next = new Set(prev);
       next.delete(placeId);
       return next;
     });
-  };
+  }, []);
 
   const refreshPlaces = useCallback(async () => {
     await loadPlaces(undefined, wishedIds);

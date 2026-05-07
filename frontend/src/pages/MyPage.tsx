@@ -59,8 +59,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
     useState<RegionChangePolicy | null>(null);
   const [myPlaces, setMyPlaces] = useState<Place[]>([]);
   const [myReports, setMyReports] = useState<MyReport[]>([]);
-  const [summary, setSummary] =
-    useState<MyActivitySummary>(DEFAULT_SUMMARY);
+  const [summary, setSummary] = useState<MyActivitySummary>(DEFAULT_SUMMARY);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [nickname, setNickname] = useState("");
@@ -108,7 +107,12 @@ export default function MyPage({ onPlaceDeleted }: Props) {
       .then(() => loadMe())
       .catch((error) => {
         if (mounted) {
-          setMessage(getApiErrorMessage(error, "내 정보를 불러오지 못했습니다."));
+          setMessage(
+            getApiErrorMessage(
+              error,
+              "내 정보를 불러오지 못했어요. 잠시 후 다시 시도해주세요.",
+            ),
+          );
         }
       })
       .finally(() => {
@@ -133,16 +137,16 @@ export default function MyPage({ onPlaceDeleted }: Props) {
       await loadMe();
       setMessage(
         authMode === "signup"
-          ? "회원가입과 로그인을 완료했습니다."
-          : "로그인했습니다.",
+          ? "회원가입과 로그인을 완료했어요."
+          : "로그인했어요.",
       );
     } catch (error) {
       setMessage(
         getApiErrorMessage(
           error,
           authMode === "signup"
-            ? "회원가입 요청을 처리하지 못했습니다."
-            : "로그인 요청을 처리하지 못했습니다.",
+            ? "회원가입 요청을 처리하지 못했어요."
+            : "로그인 요청을 처리하지 못했어요.",
         ),
       );
     } finally {
@@ -164,9 +168,9 @@ export default function MyPage({ onPlaceDeleted }: Props) {
       setSummary(DEFAULT_SUMMARY);
       setPhone("");
       setCode("");
-      setMessage("로그아웃했습니다.");
+      setMessage("로그아웃했어요.");
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "로그아웃을 처리하지 못했습니다."));
+      setMessage(getApiErrorMessage(error, "로그아웃을 처리하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
@@ -177,11 +181,9 @@ export default function MyPage({ onPlaceDeleted }: Props) {
     setMessage(null);
     try {
       await sendPhoneVerificationCode(normalizePhone(phone));
-      setMessage("인증번호를 보냈습니다.");
+      setMessage("인증번호를 보냈어요.");
     } catch (error) {
-      setMessage(
-        getApiErrorMessage(error, "인증번호 발송을 처리하지 못했습니다."),
-      );
+      setMessage(getApiErrorMessage(error, "인증번호 발송을 처리하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
@@ -193,14 +195,15 @@ export default function MyPage({ onPlaceDeleted }: Props) {
     try {
       await verifyPhoneCode(normalizePhone(phone), code.trim());
       const phoneStatus = await getPhoneVerificationStatus();
-      const nextProfile = profile
-        ? { ...profile, phoneVerified: phoneStatus.phoneVerified }
-        : null;
-      setProfile(nextProfile);
+      setProfile(
+        profile
+          ? { ...profile, phoneVerified: phoneStatus.phoneVerified }
+          : null,
+      );
       await loadMe();
-      setMessage("전화 인증을 완료했습니다.");
+      setMessage("전화번호 인증이 완료됐어요.");
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "전화 인증을 처리하지 못했습니다."));
+      setMessage(getApiErrorMessage(error, "전화번호 인증을 처리하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
@@ -217,9 +220,9 @@ export default function MyPage({ onPlaceDeleted }: Props) {
       );
       setRegion(nextRegion);
       await loadMe();
-      setMessage(`${formatRegionName(nextRegion)} 동네 인증을 완료했습니다.`);
+      setMessage(`${formatRegionName(nextRegion)} 동네 인증이 완료됐어요.`);
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "동네 인증을 처리하지 못했습니다."));
+      setMessage(getApiErrorMessage(error, "동네 인증을 처리하지 못했어요."));
     } finally {
       setBusyAction(null);
     }
@@ -227,7 +230,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
 
   const handleDeletePlace = async (place: Place) => {
     const confirmed = window.confirm(
-      `${place.title} 장소를 삭제할까요?\n삭제한 장소는 목록과 상세 화면에서 보이지 않습니다.`,
+      `${place.title} 맛집을 삭제할까요?\n삭제한 맛집은 목록과 상세 화면에서 보이지 않아요.`,
     );
     if (!confirmed) {
       return;
@@ -239,242 +242,69 @@ export default function MyPage({ onPlaceDeleted }: Props) {
       await deletePlace(place.id);
       onPlaceDeleted(place.id);
       await loadMe();
-      setMessage("장소가 삭제되었습니다.");
+      setMessage("맛집을 삭제했어요.");
     } catch (error) {
-      setMessage(getApiErrorMessage(error, "장소 삭제를 처리하지 못했습니다."));
+      setMessage(getApiErrorMessage(error, "맛집 삭제를 처리하지 못했어요."));
     } finally {
       setDeletingPlaceId(null);
     }
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
-      <main className="px-6 pt-8">
-        <h1 className="text-2xl font-bold">마이페이지</h1>
+    <div className="min-h-screen bg-neutral-100">
+      <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] px-4 pb-24 pt-6">
+        <header>
+          <p className="text-xs font-semibold text-[#d99a00]">Honeytong</p>
+          <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
+            마이페이지
+          </h1>
+          <p className="mt-2 text-sm leading-6 text-gray-600">
+            내 활동과 동네 인증 상태를 확인해보세요.
+          </p>
+        </header>
 
-        {loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
-            내 정보를 불러오는 중입니다.
-          </section>
-        )}
+        {loading && <LoadingCard />}
 
         {!loading && !profile && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-left shadow-sm">
-            <div className="grid grid-cols-2 gap-2">
-              {(["login", "signup"] as AuthMode[]).map((mode) => (
-                <button
-                  key={mode}
-                  type="button"
-                  onClick={() => setAuthMode(mode)}
-                  className={`h-10 rounded-lg text-sm font-bold ${
-                    authMode === mode
-                      ? "bg-yellow-400 text-black"
-                      : "bg-yellow-50 text-gray-500"
-                  }`}
-                >
-                  {mode === "login" ? "로그인" : "회원가입"}
-                </button>
-              ))}
-            </div>
-
-            <div className="mt-5 flex flex-col gap-3">
-              <label className="text-sm font-semibold">
-                이메일
-                <input
-                  value={email}
-                  onChange={(event) => setEmail(event.target.value)}
-                  type="email"
-                  className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
-                />
-              </label>
-              <label className="text-sm font-semibold">
-                비밀번호
-                <input
-                  value={password}
-                  onChange={(event) => setPassword(event.target.value)}
-                  type="password"
-                  className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
-                />
-              </label>
-              {authMode === "signup" && (
-                <label className="text-sm font-semibold">
-                  닉네임
-                  <input
-                    value={nickname}
-                    onChange={(event) => setNickname(event.target.value)}
-                    className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
-                  />
-                </label>
-              )}
-            </div>
-
-            <button
-              type="button"
-              onClick={handleAuthSubmit}
-              disabled={busyAction !== null}
-              className="mt-5 h-12 w-full rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
-            >
-              {busyAction === "auth"
-                ? "처리 중"
-                : authMode === "login"
-                  ? "로그인"
-                  : "회원가입 후 로그인"}
-            </button>
-          </section>
+          <AuthCard
+            authMode={authMode}
+            setAuthMode={setAuthMode}
+            email={email}
+            setEmail={setEmail}
+            password={password}
+            setPassword={setPassword}
+            nickname={nickname}
+            setNickname={setNickname}
+            busy={busyAction === "auth"}
+            onSubmit={handleAuthSubmit}
+          />
         )}
 
         {!loading && profile && (
-          <>
-            <section className="mt-6 rounded-xl bg-white p-5 text-left shadow-sm">
-              <div className="flex items-center gap-4">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-yellow-300 text-lg font-bold">
-                  꿀벌
-                </div>
+          <div className="mt-6 space-y-5">
+            <ProfileSummaryCard
+              profile={profile}
+              status={status}
+              region={region}
+            />
+            <ActivitySummaryCard summary={summary} />
 
-                <div className="min-w-0 flex-1">
-                  <h2 className="truncate text-lg font-bold">
-                    {profile.nickname}
-                  </h2>
-                  <p className="text-sm text-gray-500">
-                    {profile.phoneVerified
-                      ? "전화 인증 완료"
-                      : "전화 인증이 필요합니다."}
-                  </p>
-                </div>
-              </div>
-            </section>
-
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <h2 className="text-lg font-bold">나의 상태</h2>
-              <div className="mt-4 grid grid-cols-3 gap-3 text-center">
-                <StatusCell label="레벨" value={status?.level ?? 1} />
-                <StatusCell label="EXP" value={status?.exp ?? 0} />
-                <StatusCell
-                  label="신뢰도"
-                  value={toTrustGrade(status?.trustGrade)}
-                />
-              </div>
-            </section>
-
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <h2 className="text-lg font-bold">나의 활동</h2>
-
-              <div className="mt-4 grid grid-cols-4 gap-2 text-center">
-                <StatusCell label="추천" value={summary.recommendedCount} />
-                <StatusCell label="방문" value={summary.visitCount} />
-                <StatusCell label="댓글" value={summary.commentCount} />
-                <StatusCell label="등록" value={summary.registeredPlaceCount} />
-              </div>
-            </section>
-
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <h2 className="text-lg font-bold">내 신고 내역</h2>
-
-              {myReports.length === 0 && (
-                <p className="mt-4 text-sm text-gray-500">
-                  아직 접수한 신고가 없습니다.
-                </p>
-              )}
-
-              <div className="mt-4 flex flex-col gap-3">
-                {myReports.slice(0, 5).map((report) => (
-                  <article
-                    key={report.reportId}
-                    className="rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm"
-                  >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <p className="font-bold">
-                          {reportTargetLabel(report.targetType)} #{report.targetId}
-                        </p>
-                        <p className="mt-1 text-gray-500">
-                          {reportReasonLabel(report.reasonCode)}
-                        </p>
-                      </div>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-bold text-[#2f6f5f]">
-                        {reportStatusLabel(report.status)}
-                      </span>
-                    </div>
-
-                    {report.reasonText && (
-                      <p className="mt-2 text-gray-600">{report.reasonText}</p>
-                    )}
-                    <p className="mt-2 text-xs text-gray-400">
-                      {formatDateTime(report.createdAt)}
-                    </p>
-                    {report.reviewNote && (
-                      <p className="mt-2 text-xs text-gray-500">
-                        검토 메모: {report.reviewNote}
-                      </p>
-                    )}
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="text-lg font-bold">내가 등록한 장소</h2>
-                <Link
-                  to="/places/new"
-                  className="rounded-lg bg-yellow-400 px-3 py-2 text-sm font-bold text-black"
-                >
-                  등록
-                </Link>
-              </div>
-
-              {myPlaces.length === 0 && (
-                <p className="mt-4 text-sm text-gray-500">
-                  아직 등록한 장소가 없습니다.
-                </p>
-              )}
-
-              <div className="mt-4 flex flex-col gap-3">
-                {myPlaces.slice(0, 5).map((place) => (
-                  <article
-                    key={place.id}
-                    className="rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3"
-                  >
-                    <Link to={`/places/${place.id}`} className="block">
-                      <SpaceCard
-                        title={place.title}
-                        desc={place.desc}
-                        distance={place.regionName}
-                        rating={place.rating}
-                        price={place.price}
-                        imageUrl={place.imageUrl}
-                      />
-                    </Link>
-                    <div className="mt-3 grid grid-cols-2 gap-2">
-                      <Link
-                        to={`/places/${place.id}/edit`}
-                        className="h-10 rounded-lg border border-yellow-300 pt-2 text-center text-sm font-bold"
-                      >
-                        수정
-                      </Link>
-                      <button
-                        type="button"
-                        onClick={() => handleDeletePlace(place)}
-                        disabled={deletingPlaceId !== null}
-                        className="h-10 rounded-lg border border-red-100 text-sm font-bold text-red-500 disabled:opacity-50"
-                      >
-                        {deletingPlaceId === place.id ? "삭제 중" : "삭제"}
-                      </button>
-                    </div>
-                  </article>
-                ))}
-              </div>
-            </section>
-
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <h2 className="text-lg font-bold">전화 인증</h2>
+            <section className="rounded-3xl bg-white p-4 shadow-sm">
+              <SectionHeader
+                title="전화번호 인증"
+                desc={
+                  profile.phoneVerified
+                    ? "믿을 수 있는 동네 활동 준비가 끝났어요."
+                    : "추천, 댓글, 맛집 등록을 위해 인증이 필요해요."
+                }
+              />
               <div className="mt-4 flex flex-col gap-3">
                 <input
                   value={phone}
                   onChange={(event) => setPhone(event.target.value)}
                   inputMode="numeric"
                   placeholder="01012345678"
-                  className="h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                  className="h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
                 />
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                   <input
@@ -482,13 +312,13 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                     onChange={(event) => setCode(event.target.value)}
                     inputMode="numeric"
                     placeholder="인증번호"
-                    className="h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                    className="h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
                   />
                   <button
                     type="button"
                     onClick={handleSendPhoneCode}
                     disabled={busyAction !== null || profile.phoneVerified}
-                    className="h-11 rounded-lg border border-yellow-300 px-3 text-sm font-bold disabled:opacity-50"
+                    className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     발송
                   </button>
@@ -497,34 +327,36 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                   type="button"
                   onClick={handleVerifyPhoneCode}
                   disabled={busyAction !== null || profile.phoneVerified}
-                  className="h-11 rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+                  className="h-11 rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
-                  {busyAction === "phone-verify" ? "확인 중" : "인증 완료"}
+                  {busyAction === "phone-verify" ? "확인 중..." : "인증 완료"}
                 </button>
               </div>
             </section>
 
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
+            <section className="rounded-3xl bg-white p-4 shadow-sm">
               <div className="flex items-start justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-bold">동네 인증</h2>
-                  <p className="mt-1 text-sm text-gray-500">
-                    {status?.regionVerified
-                      ? "동네 인증 완료"
-                      : "동네 인증이 필요합니다."}
-                  </p>
-                </div>
-                <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
-                  {region?.verified ? "인증됨" : "미인증"}
-                </span>
+                <SectionHeader
+                  title="동네 인증"
+                  desc={
+                    status?.regionVerified
+                      ? "인증한 동네 기준으로 활동할 수 있어요."
+                      : "현재 위치로 내 동네를 인증해보세요."
+                  }
+                />
+                <Badge tone={region?.verified ? "green" : "gray"}>
+                  {region?.verified ? "인증 완료" : "인증 필요"}
+                </Badge>
               </div>
 
-              <div className="mt-4 rounded-lg bg-[#FFFBEB] p-4">
-                <p className="text-xs text-gray-500">현재 인증 동네</p>
-                <p className="mt-1 text-base font-bold">
-                  {region ? formatRegionName(region) : "아직 인증된 동네가 없습니다."}
+              <div className="mt-4 rounded-2xl bg-[#fffaf0] p-4">
+                <p className="text-xs font-semibold text-gray-500">
+                  현재 인증 동네
                 </p>
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-1 text-base font-bold text-[#2b210f]">
+                  {region ? formatRegionName(region) : "아직 인증한 동네가 없어요."}
+                </p>
+                <p className="mt-2 text-xs leading-5 text-gray-500">
                   {formatRegionPolicy(regionPolicy)}
                 </p>
               </div>
@@ -533,60 +365,409 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                 type="button"
                 onClick={handleVerifyRegion}
                 disabled={busyAction !== null}
-                className="mt-4 h-11 w-full rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+                className="mt-4 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
-                {busyAction === "region" ? "위치 확인 중" : "현재 위치로 인증"}
+                {busyAction === "region" ? "위치 확인 중..." : "현재 위치로 인증"}
               </button>
             </section>
 
-            <section className="mt-5 rounded-xl bg-white p-5 text-left shadow-sm">
-              <h2 className="text-lg font-bold">설정</h2>
+            <MyPlacesSection
+              places={myPlaces}
+              deletingPlaceId={deletingPlaceId}
+              onDelete={handleDeletePlace}
+            />
+            <ReportsSection reports={myReports} />
 
-              <div className="mt-4 flex flex-col gap-4 text-sm">
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  disabled={busyAction !== null}
-                  className="text-left text-red-500 disabled:opacity-50"
-                >
-                  로그아웃
-                </button>
-              </div>
+            <section className="rounded-3xl bg-white p-4 shadow-sm">
+              <SectionHeader
+                title="설정"
+                desc="계정 이용 상태를 관리할 수 있어요."
+              />
+              <button
+                type="button"
+                onClick={handleLogout}
+                disabled={busyAction !== null}
+                className="mt-4 flex h-11 w-full items-center justify-between rounded-2xl border border-red-100 bg-white px-4 text-left text-sm font-semibold text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <span>
+                  {busyAction === "logout" ? "로그아웃 중..." : "로그아웃"}
+                </span>
+                <span aria-hidden="true">›</span>
+              </button>
             </section>
-          </>
+          </div>
         )}
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
             {message}
           </p>
         )}
       </main>
-
       <BottomNav />
     </div>
   );
 }
 
-function StatusCell({
-  label,
-  value,
+function AuthCard({
+  authMode,
+  setAuthMode,
+  email,
+  setEmail,
+  password,
+  setPassword,
+  nickname,
+  setNickname,
+  busy,
+  onSubmit,
 }: {
-  label: string;
-  value: string | number;
+  authMode: AuthMode;
+  setAuthMode: (mode: AuthMode) => void;
+  email: string;
+  setEmail: (value: string) => void;
+  password: string;
+  setPassword: (value: string) => void;
+  nickname: string;
+  setNickname: (value: string) => void;
+  busy: boolean;
+  onSubmit: () => void;
 }) {
   return (
+    <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm">
+      <h2 className="text-lg font-bold text-[#2b210f]">
+        로그인이 필요한 화면이에요
+      </h2>
+      <p className="mt-2 text-sm leading-6 text-gray-600">
+        로그인하면 내 동네와 활동 기록을 한눈에 볼 수 있어요.
+      </p>
+
+      <div className="mt-5 grid grid-cols-2 gap-2 rounded-full bg-[#fff7dc] p-1">
+        {(["login", "signup"] as AuthMode[]).map((mode) => (
+          <button
+            key={mode}
+            type="button"
+            onClick={() => setAuthMode(mode)}
+            className={`h-10 rounded-full text-sm font-semibold transition ${
+              authMode === mode
+                ? "bg-[#f6b800] text-[#2b210f]"
+                : "text-gray-500"
+            }`}
+          >
+            {mode === "login" ? "로그인" : "회원가입"}
+          </button>
+        ))}
+      </div>
+
+      <div className="mt-5 flex flex-col gap-4">
+        <FormField label="이메일" value={email} onChange={setEmail} type="email" />
+        <FormField
+          label="비밀번호"
+          value={password}
+          onChange={setPassword}
+          type="password"
+        />
+        {authMode === "signup" && (
+          <FormField label="닉네임" value={nickname} onChange={setNickname} />
+        )}
+      </div>
+
+      <button
+        type="button"
+        onClick={onSubmit}
+        disabled={busy}
+        className="mt-5 h-12 w-full rounded-full bg-[#f6b800] px-5 text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+      >
+        {busy
+          ? "처리 중..."
+          : authMode === "login"
+            ? "로그인하기"
+            : "회원가입하고 로그인하기"}
+      </button>
+    </section>
+  );
+}
+
+function LoadingCard() {
+  return (
+    <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm">
+      <p className="text-sm font-semibold text-[#2b210f]">
+        내 정보를 불러오는 중이에요.
+      </p>
+      <div className="mt-4 space-y-3">
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff1bf]" />
+        <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff1bf]" />
+        <div className="h-16 animate-pulse rounded-2xl bg-[#fffaf0]" />
+      </div>
+    </section>
+  );
+}
+
+function ProfileSummaryCard({
+  profile,
+  status,
+  region,
+}: {
+  profile: MyProfile;
+  status: MyStatus | null;
+  region: MyRegion | null;
+}) {
+  const displayName = profile.nickname?.trim() || "꿀벌님";
+
+  return (
+    <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <div className="flex items-center gap-4">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#5c3b13]">
+          꿀벌
+        </div>
+        <div className="min-w-0 flex-1">
+          <div className="flex flex-wrap items-center gap-2">
+            <h2 className="truncate text-xl font-bold text-[#2b210f]">
+              {displayName}
+            </h2>
+            <Badge tone={profile.phoneVerified ? "green" : "gray"}>
+              {profile.phoneVerified ? "전화 인증 완료" : "전화 인증 필요"}
+            </Badge>
+          </div>
+          <p className="mt-2 text-sm leading-6 text-gray-600">
+            우리 동네 꿀맛집을 찾는 중이에요.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-4 grid gap-2 text-sm">
+        <ProfileInfoRow label="이메일" value="이메일 정보는 아직 제공되지 않아요." />
+        <ProfileInfoRow
+          label="동네"
+          value={region ? formatRegionName(region) : "아직 인증한 동네가 없어요."}
+        />
+        <ProfileInfoRow
+          label="인증 상태"
+          value={status?.regionVerified ? "동네 인증 완료" : "동네 인증 필요"}
+        />
+      </div>
+    </section>
+  );
+}
+
+function ActivitySummaryCard({ summary }: { summary: MyActivitySummary }) {
+  const items = [
+    { label: "추천한 맛집", value: summary.recommendedCount },
+    { label: "방문 인증", value: summary.visitCount },
+    { label: "댓글", value: summary.commentCount },
+    { label: "등록 맛집", value: summary.registeredPlaceCount },
+  ];
+
+  return (
+    <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <SectionHeader
+        title="내 활동 요약"
+        desc="Honeytong에서 남긴 활동을 모아봤어요."
+      />
+      <div className="mt-4 grid grid-cols-2 gap-3">
+        {items.map((item) => (
+          <div key={item.label} className="rounded-2xl bg-[#fffaf0] p-3">
+            <p className="text-2xl font-bold text-[#2b210f]">{item.value}</p>
+            <p className="mt-1 text-xs font-semibold text-gray-500">
+              {item.label}
+            </p>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+function MyPlacesSection({
+  places,
+  deletingPlaceId,
+  onDelete,
+}: {
+  places: Place[];
+  deletingPlaceId: number | null;
+  onDelete: (place: Place) => void;
+}) {
+  return (
+    <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <div className="flex items-center justify-between gap-3">
+        <SectionHeader
+          title="내가 등록한 맛집"
+          desc="직접 소개한 동네 맛집을 확인해보세요."
+        />
+        <Link
+          to="/places/new"
+          className="rounded-full bg-[#f6b800] px-4 py-2 text-sm font-semibold text-[#2b210f]"
+        >
+          등록
+        </Link>
+      </div>
+
+      {places.length === 0 ? (
+        <EmptyText text="아직 등록한 맛집이 없어요." />
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {places.slice(0, 5).map((place) => (
+            <article
+              key={place.id}
+              className="rounded-3xl border border-gray-100 bg-[#fffaf0] p-3"
+            >
+              <Link to={`/places/${place.id}`} className="block">
+                <SpaceCard
+                  title={place.title}
+                  desc={place.desc}
+                  distance={place.regionName}
+                  rating={place.rating}
+                  price={place.price}
+                  imageUrl={place.imageUrl}
+                />
+              </Link>
+              <div className="mt-3 grid grid-cols-2 gap-2">
+                <Link
+                  to={`/places/${place.id}/edit`}
+                  className="flex h-10 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700"
+                >
+                  수정
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => onDelete(place)}
+                  disabled={deletingPlaceId !== null}
+                  className="h-10 rounded-full border border-red-100 bg-white text-sm font-semibold text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {deletingPlaceId === place.id ? "삭제 중..." : "삭제"}
+                </button>
+              </div>
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function ReportsSection({ reports }: { reports: MyReport[] }) {
+  return (
+    <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <SectionHeader
+        title="내 신고 내역"
+        desc="접수한 신고 처리 상태를 확인할 수 있어요."
+      />
+
+      {reports.length === 0 ? (
+        <EmptyText text="아직 접수한 신고가 없어요." />
+      ) : (
+        <div className="mt-4 flex flex-col gap-3">
+          {reports.slice(0, 5).map((report) => (
+            <article
+              key={report.reportId}
+              className="rounded-2xl border border-gray-100 bg-[#fffaf0] p-3 text-sm"
+            >
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="font-bold text-[#2b210f]">
+                    {reportTargetLabel(report.targetType)} #{report.targetId}
+                  </p>
+                  <p className="mt-1 text-gray-500">
+                    {reportReasonLabel(report.reasonCode)}
+                  </p>
+                </div>
+                <Badge tone={report.status === "APPROVED" ? "green" : "gray"}>
+                  {reportStatusLabel(report.status)}
+                </Badge>
+              </div>
+              {report.reasonText && (
+                <p className="mt-2 text-gray-600">{report.reasonText}</p>
+              )}
+              <p className="mt-2 text-xs text-gray-400">
+                {formatDateTime(report.createdAt)}
+              </p>
+              {report.reviewNote && (
+                <p className="mt-2 text-xs text-gray-500">
+                  검토 메모: {report.reviewNote}
+                </p>
+              )}
+            </article>
+          ))}
+        </div>
+      )}
+    </section>
+  );
+}
+
+function FormField({
+  label,
+  value,
+  onChange,
+  type = "text",
+}: {
+  label: string;
+  value: string;
+  onChange: (value: string) => void;
+  type?: string;
+}) {
+  return (
+    <label className="text-sm font-semibold text-[#2b210f]">
+      {label}
+      <input
+        value={value}
+        onChange={(event) => onChange(event.target.value)}
+        type={type}
+        className="mt-2 h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
+      />
+    </label>
+  );
+}
+
+function SectionHeader({ title, desc }: { title: string; desc: string }) {
+  return (
     <div>
-      <p className="truncate text-xl font-bold">{value}</p>
-      <p className="text-xs text-gray-500">{label}</p>
+      <h2 className="text-lg font-bold text-[#2b210f]">{title}</h2>
+      <p className="mt-1 text-sm leading-5 text-gray-500">{desc}</p>
     </div>
+  );
+}
+
+function ProfileInfoRow({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-start justify-between gap-3 rounded-2xl bg-[#fffaf0] px-3 py-2">
+      <span className="shrink-0 text-xs font-semibold text-gray-500">
+        {label}
+      </span>
+      <span className="text-right text-xs font-semibold leading-5 text-[#2b210f]">
+        {value}
+      </span>
+    </div>
+  );
+}
+
+function EmptyText({ text }: { text: string }) {
+  return <p className="mt-4 text-sm leading-6 text-gray-500">{text}</p>;
+}
+
+function Badge({
+  children,
+  tone,
+}: {
+  children: string;
+  tone: "green" | "gray";
+}) {
+  const toneClass =
+    tone === "green"
+      ? "bg-[#e9f8ef] text-[#2f6f5f]"
+      : "bg-[#fff1bf] text-[#5c3b13]";
+
+  return (
+    <span
+      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold ${toneClass}`}
+    >
+      {children}
+    </span>
   );
 }
 
 function reportTargetLabel(value: MyReport["targetType"]) {
   switch (value) {
     case "PLACE":
-      return "장소";
+      return "맛집";
     case "COMMENT":
       return "댓글";
     case "USER":
@@ -612,7 +793,7 @@ function reportReasonLabel(value: string) {
     case "FRANCHISE":
       return "프랜차이즈 의심";
     case "SPAM":
-      return "스팸/홍보";
+      return "스팸 또는 홍보";
     case "ABUSE":
       return "부적절한 내용";
     case "OTHER":
@@ -636,7 +817,7 @@ async function settle<T>(promise: Promise<T>) {
 
 function getCurrentPosition() {
   if (!navigator.geolocation) {
-    throw new Error("Geolocation is not supported.");
+    throw new Error("브라우저에서 위치 정보를 사용할 수 없어요.");
   }
 
   return new Promise<GeolocationPosition>((resolve, reject) => {
@@ -653,18 +834,15 @@ function formatRegionName(region: MyRegion) {
 
 function formatRegionPolicy(policy: RegionChangePolicy | null) {
   if (!policy) {
-    return "동네 변경 가능 상태를 불러오지 못했습니다.";
+    return "동네 변경 가능 상태를 불러오지 못했어요.";
   }
-
   if (policy.changeAllowed) {
-    return `동네 변경 가능 · 기준 주기 ${policy.cooldownDays}일`;
+    return `동네 변경 가능, 기준 주기 ${policy.cooldownDays}일`;
   }
-
   if (policy.nextAvailableAt) {
     return `다음 변경 가능 시간: ${formatDateTime(policy.nextAvailableAt)}`;
   }
-
-  return "현재는 동네를 변경할 수 없습니다.";
+  return "현재는 동네를 변경할 수 없어요.";
 }
 
 function formatDateTime(value: string) {
@@ -672,24 +850,4 @@ function formatDateTime(value: string) {
     dateStyle: "medium",
     timeStyle: "short",
   });
-}
-
-function toTrustGrade(value?: string) {
-  if (!value) {
-    return "기본";
-  }
-  switch (value) {
-    case "VERIFIED_BEE":
-      return "인증";
-    case "LOCAL_BEE":
-      return "동네";
-    case "ACTIVE_BEE":
-      return "활동";
-    case "TRUSTED_BEE":
-      return "신뢰";
-    case "INFLUENCER_BEE":
-      return "영향";
-    default:
-      return "기본";
-  }
 }

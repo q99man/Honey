@@ -82,21 +82,21 @@ const toKoreanErrorMessage = (errorCode: string) => {
     case "INVALID_REGION_CHANGE":
       return "동네 변경 요청이 올바르지 않습니다.";
     case "PLACE_REGISTRATION_LIMIT_EXCEEDED":
-      return "장소 등록 가능 횟수를 모두 사용했습니다.";
+      return "맛집 등록 가능 횟수를 모두 사용했습니다.";
     case "POLICY_VIOLATION":
       return "운영 정책 조건을 만족하지 않습니다.";
     case "INVALID_REQUEST":
-      return "입력한 값을 다시 확인해 주세요.";
+      return "입력한 값을 다시 확인해주세요.";
     case "NOT_PLACE_OWNER":
-      return "이 장소를 수정할 권한이 없습니다.";
+      return "이 맛집을 수정할 권한이 없습니다.";
     case "USER_SANCTION_ACTIVE":
       return "활성 제재로 인해 이 작업을 수행할 수 없습니다.";
     case "DAILY_RECOMMEND_LIMIT_EXCEEDED":
       return "오늘 추천 가능 횟수를 모두 사용했습니다.";
     case "RECOMMEND_ALREADY_EXISTS":
-      return "이미 추천한 장소입니다.";
+      return "이미 추천한 맛집입니다.";
     case "COMMENT_ALREADY_EXISTS":
-      return "이미 댓글을 작성한 장소입니다.";
+      return "이미 댓글을 작성한 맛집입니다.";
     case "VISIT_COOLDOWN_ACTIVE":
       return "아직 다시 방문 인증할 수 없습니다.";
     case "OUT_OF_VISIT_RADIUS":

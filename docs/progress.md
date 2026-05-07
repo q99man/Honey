@@ -434,24 +434,19 @@ Next implementation order:
 ## 7. Current Next Step
 
 Recent update:
-- [x] Wishlist UI/UX refactoring first pass completed within the limited `WishlistPage` scope
-- [x] Changed files: `frontend/src/pages/WishlistPage.tsx` and `docs/PROGRESS.md`
-- [x] Wishlist layout now uses the mobile app shell baseline with `max-w-[430px]`, `#fffaf0`, `px-4`, and `pb-24`
-- [x] Wishlist header copy was normalized to Korean Honeytong tone with `내 꿀단지` and a short saved-restaurant explanation
-- [x] Saved-count summary card now shows the current wished count and friendly guidance for both non-empty and empty states
-- [x] Wished restaurant list keeps the existing `SpaceCard` reuse and `Link` detail navigation to `/places/{placeId}`
-- [x] Loading, empty, and error states now use Korean Honeytong copy and rounded white message/skeleton cards
-- [x] Preserved existing wishlist filtering from `place.isWished`, `onToggleWish(place.id)` flow, localStorage-backed wishlist state in the parent app, and bottom navigation structure
-- [x] Verification passed: frontend lint, frontend build, TypeScript build step through `npm run build`, and `git diff --check`; no standalone `typecheck` script exists in `frontend/package.json`
+- [x] Home map-first layout direction corrected before the 2nd polish round
+- [x] Mobile Home now uses a full-screen map-style background with floating search, category chips, and a bottom place information sheet
+- [x] Desktop Home now separates the experience into a left information/search/list panel, a large center map area, and a right ranking preview panel
+- [x] Existing place list API data, search flow, category filtering, detail routing, wishlist toggle behavior, and mobile BottomNav were preserved
+- [x] No frontend mock data, API shape changes, routing changes, authentication changes, or wishlist storage changes were added
 
 Next task:
 
-MyPage UI/UX refactoring first pass
+2nd UI polish round
 
-- keep the refactor limited to `frontend/src/pages/MyPage.tsx` and only directly necessary shared component tweaks
-- align My Page header copy, profile summary, verification/status cards, activity summaries, empty/fallback copy, and mobile bottom spacing with the UI/UX Harness baseline
-- preserve existing profile/status/region/phone/place APIs, auth/logout flow, local UI state, and Korean UI copy
-- verify loading/error/non-login states, phone/region status display, and build/lint after the change
+- refine the map-first Home layout across 393px, 430px, tablet, and desktop widths
+- connect a real map provider layer later when the API/key loading boundary is ready, while keeping the current place/list interactions stable
+- continue with small spacing, Korean copy consistency, and mobile touch ergonomics without changing API, auth, routing, or seed structure
 - recommended reasoning level: medium
 
 ---
