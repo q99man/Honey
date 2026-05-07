@@ -434,19 +434,20 @@ Next implementation order:
 ## 7. Current Next Step
 
 Recent update:
-- [x] Home map-first layout direction corrected before the 2nd polish round
-- [x] Mobile Home now uses a full-screen map-style background with floating search, category chips, and a bottom place information sheet
-- [x] Desktop Home now separates the experience into a left information/search/list panel, a large center map area, and a right ranking preview panel
-- [x] Existing place list API data, search flow, category filtering, detail routing, wishlist toggle behavior, and mobile BottomNav were preserved
-- [x] No frontend mock data, API shape changes, routing changes, authentication changes, or wishlist storage changes were added
+- [x] Home hardcoded map placeholder was replaced with a Kakao Maps JavaScript SDK integration
+- [x] Place list-shaped API responses now include `latitude` and `longitude` so Home can render map markers from real backend data
+- [x] Frontend `Place` mapping now carries place coordinates through list, search, nearby, wishlist, ranking source data, and My Page registered-place reads
+- [x] Kakao map markers navigate to `/places/{id}` through the existing detail route and existing card/wishlist/search/category flows were preserved
+- [x] When `VITE_KAKAO_JAVASCRIPT_KEY` is missing, Home shows a Korean map configuration state instead of a fixed fake map
+- [x] API spec and architecture decision notes were updated for API-backed Home map markers
 
 Next task:
 
 2nd UI polish round
 
-- refine the map-first Home layout across 393px, 430px, tablet, and desktop widths
-- connect a real map provider layer later when the API/key loading boundary is ready, while keeping the current place/list interactions stable
-- continue with small spacing, Korean copy consistency, and mobile touch ergonomics without changing API, auth, routing, or seed structure
+- configure `VITE_KAKAO_JAVASCRIPT_KEY` locally and rerun seeded browser QA for Home at 393px, 430px, tablet, and desktop widths with the real map visible
+- then polish Detail/Ranking/Wishlist/MyPage spacing only where the seeded QA pass shows real overlap or density issues
+- consider map marker labels or selected-place highlighting after the base Kakao map smoke passes
 - recommended reasoning level: medium
 
 ---

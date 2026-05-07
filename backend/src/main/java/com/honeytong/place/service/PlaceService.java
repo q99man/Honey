@@ -469,6 +469,8 @@ public class PlaceService {
                 place.getRegionDong().getId(),
                 place.getRegionDong().getNameKo(),
                 place.getAddressRoad() == null ? place.getAddressJibun() : place.getAddressRoad(),
+                place.getLatitude(),
+                place.getLongitude(),
                 place.getShortRecommendation(),
                 place.getCurrentStarLevel(),
                 place.getCurrentFlowerGrade(),

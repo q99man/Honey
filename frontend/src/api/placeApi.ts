@@ -10,6 +10,8 @@ type PlaceListItemResponse = {
   dongId: number;
   regionName: string;
   address: string | null;
+  latitude: number;
+  longitude: number;
   shortRecommendation: string;
   starLevel: number;
   flowerGrade: string;
@@ -201,6 +203,8 @@ const toPlace = (
     regionName: detail.dongName ?? item.regionName,
     title: item.name,
     desc: description,
+    latitude: item.latitude,
+    longitude: item.longitude,
     distance: formatDistance(item.distanceMeter),
     rating: item.starLevel,
     price: toDisplayPrice(detail.priceRangeCode),

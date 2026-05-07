@@ -1,5 +1,7 @@
 package com.honeytong.place.dto;
 
+import java.math.BigDecimal;
+
 public record PlaceListItemResponse(
         Long id,
         String name,
@@ -9,6 +11,8 @@ public record PlaceListItemResponse(
         Long dongId,
         String regionName,
         String address,
+        BigDecimal latitude,
+        BigDecimal longitude,
         String shortRecommendation,
         int starLevel,
         String flowerGrade,

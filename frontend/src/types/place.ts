@@ -6,6 +6,8 @@ export type Place = {
   regionName: string;
   title: string;
   desc: string;
+  latitude: number;
+  longitude: number;
   distance: string;
   rating: number;
   price: string;

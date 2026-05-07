@@ -1,5 +1,5 @@
-import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+﻿import { useEffect, useMemo, useRef, useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
 import BottomNav from "../components/BottomNav";
 import CategoryTabs from "../components/CategoryTabs";
 import SearchBar from "../components/SearchBar";
@@ -29,6 +29,7 @@ export default function HomePage({
   onToggleWish,
   onSearch,
 }: Props) {
+  const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const visiblePlaces = useMemo(() => {
     if (selectedCategory === "ALL") {
@@ -51,10 +52,13 @@ export default function HomePage({
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      <main className="relative mx-auto min-h-screen max-w-[430px] overflow-hidden bg-[#eaf2e4] lg:max-w-none">
-        <MapCanvas places={visiblePlaces} />
+      <main className="relative mx-auto min-h-screen max-w-[430px] overflow-hidden bg-[#eaf2e4] md:max-w-none">
+        <PlaceMap
+          places={visiblePlaces}
+          onSelectPlace={(placeId) => navigate(`/places/${placeId}`)}
+        />
 
-        <section className="relative z-10 mx-auto flex min-h-screen max-w-[430px] flex-col px-4 pb-24 pt-5 lg:hidden">
+        <section className="relative z-10 mx-auto flex min-h-screen max-w-[430px] flex-col px-4 pb-24 pt-4 sm:pt-5 md:max-w-[760px] md:px-6 md:pb-8 lg:hidden">
           <MobileFloatingHeader
             selectedCategory={selectedCategory}
             onSelectCategory={setSelectedCategory}
@@ -74,10 +78,10 @@ export default function HomePage({
           />
         </section>
 
-        <section className="relative z-10 hidden min-h-screen grid-cols-[360px_minmax(420px,1fr)_340px] gap-5 px-6 py-6 lg:grid">
-          <aside className="flex min-h-0 flex-col rounded-3xl bg-white/95 p-5 shadow-sm backdrop-blur">
+        <section className="relative z-10 hidden min-h-screen grid-cols-[320px_minmax(0,1fr)_300px] gap-4 px-5 py-5 lg:grid xl:grid-cols-[360px_minmax(0,1fr)_340px] xl:gap-5 xl:px-6 xl:py-6">
+          <aside className="flex min-h-0 flex-col rounded-3xl bg-white/95 p-4 shadow-sm backdrop-blur xl:p-5">
             <p className="text-xs font-semibold text-[#d99a00]">Honeytong</p>
-            <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
+            <h1 className="mt-1 text-xl font-bold text-[#2b210f] xl:text-2xl">
               오늘은 어디서 꿀맛을 찾을까요?
             </h1>
             <p className="mt-2 text-sm leading-6 text-gray-600">
@@ -124,7 +128,7 @@ export default function HomePage({
             />
           </aside>
 
-          <section className="relative min-h-0 rounded-[32px] border border-white/70 bg-white/10 shadow-sm">
+          <section className="relative min-h-0 overflow-hidden rounded-[32px] border border-white/70 bg-white/10 shadow-sm">
             <div className="absolute left-5 top-5 rounded-full bg-white/95 px-4 py-3 text-sm font-semibold text-[#2b210f] shadow-sm backdrop-blur">
               {visiblePlaces.length > 0
                 ? `${visiblePlaces.length}개의 꿀맛집이 보이는 중이에요`
@@ -134,16 +138,16 @@ export default function HomePage({
               <p className="text-xs font-semibold text-[#d99a00]">
                 지도 탐색
               </p>
-              <p className="mt-1 text-lg font-bold text-[#2b210f]">
+              <p className="mt-1 text-base font-bold leading-6 text-[#2b210f] xl:text-lg">
                 가운데 지도에서 위치를 보고, 양쪽 패널에서 정보를 확인하세요.
               </p>
             </div>
           </section>
 
-          <aside className="flex min-h-0 flex-col rounded-3xl bg-white/95 p-5 shadow-sm backdrop-blur">
+          <aside className="flex min-h-0 flex-col rounded-3xl bg-white/95 p-4 shadow-sm backdrop-blur xl:p-5">
             <div>
               <p className="text-xs font-semibold text-[#d99a00]">랭킹</p>
-              <h2 className="mt-1 text-xl font-bold text-[#2b210f]">
+              <h2 className="mt-1 text-lg font-bold text-[#2b210f] xl:text-xl">
                 지금 반응 좋은 맛집
               </h2>
               <p className="mt-2 text-sm leading-6 text-gray-500">
@@ -205,7 +209,7 @@ function MobileFloatingHeader({
   onSearch: (keyword: string) => void;
 }) {
   return (
-    <div className="space-y-3">
+    <div className="space-y-2 sm:space-y-3 md:mx-auto md:w-full md:max-w-[680px]">
       <div className="flex items-center justify-between gap-3">
         <div className="rounded-full bg-white/95 px-4 py-2 shadow-sm backdrop-blur">
           <p className="text-sm font-bold text-[#2b210f]">우리 동네 꿀맛 지도</p>
@@ -245,7 +249,7 @@ function MobilePlaceSheet({
   onRetry: () => void;
 }) {
   return (
-    <section className="max-h-[38vh] overflow-hidden rounded-t-[32px] bg-white/95 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur">
+    <section className="max-h-[38dvh] overflow-hidden rounded-t-[32px] bg-white/95 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.08)] backdrop-blur sm:max-h-[36dvh] md:mx-auto md:w-full md:max-w-[680px] md:max-h-[34dvh]">
       <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-gray-300" />
       <div className="flex items-end justify-between gap-3">
         <div>
@@ -331,7 +335,7 @@ function PlaceList({
   }
 
   return (
-    <div className="mt-4 max-h-[22vh] space-y-3 overflow-y-auto pr-1 lg:max-h-none lg:flex-1">
+    <div className="mt-4 max-h-[21dvh] space-y-3 overflow-y-auto pr-1 sm:max-h-[20dvh] md:max-h-[18dvh] lg:max-h-none lg:flex-1">
       {visiblePlaces.map((place) => (
         <Link key={place.id} to={`/places/${place.id}`} className="block">
           <SpaceCard
@@ -380,60 +384,207 @@ function StateCard({
   );
 }
 
-function MapCanvas({ places }: { places: Place[] }) {
-  const markers = places.slice(0, 8);
+function PlaceMap({
+  places,
+  onSelectPlace,
+}: {
+  places: Place[];
+  onSelectPlace: (placeId: number) => void;
+}) {
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const mapRef = useRef<KakaoMap | null>(null);
+  const markersRef = useRef<KakaoMarker[]>([]);
+  const appKey = import.meta.env.VITE_KAKAO_JAVASCRIPT_KEY as
+    | string
+    | undefined;
+
+  useEffect(() => {
+    if (!appKey || !containerRef.current) {
+      return;
+    }
+
+    let canceled = false;
+
+    loadKakaoMapSdk(appKey)
+      .then((kakao) => {
+        if (canceled || !containerRef.current) {
+          return;
+        }
+
+        const validPlaces = places.filter(isPlaceWithCoordinates);
+        const center = getMapCenter(validPlaces);
+        const map =
+          mapRef.current ??
+          new kakao.maps.Map(containerRef.current, {
+            center: new kakao.maps.LatLng(center.latitude, center.longitude),
+            level: validPlaces.length > 1 ? 5 : 4,
+          });
+
+        mapRef.current = map;
+        markersRef.current.forEach((marker) => marker.setMap(null));
+        markersRef.current = [];
+
+        if (validPlaces.length === 0) {
+          map.setCenter(new kakao.maps.LatLng(center.latitude, center.longitude));
+          return;
+        }
+
+        const bounds = new kakao.maps.LatLngBounds();
+        validPlaces.forEach((place) => {
+          const position = new kakao.maps.LatLng(place.latitude, place.longitude);
+          bounds.extend(position);
+
+          const marker = new kakao.maps.Marker({
+            map,
+            position,
+            title: place.title,
+          });
+
+          kakao.maps.event.addListener(marker, "click", () => {
+            onSelectPlace(place.id);
+          });
+
+          markersRef.current.push(marker);
+        });
+
+        if (validPlaces.length > 1) {
+          map.setBounds(bounds);
+        } else {
+          map.setCenter(
+            new kakao.maps.LatLng(
+              validPlaces[0].latitude,
+              validPlaces[0].longitude,
+            ),
+          );
+        }
+      })
+      .catch(() => {
+        mapRef.current = null;
+      });
+
+    return () => {
+      canceled = true;
+    };
+  }, [appKey, places, onSelectPlace]);
+
+  if (!appKey) {
+    return (
+      <MapStatus
+        title="지도 키가 필요해요."
+        desc="VITE_KAKAO_JAVASCRIPT_KEY를 설정하면 실제 Kakao 지도로 맛집 위치를 보여드릴게요."
+      />
+    );
+  }
 
   return (
     <div
-      aria-hidden="true"
-      className="absolute left-0 top-0 z-[1] h-full min-h-screen w-full overflow-hidden bg-[#eaf2e4]"
-    >
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 430 860"
-        preserveAspectRatio="none"
-      >
-        <rect width="430" height="860" fill="#eaf2e4" />
-        <path d="M-20 100 H450 M-20 230 H450 M-20 390 H450 M-20 555 H450 M-20 720 H450" stroke="#ffffff" strokeWidth="22" />
-        <path d="M64 -40 V900 M168 -40 V900 M285 -40 V900 M388 -40 V900" stroke="#ffffff" strokeWidth="20" />
-        <path d="M-30 610 C120 560 250 650 460 590" stroke="#6d95d8" strokeWidth="14" fill="none" opacity="0.75" />
-        <path d="M-20 310 C105 260 250 315 455 250" stroke="#ffffff" strokeWidth="28" fill="none" />
-        <path d="M120 -20 C170 160 155 340 220 520 C260 640 245 760 290 900" stroke="#ffffff" strokeWidth="24" fill="none" />
-        <rect x="28" y="155" width="112" height="82" rx="18" fill="#d8e8cf" />
-        <rect x="254" y="170" width="122" height="92" rx="20" fill="#efd8cf" />
-        <rect x="46" y="655" width="144" height="105" rx="22" fill="#d7e3f0" />
-        <rect x="265" y="610" width="120" height="88" rx="20" fill="#ece5c9" />
-        <text x="34" y="292" fill="#8f9a8d" fontSize="12" fontWeight="700">서교동</text>
-        <text x="305" y="334" fill="#8f9a8d" fontSize="12" fontWeight="700">연남동</text>
-        <text x="72" y="635" fill="#8f9a8d" fontSize="12" fontWeight="700">망원시장</text>
-      </svg>
+      ref={containerRef}
+      aria-label="맛집 지도"
+      className="absolute left-0 top-0 z-[1] h-full min-h-screen w-full bg-[#eaf2e4]"
+    />
+  );
+}
 
-      {markers.map((place, index) => {
-        const positions = [
-          ["left-[26%]", "top-[42%]"],
-          ["left-[54%]", "top-[34%]"],
-          ["left-[68%]", "top-[52%]"],
-          ["left-[39%]", "top-[61%]"],
-          ["left-[75%]", "top-[28%]"],
-          ["left-[18%]", "top-[66%]"],
-          ["left-[46%]", "top-[24%]"],
-          ["left-[60%]", "top-[70%]"],
-        ];
-        const [left, top] = positions[index % positions.length];
-
-        return (
-          <div
-            key={place.id}
-            className={`absolute ${left} ${top} flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f] shadow-sm ring-4 ring-white/80`}
-          >
-            {index + 1}
-          </div>
-        );
-      })}
-
-      <div className="absolute left-1/2 top-[58%] flex h-10 w-10 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-[#1473e6] shadow-[0_0_0_8px_rgba(20,115,230,0.18)] ring-4 ring-white">
-        <span className="h-3 w-3 rounded-full bg-white" />
+function MapStatus({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-[#eaf2e4] px-8 text-center">
+      <div className="rounded-3xl bg-white/95 p-5 shadow-sm">
+        <p className="text-sm font-bold text-[#2b210f]">{title}</p>
+        <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>
       </div>
     </div>
   );
+}
+
+function isPlaceWithCoordinates(place: Place) {
+  return Number.isFinite(place.latitude) && Number.isFinite(place.longitude);
+}
+
+function getMapCenter(places: Place[]) {
+  if (places.length === 0) {
+    return { latitude: 37.5563, longitude: 126.9236 };
+  }
+
+  return {
+    latitude:
+      places.reduce((sum, place) => sum + place.latitude, 0) / places.length,
+    longitude:
+      places.reduce((sum, place) => sum + place.longitude, 0) / places.length,
+  };
+}
+
+function loadKakaoMapSdk(appKey: string) {
+  if (window.kakao?.maps) {
+    return Promise.resolve(window.kakao);
+  }
+
+  return new Promise<KakaoWindow>((resolve, reject) => {
+    const existingScript = document.getElementById(KAKAO_MAP_SCRIPT_ID);
+    if (existingScript) {
+      existingScript.addEventListener("load", () => {
+        window.kakao?.maps.load(() => resolve(window.kakao!));
+      });
+      existingScript.addEventListener("error", reject);
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.id = KAKAO_MAP_SCRIPT_ID;
+    script.async = true;
+    script.src = `https://dapi.kakao.com/v2/maps/sdk.js?appkey=${encodeURIComponent(
+      appKey,
+    )}&autoload=false`;
+    script.onload = () => {
+      window.kakao?.maps.load(() => resolve(window.kakao!));
+    };
+    script.onerror = reject;
+    document.head.appendChild(script);
+  });
+}
+
+const KAKAO_MAP_SCRIPT_ID = "kakao-map-sdk";
+
+type KakaoWindow = {
+  maps: {
+    load: (callback: () => void) => void;
+    LatLng: new (latitude: number, longitude: number) => KakaoLatLng;
+    LatLngBounds: new () => KakaoLatLngBounds;
+    Map: new (
+      container: HTMLElement,
+      options: { center: KakaoLatLng; level: number },
+    ) => KakaoMap;
+    Marker: new (options: {
+      map: KakaoMap;
+      position: KakaoLatLng;
+      title: string;
+    }) => KakaoMarker;
+    event: {
+      addListener: (
+        target: KakaoMarker,
+        type: "click",
+        handler: () => void,
+      ) => void;
+    };
+  };
+};
+
+type KakaoLatLng = object;
+
+type KakaoLatLngBounds = {
+  extend: (latLng: KakaoLatLng) => void;
+};
+
+type KakaoMap = {
+  setBounds: (bounds: KakaoLatLngBounds) => void;
+  setCenter: (latLng: KakaoLatLng) => void;
+};
+
+type KakaoMarker = {
+  setMap: (map: KakaoMap | null) => void;
+};
+
+declare global {
+  interface Window {
+    kakao?: KakaoWindow;
+  }
 }

@@ -326,11 +326,14 @@ Use Kakao Map and Kakao Local API as the MVP map provider.
 - `.env` is ignored by Git and `.env.example` documents required variable names
 - backend reads `KAKAO_REST_API_KEY`, `KAKAO_JAVASCRIPT_KEY`, and `KAKAO_LOCAL_BASE_URL`
 - frontend can read `VITE_KAKAO_JAVASCRIPT_KEY`
+- Home uses Kakao Maps JavaScript SDK when `VITE_KAKAO_JAVASCRIPT_KEY` is present and renders markers from place API latitude/longitude fields
+- When the frontend map key is missing, Home shows a Korean configuration state instead of a fixed placeholder map
 
 ### Reason
 - Kakao Local API directly supports coordinate-to-region-code conversion
 - Kakao Local API also supports keyword/category place search with coordinates and radius
 - this fits region verification and nearby place discovery before the place domain is implemented
+- Place discovery should use API-backed coordinates for map markers instead of hardcoded visual marker positions
 
 ---
 

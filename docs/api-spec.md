@@ -616,6 +616,8 @@ Response:
       "dongId": 123,
       "regionName": "서교동",
       "address": "Some road address",
+      "latitude": 37.123456,
+      "longitude": 127.123456,
       "shortRecommendation": "A place worth revisiting in this area",
       "starLevel": 0,
       "flowerGrade": "SEED",
@@ -631,6 +633,7 @@ Response:
 
 MVP note:
 This authenticated read returns non-deleted places created by the current user, ordered by newest first.
+Place list-shaped responses include `latitude` and `longitude` so the frontend can render real map markers from API data instead of fixed placeholder positions.
 6.10 Get Registration Policy
 GET /api/places/registration-policy
 
