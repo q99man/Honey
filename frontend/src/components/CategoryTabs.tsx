@@ -1,15 +1,4 @@
-type CategoryOption = {
-  label: string;
-  value: string;
-};
-
-const categoryOptions: CategoryOption[] = [
-  { label: "전체", value: "ALL" },
-  { label: "한식", value: "KOREAN" },
-  { label: "분식", value: "SNACK" },
-  { label: "카페", value: "CAFE" },
-  { label: "일식", value: "JAPANESE" },
-];
+import { FOOD_CATEGORIES } from "../constants/foodCategories";
 
 type Props = {
   selectedCategory: string;
@@ -21,8 +10,8 @@ export default function CategoryTabs({
   onSelectCategory,
 }: Props) {
   return (
-    <div className="flex gap-2 overflow-x-auto pb-1">
-      {categoryOptions.map((category) => {
+    <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      {FOOD_CATEGORIES.map((category) => {
         const active = selectedCategory === category.value;
 
         return (
@@ -31,13 +20,16 @@ export default function CategoryTabs({
             type="button"
             aria-pressed={active}
             onClick={() => onSelectCategory(category.value)}
-            className={`shrink-0 rounded-full px-4 py-2 text-sm font-semibold transition ${
+            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-bold shadow-sm transition active:scale-[0.98] ${
               active
-                ? "bg-[#f6b800] text-[#2b210f]"
-                : "bg-white text-gray-500"
+                ? "border-[#f6b800] bg-[#fff1bf] text-[#2b210f]"
+                : "border-white/80 bg-white/95 text-gray-600"
             }`}
           >
-            {category.label}
+            <span aria-hidden="true" className="text-sm leading-none">
+              {category.emoji}
+            </span>
+            <span>{category.label}</span>
           </button>
         );
       })}

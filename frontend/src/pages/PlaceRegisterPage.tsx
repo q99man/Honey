@@ -13,6 +13,7 @@ import {
 } from "../api/placeApi";
 import { getMyRegion, type MyRegion } from "../api/regionApi";
 import BottomNav from "../components/BottomNav";
+import { FOOD_CATEGORIES } from "../constants/foodCategories";
 import type { Place } from "../types/place";
 
 type Props = {
@@ -21,15 +22,9 @@ type Props = {
   onPlaceUpdated?: (place: Place) => void;
 };
 
-const CATEGORY_OPTIONS = [
-  { value: "KOREAN", label: "한식" },
-  { value: "CAFE", label: "카페" },
-  { value: "JAPANESE", label: "일식" },
-  { value: "CHINESE", label: "중식" },
-  { value: "WESTERN", label: "양식" },
-  { value: "SNACK", label: "분식" },
-  { value: "OTHER", label: "기타" },
-];
+const CATEGORY_OPTIONS = FOOD_CATEGORIES.filter(
+  (category) => category.value !== "ALL",
+);
 
 const PRICE_OPTIONS = [
   { value: "", label: "선택 안 함" },
@@ -360,7 +355,7 @@ export default function PlaceRegisterPage({
                 >
                   {CATEGORY_OPTIONS.map((option) => (
                     <option key={option.value} value={option.value}>
-                      {option.label}
+                      {option.emoji} {option.label}
                     </option>
                   ))}
                 </select>
