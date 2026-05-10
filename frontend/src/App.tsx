@@ -8,6 +8,7 @@ import AdminPlacesPage from "./pages/AdminPlacesPage";
 import AdminPoliciesPage from "./pages/AdminPoliciesPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
 import AdminUsersPage from "./pages/AdminUsersPage";
+import CommunityPage from "./pages/CommunityPage";
 import DetailPage from "./pages/DetailPage";
 import HomePage from "./pages/HomePage";
 import MyPage from "./pages/MyPage";
@@ -209,6 +210,7 @@ function App() {
         <Route path="/admin/places" element={<AdminPlacesPage />} />
         <Route path="/admin/reports" element={<AdminReportsPage />} />
         <Route path="/admin/users" element={<AdminUsersPage />} />
+        <Route path="/community" element={<CommunityPage />} />
       </Routes>
     </BrowserRouter>
   );

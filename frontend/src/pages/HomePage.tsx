@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CSSProperties,
+  MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
+  TouchEvent as ReactTouchEvent,
 } from "react";
-import { Link, NavLink, useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import BottomNav from "../components/BottomNav";
 import CategoryTabs from "../components/CategoryTabs";
-import SearchBar from "../components/SearchBar";
 import {
   FOOD_CATEGORIES,
   getFoodCategory,
@@ -38,6 +39,10 @@ type MapActions = {
   zoomOut: () => void;
 };
 
+type MobileSheetStage = "closed" | "half" | "full";
+type DesktopPanelMode = "map" | "ranking" | "saved" | "community" | "my";
+type DesktopPlaceTab = "home" | "menu" | "photos" | "comments" | "report";
+
 const mapGestureStyle: CSSProperties & { WebkitUserDrag?: string } = {
   overscrollBehavior: "contain",
   touchAction: "none",
@@ -62,7 +67,11 @@ export default function HomePage({
   const navigate = useNavigate();
   const [selectedCategory, setSelectedCategory] = useState("ALL");
   const [selectedPlaceId, setSelectedPlaceId] = useState<number | null>(null);
-  const [mobileSheetOpen, setMobileSheetOpen] = useState(false);
+  const [mobileSheetStage, setMobileSheetStage] =
+    useState<MobileSheetStage>("closed");
+  const [desktopPanelMode, setDesktopPanelMode] =
+    useState<DesktopPanelMode>("map");
+  const [desktopPanelCollapsed, setDesktopPanelCollapsed] = useState(false);
   const [desktopCategoryMenuOpen, setDesktopCategoryMenuOpen] = useState(false);
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
@@ -91,16 +100,37 @@ export default function HomePage({
       .slice(0, 5);
   }, [visiblePlaces]);
 
+  const wishedPlaces = useMemo(
+    () => places.filter((place) => place.isWished),
+    [places],
+  );
+
   const handleSelectPlace = useCallback((placeId: number) => {
     setSelectedPlaceId(placeId);
-    setMobileSheetOpen(true);
+    setMobileSheetStage("half");
+    setDesktopPanelMode("map");
+    setDesktopPanelCollapsed(false);
   }, []);
 
   const handleSelectCategory = useCallback((value: string) => {
     setSelectedCategory(value);
     setSelectedPlaceId(null);
-    setMobileSheetOpen(false);
+    setDesktopPanelMode("map");
+    setDesktopPanelCollapsed(false);
+    setMobileSheetStage("closed");
     setDesktopCategoryMenuOpen(false);
+  }, []);
+
+  const handleClearMapSelection = useCallback(() => {
+    setSelectedCategory("ALL");
+    setSelectedPlaceId(null);
+    setDesktopCategoryMenuOpen(false);
+    setMobileSheetStage("closed");
+  }, []);
+
+  const handleCloseMobileSheet = useCallback(() => {
+    setSelectedPlaceId(null);
+    setMobileSheetStage("closed");
   }, []);
 
   const handleUseCurrentLocation = useCallback(async () => {
@@ -124,7 +154,7 @@ export default function HomePage({
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      <main className="relative mx-auto h-[100dvh] min-h-[640px] max-w-[430px] overflow-hidden bg-[#eaf2e4] md:max-w-none">
+      <main className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-[#eaf2e4]">
         <PlaceMap
           places={visiblePlaces}
           selectedPlaceId={selectedPlace?.id ?? null}
@@ -135,7 +165,7 @@ export default function HomePage({
 
         <section
           data-map-ui-layer="mobile-overlay"
-          className="pointer-events-none absolute inset-0 z-10 mx-auto max-w-[430px] md:max-w-[760px] lg:hidden"
+          className="pointer-events-none absolute inset-0 z-10 w-full lg:hidden"
         >
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 px-4 pt-4 sm:pt-5 md:px-6">
             <MobileFloatingHeader
@@ -147,23 +177,33 @@ export default function HomePage({
 
           <FloatingMapActions
             mapActions={mapActions}
+            sheetOpen={mobileSheetStage !== "closed"}
             onUseCurrentLocation={handleUseCurrentLocation}
             onRegister={() => navigate("/places/new")}
           />
 
-          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-30 px-4 pb-24 md:px-6 md:pb-8">
+          <div
+            className={`pointer-events-none absolute inset-x-0 bottom-0 z-30 ${
+              mobileSheetStage === "full"
+                ? "px-0 pb-0 md:px-0 md:pb-0"
+                : mobileSheetStage === "half"
+                  ? "px-0 pb-0 md:px-0 md:pb-0"
+                  : "px-4 pb-[calc(96px+env(safe-area-inset-bottom))] md:px-6 md:pb-8"
+            }`}
+          >
             <MobileSelectedPlaceSheet
               places={places}
               visiblePlaces={visiblePlaces}
               selectedPlace={selectedPlace}
-              open={mobileSheetOpen}
+              stage={mobileSheetStage}
               loading={loading}
               errorMessage={errorMessage}
               selectedCategory={selectedCategory}
               locationMessage={locationMessage}
               onToggleWish={onToggleWish}
               onRetry={() => onSearch("")}
-              onClose={() => setMobileSheetOpen(false)}
+              onStageChange={setMobileSheetStage}
+              onClose={handleCloseMobileSheet}
             />
           </div>
         </section>
@@ -171,188 +211,81 @@ export default function HomePage({
         <section
           data-map-ui-layer="desktop-overlay"
           className="hidden"
-        >
-          <aside className="pointer-events-auto flex min-h-0 flex-col rounded-[28px] bg-white/95 p-4 shadow-sm backdrop-blur xl:p-5">
-            <p className="text-xs font-semibold text-[#d99a00]">Honeytong</p>
-            <h1 className="mt-1 text-xl font-bold text-[#2b210f] xl:text-2xl">
-              지도로 찾는 우리 동네 꿀맛집
-            </h1>
-            <p className="mt-2 text-sm leading-6 text-gray-600">
-              카테고리를 고르고 마커를 눌러 한 곳씩 탐색해보세요.
-            </p>
-
-            <div className="mt-5">
-              <SearchBar onSearch={onSearch} />
-            </div>
-
-            <div className="mt-4">
-              <CategoryTabs
-                selectedCategory={selectedCategory}
-                onSelectCategory={handleSelectCategory}
-              />
-            </div>
-
-            <div className="mt-5 grid grid-cols-2 gap-2">
-              <button
-                type="button"
-                onClick={handleUseCurrentLocation}
-                className="h-11 rounded-full border border-[#f6d365] bg-white text-sm font-bold text-[#2b210f]"
-              >
-                내 위치
-              </button>
-              <Link
-                to="/places/new"
-                className="flex h-11 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f]"
-              >
-                맛집 등록
-              </Link>
-            </div>
-
-            <DesktopSelectedPlacePanel
-              places={places}
-              visiblePlaces={visiblePlaces}
-              selectedPlace={selectedPlace}
-              loading={loading}
-              errorMessage={errorMessage}
-              selectedCategory={selectedCategory}
-              locationMessage={locationMessage}
-              onToggleWish={onToggleWish}
-              onRetry={() => onSearch("")}
-            />
-          </aside>
-
-          <section className="pointer-events-none relative min-h-0 overflow-hidden rounded-[32px] border border-white/70 bg-white/10 shadow-sm">
-            <div className="absolute left-5 top-5 rounded-full bg-white/95 px-4 py-3 text-sm font-semibold text-[#2b210f] shadow-sm backdrop-blur">
-              {visiblePlaces.length > 0
-                ? `${visiblePlaces.length}개의 꿀맛 마커가 보이는 중이에요`
-                : "지도에서 동네 맛집을 찾는 중이에요"}
-            </div>
-            <div className="absolute bottom-5 left-1/2 w-[min(560px,calc(100%-40px))] -translate-x-1/2 rounded-[28px] bg-white/95 p-4 shadow-sm backdrop-blur">
-              <p className="text-xs font-semibold text-[#d99a00]">
-                지도 탐색
-              </p>
-              <p className="mt-1 text-base font-bold leading-6 text-[#2b210f] xl:text-lg">
-                마커를 누르면 선택한 맛집 카드가 왼쪽에 고정돼요.
-              </p>
-            </div>
-          </section>
-
-          <aside className="pointer-events-auto flex min-h-0 flex-col rounded-[28px] bg-white/95 p-4 shadow-sm backdrop-blur xl:p-5">
-            <div>
-              <p className="text-xs font-semibold text-[#d99a00]">랭킹</p>
-              <h2 className="mt-1 text-lg font-bold text-[#2b210f] xl:text-xl">
-                지금 반응 좋은 맛집
-              </h2>
-              <p className="mt-2 text-sm leading-6 text-gray-500">
-                추천, 방문, 댓글 수를 기준으로 정리했어요.
-              </p>
-            </div>
-
-            <div className="mt-5 space-y-3 overflow-y-auto pr-1">
-              {rankedPlaces.length > 0 ? (
-                rankedPlaces.map((place, index) => (
-                  <button
-                    key={place.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedPlaceId(place.id);
-                      setMobileSheetOpen(true);
-                    }}
-                    className="block w-full rounded-[24px] border border-gray-100 bg-white p-4 text-left shadow-sm transition active:scale-[0.99]"
-                  >
-                    <div className="flex items-start gap-3">
-                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#8a6315]">
-                        {index + 1}
-                      </span>
-                      <div className="min-w-0 flex-1">
-                        <h3 className="truncate text-sm font-bold text-[#2b210f]">
-                          {place.title}
-                        </h3>
-                        <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
-                          {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
-                        </p>
-                        <p className="mt-2 text-xs font-semibold text-[#8a6315]">
-                          추천 {place.recommendCount} · 방문 {place.visitCount}
-                        </p>
-                      </div>
-                    </div>
-                  </button>
-                ))
-              ) : (
-                <StateCard
-                  title="아직 랭킹으로 볼 맛집이 없어요."
-                  desc="seed 데이터나 추천 활동이 쌓이면 여기에 보여드릴게요."
-                  flush
-                />
-              )}
-            </div>
-          </aside>
-        </section>
+          aria-hidden="true"
+        />
 
         <section
           data-map-ui-layer="desktop-map-layout"
           className="pointer-events-none absolute inset-0 z-10 hidden lg:block"
         >
-          <DesktopSideNav />
+          <DesktopSideNav
+            activeMode={desktopPanelMode}
+            onSelectMode={(mode) => {
+              setDesktopPanelMode(mode);
+              setDesktopPanelCollapsed(false);
+            }}
+          />
 
-          <aside className="pointer-events-auto absolute inset-y-5 left-[104px] z-20 flex w-[330px] min-h-0 flex-col rounded-[28px] border border-white/80 bg-white/95 p-4 shadow-[0_12px_36px_rgba(43,33,15,0.12)] backdrop-blur xl:left-[112px] xl:w-[360px] xl:p-5">
-            <div>
-              <SearchBar onSearch={onSearch} />
-            </div>
-
-            <div className="mt-5 flex items-start justify-between gap-3">
-              <div className="min-w-0">
-                <button
-                  type="button"
-                  onClick={handleUseCurrentLocation}
-                  className="flex max-w-full items-center gap-2 text-left text-xl font-black text-[#2b210f] transition active:scale-[0.99]"
-                >
-                  <span className="truncate">부개3동</span>
-                  <span className="text-sm text-gray-400">⌄</span>
-                </button>
-                <p className="mt-1 text-xs font-semibold text-gray-400">
-                  현재 지도 중심 지역
-                </p>
-              </div>
-              <span className="shrink-0 rounded-full bg-[#fff7d8] px-3 py-1.5 text-xs font-bold text-[#8a6315]">
-                인천 부평구
-              </span>
-            </div>
-
-            <DesktopSelectedPlacePanel
+          <aside
+            data-desktop-place-panel="root"
+            className={
+              "pointer-events-auto absolute inset-y-0 left-[84px] z-20 flex w-[348px] min-h-0 flex-col border-r border-gray-100 bg-white p-5 shadow-[12px_0_36px_rgba(43,33,15,0.10)] transition-[transform,opacity] duration-300 ease-out xl:w-[388px] " +
+              (desktopPanelCollapsed
+                ? "-translate-x-[calc(100%+16px)] opacity-0"
+                : "translate-x-0 opacity-100")
+            }
+            aria-hidden={desktopPanelCollapsed}
+          >
+            <DesktopPanelContent
+              mode={desktopPanelMode}
               places={places}
               visiblePlaces={visiblePlaces}
+              wishedPlaces={wishedPlaces}
+              rankedPlaces={rankedPlaces}
               selectedPlace={selectedPlace}
               loading={loading}
               errorMessage={errorMessage}
               selectedCategory={selectedCategory}
               locationMessage={locationMessage}
+              onSearch={onSearch}
               onToggleWish={onToggleWish}
               onRetry={() => onSearch("")}
+              onUseCurrentLocation={handleUseCurrentLocation}
+              onSelectPlace={handleSelectPlace}
+              onClearSelection={handleClearMapSelection}
             />
-
-            <div className="mt-4 border-t border-gray-100 pt-4">
-              <div className="flex items-center justify-between gap-3">
-                <p className="text-sm font-black text-[#2b210f]">둘러보기</p>
-                <Link
-                  to="/ranking"
-                  className="text-xs font-bold text-[#8a6315] underline-offset-4 hover:underline"
-                >
-                  랭킹 보기
-                </Link>
-              </div>
-              <DesktopExploreChips
-                selectedCategory={selectedCategory}
-                onSelectCategory={handleSelectCategory}
-              />
-            </div>
           </aside>
 
-          <div className="pointer-events-none absolute inset-y-0 left-[452px] z-10 w-px bg-gray-200/80 xl:left-[492px]" />
+          <div
+            className={`pointer-events-none absolute inset-y-0 z-10 w-px bg-gray-200/80 transition-all ${
+              desktopPanelCollapsed
+                ? "left-[84px]"
+                : "left-[432px] xl:left-[472px]"
+            }`}
+          />
+
+          <button
+            type="button"
+            data-desktop-panel-toggle="root"
+            onClick={() =>
+              setDesktopPanelCollapsed((currentValue) => !currentValue)
+            }
+            aria-label={
+              desktopPanelCollapsed ? "정보 패널 펼치기" : "정보 패널 접기"
+            }
+            className={`pointer-events-auto absolute top-1/2 z-30 flex h-16 w-9 -translate-y-1/2 items-center justify-center rounded-r-2xl border border-l-0 border-gray-100 bg-white text-lg font-black text-[#8a6315] shadow-[0_8px_24px_rgba(43,33,15,0.14)] transition-all active:scale-95 ${
+              desktopPanelCollapsed
+                ? "left-[84px]"
+                : "left-[432px] xl:left-[472px]"
+            }`}
+          >
+            {desktopPanelCollapsed ? ">" : "<"}
+          </button>
 
           <DesktopMapCategoryBar
             selectedCategory={selectedCategory}
             open={desktopCategoryMenuOpen}
+            panelCollapsed={desktopPanelCollapsed}
             onSelectCategory={handleSelectCategory}
             onToggleOpen={() =>
               setDesktopCategoryMenuOpen((currentOpen) => !currentOpen)
@@ -360,44 +293,46 @@ export default function HomePage({
             onClose={() => setDesktopCategoryMenuOpen(false)}
           />
 
-          <div className="pointer-events-none absolute left-[472px] top-28 z-10 rounded-full bg-white/95 px-4 py-3 text-sm font-semibold text-[#2b210f] shadow-sm backdrop-blur xl:left-[512px]">
-            {visiblePlaces.length > 0
-              ? `${visiblePlaces.length}개의 꿀맛 마커가 보이는 중이에요`
-              : "지도에서 동네 맛집을 찾는 중이에요"}
-          </div>
-
-          <div className="pointer-events-none absolute bottom-6 left-[472px] z-10 rounded-[22px] border border-white/80 bg-white/95 px-4 py-3 shadow-sm backdrop-blur xl:left-[512px]">
-            <p className="text-xs font-bold text-[#8a6315]">☀ 21°</p>
-            <p className="mt-1 text-xs font-semibold text-gray-500">
-              미세먼지 보통
-            </p>
-          </div>
-
           <DesktopMapControls
             mapActions={mapActions}
             onUseCurrentLocation={handleUseCurrentLocation}
-            onRegister={() => navigate("/places/new")}
           />
         </section>
       </main>
-      <div data-bottom-nav="mobile-bottom-nav" className="lg:hidden">
+      <div
+        data-bottom-nav="mobile-bottom-nav"
+        className={mobileSheetStage !== "closed" ? "hidden" : "lg:hidden"}
+      >
         <BottomNav />
       </div>
     </div>
   );
 }
 
-function DesktopSideNav() {
+function DesktopSideNav({
+  activeMode,
+  onSelectMode,
+}: {
+  activeMode: DesktopPanelMode;
+  onSelectMode: (mode: DesktopPanelMode) => void;
+}) {
   const navItems = [
-    { to: "/", label: "\uD648", icon: "H", end: true },
-    { to: "/ranking", label: "\uB7AD\uD0B9", icon: "#", end: false },
-    { to: "/wishlist", label: "\uC990\uACA8\uCC3E\uAE30", icon: "*", end: false },
-    { to: "/places/new", label: "\uB4F1\uB85D", icon: "+", end: false },
-    { to: "/my", label: "\uB0B4 \uC815\uBCF4", icon: "i", end: false },
+    { mode: "map" as const, label: "\uC9C0\uB3C4", icon: "M" },
+    { mode: "ranking" as const, label: "\uB7AD\uD0B9", icon: "#" },
+    { mode: "saved" as const, label: "\uC800\uC7A5", icon: "*" },
+    {
+      mode: "community" as const,
+      label: "\uCEE4\uBBA4\uB2C8\uD2F0",
+      icon: "...",
+    },
+    { mode: "my" as const, label: "\uB9C8\uC774", icon: "i" },
   ];
 
   return (
-    <nav className="pointer-events-auto absolute inset-y-0 left-0 z-30 flex w-[84px] flex-col items-center border-r border-gray-100/80 bg-white/95 py-6 shadow-[8px_0_30px_rgba(43,33,15,0.08)] backdrop-blur">
+    <nav
+      data-desktop-side-nav="root"
+      className="pointer-events-auto absolute inset-y-0 left-0 z-30 flex w-[84px] flex-col items-center border-r border-gray-100 bg-white py-6 shadow-[8px_0_30px_rgba(43,33,15,0.08)]"
+    >
       <Link
         to="/"
         className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f6b800] text-xl font-black text-white shadow-sm"
@@ -408,33 +343,23 @@ function DesktopSideNav() {
 
       <div className="mt-8 flex w-full flex-1 flex-col items-center gap-2">
         {navItems.map((item) => (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            end={item.end}
-            className={({ isActive }) =>
-              `flex w-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-bold transition ${
-                isActive
-                  ? "bg-[#fff3c4] text-[#8a6315]"
-                  : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
-              }`
-            }
+          <button
+            key={item.mode}
+            type="button"
+            onClick={() => onSelectMode(item.mode)}
+            className={`flex w-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-bold transition ${
+              activeMode === item.mode
+                ? "bg-[#fff3c4] text-[#8a6315]"
+                : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
+            }`}
           >
             <span className="text-xl leading-none">{item.icon}</span>
             <span>{item.label}</span>
-          </NavLink>
+          </button>
         ))}
       </div>
 
-      <Link
-        to="/my"
-        className="flex w-[68px] flex-col items-center justify-center gap-2 rounded-2xl px-2 py-3 text-[11px] font-bold text-gray-500 hover:bg-gray-50"
-      >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-200 text-xs text-gray-600">
-          {"\uB098"}
-        </span>
-        {"\uB0B4 \uC815\uBCF4"}
-      </Link>
+      <div className="h-10" aria-hidden="true" />
     </nav>
   );
 }
@@ -442,19 +367,21 @@ function DesktopSideNav() {
 function DesktopMapCategoryBar({
   selectedCategory,
   open,
+  panelCollapsed,
   onSelectCategory,
   onToggleOpen,
   onClose,
 }: {
   selectedCategory: string;
   open: boolean;
+  panelCollapsed: boolean;
   onSelectCategory: (value: string) => void;
   onToggleOpen: () => void;
   onClose: () => void;
 }) {
   const primaryCategories = FOOD_CATEGORIES.filter(
     (category) => category.value !== "ALL",
-  ).slice(0, 7);
+  ).slice(0, 6);
   const extraCategories = FOOD_CATEGORIES.filter(
     (category) =>
       category.value === "ALL" ||
@@ -464,19 +391,27 @@ function DesktopMapCategoryBar({
   );
 
   return (
-    <div className="pointer-events-none absolute left-[472px] right-[120px] top-5 z-20 xl:left-[512px] xl:right-[136px]">
-      <div className="pointer-events-auto flex items-center gap-2">
-        <div className="flex min-w-0 flex-1 gap-2 overflow-hidden rounded-[22px] border border-gray-100 bg-white/95 p-2 shadow-[0_10px_28px_rgba(43,33,15,0.12)] backdrop-blur">
+    <div
+      data-desktop-category-bar="root"
+      className={
+        "pointer-events-none absolute top-5 z-40 transition-all " +
+        (panelCollapsed ? "left-[108px]" : "left-[452px] xl:left-[492px]")
+      }
+    >
+      <div className="pointer-events-auto flex w-fit max-w-[calc(100vw-560px)] items-start gap-2 xl:max-w-[760px]">
+        <div className="flex min-w-0 max-w-[calc(100vw-632px)] items-center gap-2 overflow-x-auto rounded-[24px] bg-transparent p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:max-w-[704px] [&::-webkit-scrollbar]:hidden">
           {primaryCategories.map((category) => (
             <button
               key={category.value}
+              data-desktop-category-chip="primary"
               type="button"
               onClick={() => onSelectCategory(category.value)}
-              className={`flex h-10 min-w-[92px] items-center justify-center gap-2 rounded-[16px] border px-3 text-sm font-bold transition active:scale-[0.98] ${
-                selectedCategory === category.value
+              className={
+                "flex h-10 min-w-[92px] shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-bold shadow-[0_8px_22px_rgba(43,33,15,0.10)] transition active:scale-[0.98] " +
+                (selectedCategory === category.value
                   ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                  : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]"
-              }`}
+                  : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
+              }
             >
               <span aria-hidden="true">{category.emoji}</span>
               <span className="truncate">{category.label}</span>
@@ -484,22 +419,28 @@ function DesktopMapCategoryBar({
           ))}
         </div>
 
-        <div className="relative">
+        <div className="relative shrink-0 p-0.5">
           <button
             type="button"
+            data-desktop-category-more="button"
             onClick={onToggleOpen}
             aria-expanded={open}
-            className={`flex h-12 w-12 items-center justify-center rounded-full border text-xl font-black shadow-[0_10px_28px_rgba(43,33,15,0.12)] transition active:scale-95 ${
-              open
+            aria-label="카테고리 더보기"
+            className={
+              "flex h-10 w-10 items-center justify-center rounded-full border text-lg font-black shadow-[0_8px_22px_rgba(43,33,15,0.10)] transition active:scale-95 " +
+              (open
                 ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                : "border-gray-100 bg-white/95 text-[#2b210f]"
-            }`}
+                : "border-gray-100 bg-white text-[#2b210f]")
+            }
           >
             ...
           </button>
 
           {open && (
-            <div className="absolute right-0 top-14 w-[300px] rounded-[24px] border border-gray-100 bg-white/95 p-3 shadow-[0_18px_48px_rgba(43,33,15,0.18)] backdrop-blur">
+            <div
+              data-desktop-category-popover="root"
+              className="absolute left-0 top-12 z-50 w-[300px] max-w-[calc(100vw-32px)] rounded-[24px] border border-gray-100 bg-white p-3 shadow-[0_18px_48px_rgba(43,33,15,0.18)]"
+            >
               <div className="grid grid-cols-3 gap-2">
                 {extraCategories.map((category) => (
                   <button
@@ -509,11 +450,12 @@ function DesktopMapCategoryBar({
                       onSelectCategory(category.value);
                       onClose();
                     }}
-                    className={`flex min-h-16 flex-col items-center justify-center gap-1 rounded-[18px] border px-2 py-2 text-xs font-bold transition active:scale-[0.98] ${
-                      selectedCategory === category.value
+                    className={
+                      "flex min-h-16 flex-col items-center justify-center gap-1 rounded-[18px] border px-2 py-2 text-xs font-bold transition active:scale-[0.98] " +
+                      (selectedCategory === category.value
                         ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                        : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]"
-                    }`}
+                        : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
+                    }
                   >
                     <span className="text-lg" aria-hidden="true">
                       {category.emoji}
@@ -530,68 +472,28 @@ function DesktopMapCategoryBar({
   );
 }
 
-function DesktopExploreChips({
-  selectedCategory,
-  onSelectCategory,
-}: {
-  selectedCategory: string;
-  onSelectCategory: (value: string) => void;
-}) {
-  const categories = FOOD_CATEGORIES.filter(
-    (category) => category.value !== "ALL",
-  ).slice(0, 5);
-
-  return (
-    <div className="mt-3 flex gap-2 overflow-hidden">
-      {categories.map((category) => (
-        <button
-          key={category.value}
-          type="button"
-          onClick={() => onSelectCategory(category.value)}
-          className={`flex h-9 min-w-0 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-bold transition active:scale-[0.98] ${
-            selectedCategory === category.value
-              ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-              : "border-gray-100 bg-white text-gray-600"
-          }`}
-        >
-          <span aria-hidden="true">{category.emoji}</span>
-          <span>{category.label}</span>
-        </button>
-      ))}
-    </div>
-  );
-}
-
 function DesktopMapControls({
   mapActions,
   onUseCurrentLocation,
-  onRegister,
 }: {
   mapActions: MapActions | null;
   onUseCurrentLocation: () => void;
-  onRegister: () => void;
 }) {
   const controls = [
     {
-      label: "\uD604\uC7AC\uC704\uCE58",
-      icon: "o",
+      label: "내 위치",
+      icon: "◎",
       onClick: onUseCurrentLocation,
       disabled: false,
     },
     {
-      label: "\uB9DB\uC9D1 \uB4F1\uB85D",
-      icon: "+",
-      onClick: onRegister,
-      disabled: false,
-    },
-    {
-      label: "\uD655\uB300",
+      label: "확대",
       icon: "+",
       onClick: mapActions?.zoomIn,
       disabled: !mapActions,
     },
     {
-      label: "\uCD95\uC18C",
+      label: "축소",
       icon: "-",
       onClick: mapActions?.zoomOut,
       disabled: !mapActions,
@@ -599,23 +501,212 @@ function DesktopMapControls({
   ];
 
   return (
-    <div className="pointer-events-auto absolute right-6 top-1/2 z-20 flex -translate-y-1/2 flex-col overflow-hidden rounded-[24px] border border-gray-100 bg-white/95 shadow-[0_14px_38px_rgba(43,33,15,0.14)] backdrop-blur">
+    <div
+      data-desktop-map-controls="root"
+      className="pointer-events-auto absolute right-6 top-[92px] z-20 flex flex-col overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-[0_14px_38px_rgba(43,33,15,0.14)]"
+    >
       {controls.map((control, index) => (
         <button
           key={control.label}
           type="button"
+          aria-label={control.label}
           onClick={control.onClick}
           disabled={control.disabled}
-          className={`flex h-[74px] w-[70px] flex-col items-center justify-center gap-1 text-xs font-bold text-[#2b210f] transition hover:bg-[#fff8df] active:scale-[0.98] disabled:opacity-50 ${
-            index > 0 ? "border-t border-gray-100" : ""
-          }`}
+          title={control.label}
+          className={
+            "flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition hover:bg-[#fff8df] active:scale-[0.98] disabled:opacity-50" +
+            (index > 0 ? " border-t border-gray-100" : "")
+          }
         >
-          <span className="text-xl leading-none" aria-hidden="true">
-            {control.icon}
-          </span>
-          <span>{control.label}</span>
+          {control.icon}
         </button>
       ))}
+    </div>
+  );
+}
+
+function DesktopPanelSearch({
+  onSearch,
+}: {
+  onSearch: (keyword: string) => void;
+}) {
+  return (
+    <form
+      className="flex h-12 items-center gap-3 rounded-[16px] border-2 border-[#f6d365] bg-white px-4 shadow-[0_8px_22px_rgba(43,33,15,0.08)]"
+      onSubmit={(event) => {
+        event.preventDefault();
+        const form = new FormData(event.currentTarget);
+        onSearch(String(form.get("keyword") ?? ""));
+      }}
+    >
+      <span className="shrink-0 text-base font-black text-[#d99a00]">⌕</span>
+      <input
+        name="keyword"
+        aria-label="맛집 검색"
+        placeholder="동네 맛집이나 메뉴를 검색해보세요"
+        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
+      />
+    </form>
+  );
+}
+
+function DesktopPanelContent({
+  mode,
+  places,
+  visiblePlaces,
+  wishedPlaces,
+  rankedPlaces,
+  selectedPlace,
+  loading,
+  errorMessage,
+  selectedCategory,
+  locationMessage,
+  onSearch,
+  onToggleWish,
+  onRetry,
+  onUseCurrentLocation,
+  onSelectPlace,
+  onClearSelection,
+}: {
+  mode: DesktopPanelMode;
+  places: Place[];
+  visiblePlaces: Place[];
+  wishedPlaces: Place[];
+  rankedPlaces: Place[];
+  selectedPlace: Place | null;
+  loading: boolean;
+  errorMessage: string | null;
+  selectedCategory: string;
+  locationMessage: string | null;
+  onSearch: (keyword: string) => void;
+  onToggleWish: (id: number) => void;
+  onRetry: () => void;
+  onUseCurrentLocation: () => void;
+  onSelectPlace: (placeId: number) => void;
+  onClearSelection: () => void;
+}) {
+  const modePlaces =
+    mode === "ranking" ? rankedPlaces : mode === "saved" ? wishedPlaces : [];
+  const regionTitle = selectedPlace?.regionName || selectedPlace?.address || "부개3동";
+  const regionDesc = selectedPlace
+    ? getFoodCategory(selectedPlace.category).label
+    : selectedCategory === "ALL"
+      ? "현재 지도 중심 지역"
+      : getFoodCategoryLabel(selectedCategory) + " 맛집";
+  const canClearSelection = selectedPlace != null || selectedCategory !== "ALL";
+
+  return (
+    <>
+      <div className="shrink-0">
+        <DesktopPanelSearch onSearch={onSearch} />
+      </div>
+
+      <div className="mt-4 flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
+        <div className="min-w-0">
+          <button
+            type="button"
+            onClick={onUseCurrentLocation}
+            className="flex max-w-full items-center gap-2 text-left text-xl font-black text-[#2b210f] transition active:scale-[0.99]"
+          >
+            <span className="truncate">{regionTitle}</span>
+            <span className="text-sm text-gray-400">⌄</span>
+          </button>
+          <p className="mt-1 truncate text-xs font-semibold text-gray-400">
+            {regionDesc}
+          </p>
+        </div>
+        {canClearSelection && (
+          <button
+            type="button"
+            onClick={onClearSelection}
+            aria-label="선택 초기화"
+            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white text-lg font-black text-gray-500 shadow-sm active:scale-95"
+          >
+            ×
+          </button>
+        )}
+      </div>
+
+      {mode === "map" ? (
+        <DesktopSelectedPlacePanel
+          places={places}
+          visiblePlaces={visiblePlaces}
+          selectedPlace={selectedPlace}
+          loading={loading}
+          errorMessage={errorMessage}
+          selectedCategory={selectedCategory}
+          locationMessage={locationMessage}
+          onToggleWish={onToggleWish}
+          onRetry={onRetry}
+          onSelectPlace={onSelectPlace}
+        />
+      ) : (
+        <DesktopModePanel
+          mode={mode}
+          places={modePlaces}
+          onSelectPlace={onSelectPlace}
+        />
+      )}
+    </>
+  );
+}
+
+function DesktopModePanel({
+  mode,
+  places,
+  onSelectPlace,
+}: {
+  mode: Exclude<DesktopPanelMode, "map">;
+  places: Place[];
+  onSelectPlace: (placeId: number) => void;
+}) {
+  const emptyMessage = {
+    ranking: "아직 보여줄 랭킹 맛집이 없어요",
+    saved: "저장한 맛집이 아직 없어요",
+    community: "커뮤니티 소식은 준비 중이에요.",
+    my: "마이 정보는 준비 중이에요.",
+  }[mode];
+
+  const desc = {
+    ranking: "지도는 유지한 채 반응 좋은 맛집을 빠르게 확인해요.",
+    saved: "찜한 맛집을 지도 위에서 다시 살펴볼 수 있어요.",
+    community: "동네 소식과 참여 기능은 다음 단계에서 연결할게요.",
+    my: "내 활동과 인증 상태는 현재 모바일 마이 화면 기준으로 운영해요.",
+  }[mode];
+
+  return (
+    <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+      {places.length > 0 ? (
+        <div className="space-y-3">
+          {places.map((place, index) => (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => onSelectPlace(place.id)}
+              className="block w-full rounded-[20px] border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#f6d365] active:scale-[0.99]"
+            >
+              <div className="flex items-start gap-3">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#8a6315]">
+                  {mode === "ranking" ? index + 1 : getFoodCategory(place.category).emoji}
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h3 className="truncate text-sm font-black text-[#2b210f]">
+                    {place.title}
+                  </h3>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                    {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
+                  </p>
+                  <p className="mt-2 text-xs font-semibold text-[#8a6315]">
+                    추천 {place.recommendCount} · 방문 {place.visitCount}
+                  </p>
+                </div>
+              </div>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <StateCard title={emptyMessage} desc={desc} />
+      )}
     </div>
   );
 }
@@ -632,9 +723,36 @@ function MobileFloatingHeader({
   return (
     <div
       data-map-control="mobile-header"
-      className="pointer-events-auto space-y-2 sm:space-y-3 md:mx-auto md:w-full md:max-w-[680px]"
+      className="pointer-events-auto space-y-2 md:mx-auto md:w-full md:max-w-[680px]"
     >
-      <SearchBar onSearch={onSearch} />
+      <form
+        className="flex h-11 items-center gap-2 rounded-[15px] border border-gray-100 bg-white px-3 shadow-[0_6px_20px_rgba(43,33,15,0.10)]"
+        onSubmit={(event) => {
+          event.preventDefault();
+          const form = new FormData(event.currentTarget);
+          onSearch(String(form.get("keyword") ?? ""));
+        }}
+      >
+        <Link
+          to="/"
+          aria-label="Honeytong 홈"
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#f6b800] text-base font-black text-white shadow-sm active:scale-95"
+        >
+          H
+        </Link>
+        <input
+          name="keyword"
+          aria-label="맛집 검색"
+          placeholder="부평구 부평동"
+          className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
+        />
+        <button
+          type="submit"
+          className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[12px] bg-[#2563eb] text-xs font-black text-white shadow-sm active:scale-95"
+        >
+          검색
+        </button>
+      </form>
 
       <div className="-mx-4 overflow-hidden px-4">
         <CategoryTabs
@@ -648,53 +766,59 @@ function MobileFloatingHeader({
 
 function FloatingMapActions({
   mapActions,
+  sheetOpen,
   onUseCurrentLocation,
   onRegister,
 }: {
   mapActions: MapActions | null;
+  sheetOpen: boolean;
   onUseCurrentLocation: () => void;
   onRegister: () => void;
 }) {
   return (
-    <div
-      data-map-control="floating-actions"
-      className="pointer-events-auto absolute right-3 top-[126px] z-20 flex flex-col gap-1.5 sm:top-[132px]"
-    >
-      <button
-        type="button"
-        onClick={mapActions?.zoomIn}
-        disabled={!mapActions}
-        aria-label="지도 확대"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#f6d365] bg-white/95 text-lg font-black text-[#2b210f] shadow-md backdrop-blur active:scale-95 disabled:opacity-50"
+    <>
+      <div
+        data-map-control="floating-actions"
+        className="pointer-events-auto absolute right-3 top-[206px] z-20 flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_rgba(43,33,15,0.16)] sm:top-[214px]"
       >
-        +
-      </button>
-      <button
-        type="button"
-        onClick={mapActions?.zoomOut}
-        disabled={!mapActions}
-        aria-label="지도 축소"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#f6d365] bg-white/95 text-lg font-black text-[#2b210f] shadow-md backdrop-blur active:scale-95 disabled:opacity-50"
-      >
-        −
-      </button>
-      <button
-        type="button"
-        onClick={onUseCurrentLocation}
-        aria-label="현재 위치로 이동"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-[#bfe8d3] bg-white/95 text-base font-bold text-[#2f6f5f] shadow-md backdrop-blur active:scale-95"
-      >
-        ◎
-      </button>
-      <button
-        type="button"
-        onClick={onRegister}
-        aria-label="맛집 등록"
-        className="flex h-9 w-9 items-center justify-center rounded-full bg-[#f6b800] text-base font-bold text-[#2b210f] shadow-md active:scale-95"
-      >
-        ＋
-      </button>
-    </div>
+        <button
+          type="button"
+          onClick={onUseCurrentLocation}
+          aria-label="현재 위치로 이동"
+          className="flex h-11 w-11 items-center justify-center border-b border-gray-100 text-base font-black text-[#2f6f5f] active:bg-[#fff8db] active:scale-95"
+        >
+          ⌖
+        </button>
+        <button
+          type="button"
+          onClick={mapActions?.zoomIn}
+          disabled={!mapActions}
+          aria-label="지도 확대"
+          className="flex h-11 w-11 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] active:bg-[#fff8db] active:scale-95 disabled:opacity-50"
+        >
+          +
+        </button>
+        <button
+          type="button"
+          onClick={mapActions?.zoomOut}
+          disabled={!mapActions}
+          aria-label="지도 축소"
+          className="flex h-11 w-11 items-center justify-center text-lg font-black text-[#2b210f] active:bg-[#fff8db] active:scale-95 disabled:opacity-50"
+        >
+          -
+        </button>
+      </div>
+      {!sheetOpen && (
+        <button
+          type="button"
+          onClick={onRegister}
+          aria-label="맛집 등록"
+          className="pointer-events-auto absolute bottom-[calc(92px+env(safe-area-inset-bottom))] right-4 z-20 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#f6b800] text-2xl font-black text-[#2b210f] shadow-[0_12px_30px_rgba(217,154,0,0.30)] transition active:scale-95"
+        >
+          +
+        </button>
+      )}
+    </>
   );
 }
 
@@ -702,28 +826,54 @@ function MobileSelectedPlaceSheet({
   places,
   visiblePlaces,
   selectedPlace,
-  open,
+  stage,
   loading,
   errorMessage,
   selectedCategory,
   locationMessage,
   onToggleWish,
   onRetry,
+  onStageChange,
   onClose,
 }: {
   places: Place[];
   visiblePlaces: Place[];
   selectedPlace: Place | null;
-  open: boolean;
+  stage: MobileSheetStage;
   loading: boolean;
   errorMessage: string | null;
   selectedCategory: string;
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
   onRetry: () => void;
+  onStageChange: (stage: MobileSheetStage) => void;
   onClose: () => void;
 }) {
   const startYRef = useRef<number | null>(null);
+  const open = stage !== "closed";
+  const full = stage === "full";
+
+  const finishDrag = (clientY: number) => {
+    const startY = startYRef.current;
+    startYRef.current = null;
+    if (startY == null) {
+      return;
+    }
+
+    const deltaY = clientY - startY;
+    if (deltaY > 36) {
+      if (full) {
+        onStageChange("half");
+      } else {
+        onClose();
+      }
+      return;
+    }
+
+    if (deltaY < -24) {
+      onStageChange("full");
+    }
+  };
 
   const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
     startYRef.current = event.clientY;
@@ -731,43 +881,70 @@ function MobileSelectedPlaceSheet({
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
-    const startY = startYRef.current;
-    startYRef.current = null;
-    if (startY != null && event.clientY - startY > 28) {
-      onClose();
-    }
+    finishDrag(event.clientY);
+  };
+
+  const handleMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    startYRef.current = event.clientY;
+  };
+
+  const handleMouseUp = (event: ReactMouseEvent<HTMLButtonElement>) => {
+    finishDrag(event.clientY);
+  };
+
+  const handleTouchStart = (event: ReactTouchEvent<HTMLButtonElement>) => {
+    startYRef.current = event.touches[0]?.clientY ?? null;
+  };
+
+  const handleTouchEnd = (event: ReactTouchEvent<HTMLButtonElement>) => {
+    finishDrag(event.changedTouches[0]?.clientY ?? startYRef.current ?? 0);
   };
 
   return (
     <section
       data-selected-place-sheet="mobile-sheet"
-      className={`pointer-events-auto relative z-30 rounded-t-[28px] bg-white/95 p-4 shadow-[0_-8px_24px_rgba(0,0,0,0.10)] backdrop-blur transition-transform duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
-        open ? "translate-y-0" : "translate-y-[calc(100%-20px)]"
+      className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-white shadow-[0_-12px_34px_rgba(43,33,15,0.16)] transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
+        open ? "translate-y-0" : "translate-y-[calc(100%+24px)]"
+      } ${
+        full
+          ? "h-[calc(100dvh-118px)] max-h-[calc(100dvh-118px)] md:h-[calc(100dvh-132px)] md:max-h-[calc(100dvh-132px)]"
+          : "h-[min(430px,70dvh)] max-h-[min(430px,70dvh)] pb-[calc(8px+env(safe-area-inset-bottom))]"
       }`}
     >
-      <button
-        type="button"
-        aria-label="맛집 상세 카드 내리기"
-        onClick={onClose}
-        onPointerDown={handlePointerDown}
-        onPointerUp={handlePointerUp}
-        className="mx-auto mb-3 flex h-5 w-20 items-center justify-center"
-      >
-        <span className="h-1 w-10 rounded-full bg-gray-300" />
-      </button>
-      {open && (
-        <PanelState
-          places={places}
-          visiblePlaces={visiblePlaces}
-          selectedPlace={selectedPlace}
-          loading={loading}
-          errorMessage={errorMessage}
-          selectedCategory={selectedCategory}
-          locationMessage={locationMessage}
-          onToggleWish={onToggleWish}
-          onRetry={onRetry}
-        />
-      )}
+      <div className="relative h-6 shrink-0">
+        <button
+          type="button"
+          aria-label={full ? "맛집 상세 접기" : "맛집 상세 펼치기"}
+          onClick={() => (full ? onStageChange("half") : onStageChange("full"))}
+          onPointerDown={handlePointerDown}
+          onPointerUp={handlePointerUp}
+          onMouseDown={handleMouseDown}
+          onMouseUp={handleMouseUp}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+          className="absolute left-1/2 top-0 flex h-6 w-28 -translate-x-1/2 items-center justify-center"
+        >
+          <span className="h-1 w-11 rounded-full bg-gray-300" />
+        </button>
+      </div>
+      <div className="min-h-0 flex-1 overflow-hidden">
+        {open && (
+          <PanelState
+            places={places}
+            visiblePlaces={visiblePlaces}
+            selectedPlace={selectedPlace}
+            loading={loading}
+            errorMessage={errorMessage}
+            selectedCategory={selectedCategory}
+            locationMessage={locationMessage}
+            onToggleWish={onToggleWish}
+            onRetry={onRetry}
+            full={full}
+            onStageChange={onStageChange}
+            onClose={onClose}
+          />
+        )}
+      </div>
     </section>
   );
 }
@@ -782,6 +959,7 @@ function DesktopSelectedPlacePanel({
   locationMessage,
   onToggleWish,
   onRetry,
+  onSelectPlace,
 }: {
   places: Place[];
   visiblePlaces: Place[];
@@ -792,9 +970,39 @@ function DesktopSelectedPlacePanel({
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
   onRetry: () => void;
+  onSelectPlace: (placeId: number) => void;
 }) {
+  if (selectedPlace) {
+    return (
+      <div
+        data-desktop-selected-panel="root"
+        className="mt-0 min-h-0 flex-1 overflow-y-auto pr-1"
+      >
+        <DesktopPlaceDetailCard
+          key={selectedPlace.id}
+          place={selectedPlace}
+          locationMessage={locationMessage}
+          onToggleWish={() => onToggleWish(selectedPlace.id)}
+        />
+      </div>
+    );
+  }
+
+  if (selectedCategory !== "ALL") {
+    return (
+      <DesktopCategoryPlaceList
+        places={visiblePlaces}
+        selectedCategory={selectedCategory}
+        onSelectPlace={onSelectPlace}
+      />
+    );
+  }
+
   return (
-    <div className="mt-5 min-h-0 flex-1 overflow-y-auto pr-1">
+    <div
+      data-desktop-selected-panel="root"
+      className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+    >
       <PanelState
         places={places}
         visiblePlaces={visiblePlaces}
@@ -805,7 +1013,198 @@ function DesktopSelectedPlacePanel({
         locationMessage={locationMessage}
         onToggleWish={onToggleWish}
         onRetry={onRetry}
+        full
       />
+    </div>
+  );
+}
+
+function DesktopCategoryPlaceList({
+  places,
+  selectedCategory,
+  onSelectPlace,
+}: {
+  places: Place[];
+  selectedCategory: string;
+  onSelectPlace: (placeId: number) => void;
+}) {
+  if (places.length === 0) {
+    return (
+      <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+        <StateCard
+          title={getFoodCategoryLabel(selectedCategory) + " 맛집이 아직 없어요"}
+          desc="다른 카테고리를 둘러보세요."
+        />
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="divide-y divide-gray-100">
+        {places.map((place) => {
+          const category = getFoodCategory(place.category);
+          const scoreText =
+            place.rating > 0 ? place.rating.toFixed(1) : "평점 집계 중";
+          return (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => onSelectPlace(place.id)}
+              className="block w-full bg-white px-0 py-4 text-left transition hover:bg-[#fffaf0] active:scale-[0.995]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[14px] bg-[#fff1bf]">
+                  <PlaceImagePane place={place} className="h-full" />
+                </div>
+                <div className="min-w-0 flex-1 pt-0.5">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h3 className="truncate text-[15px] font-black text-[#2b210f]">
+                      {place.title}
+                    </h3>
+                    <span className="shrink-0 text-xs font-bold text-gray-400">
+                      {category.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-semibold text-gray-500">
+                    <span className="text-[#f6b800]">★★★★★</span>
+                    <span className="text-[#2b210f]">{scoreText}</span>
+                    <span>추천 {place.recommendCount}</span>
+                    <span>방문 {place.visitCount}</span>
+                  </p>
+                  <p className="mt-1 truncate text-xs font-semibold text-gray-400">
+                    {place.address || place.regionName || place.distance}
+                  </p>
+                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                    {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
+                  </p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+function DesktopPlaceDetailCard({
+  place,
+  locationMessage,
+  onToggleWish,
+}: {
+  place: Place;
+  locationMessage: string | null;
+  onToggleWish: () => void;
+}) {
+  const [activeTab, setActiveTab] = useState<DesktopPlaceTab>("home");
+  const category = getFoodCategory(place.category);
+  const scoreText = place.rating > 0 ? place.rating.toFixed(1) : "평점 집계 중";
+  const reviewCount =
+    place.reviewCount > 0
+      ? place.reviewCount
+      : place.commentCount + place.visitCount + place.recommendCount;
+  const tabs: Array<{ value: DesktopPlaceTab; label: string }> = [
+    { value: "home", label: "홈" },
+    { value: "menu", label: "메뉴" },
+    { value: "photos", label: "사진" },
+    { value: "comments", label: "댓글" },
+    { value: "report", label: "신고" },
+  ];
+
+  return (
+    <article className="flex min-h-full flex-col overflow-hidden bg-white">
+      <button type="button" onClick={() => setActiveTab("photos")} className="relative block w-full text-left" aria-label="사진 탭 보기">
+        <div className="grid h-[178px] grid-cols-[1.2fr_0.9fr] gap-1 overflow-hidden bg-[#fff1bf]">
+          <PlaceImagePane place={place} className="h-full" />
+          <div className="grid h-full grid-rows-2 gap-1">
+            <PlaceImagePane place={place} className="h-full brightness-[0.98]" />
+            <PlaceImagePane place={place} className="h-full" />
+          </div>
+        </div>
+        <span className="absolute bottom-3 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">1/6</span>
+      </button>
+
+      <div className="px-4 py-3">
+        <div className="flex items-start gap-3">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="truncate text-[21px] font-black leading-7 text-[#1f1a12]">{place.title}</h2>
+              <span className="shrink-0 text-xs font-bold text-gray-500">{category.label}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-gray-600">
+              <span className="text-[#f6b800]">★★★★★</span>
+              <span className="text-[#1f1a12]">{scoreText}</span>
+              <span>({reviewCount})</span>
+              <span className="text-[#2f8f5f]">영업정보 확인 중</span>
+            </div>
+          </div>
+          <button type="button" aria-label={place.isWished ? "저장 해제" : "저장"} onClick={onToggleWish} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#f6d365] bg-[#fff8df] px-3 text-xs font-black text-[#8a6315] shadow-sm active:scale-95">
+            <span className="text-base leading-none">{place.isWished ? "▰" : "▱"}</span>
+            저장
+          </button>
+        </div>
+        <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
+      </div>
+
+      <div className="flex h-12 items-center overflow-x-auto border-y border-gray-100 px-2 text-sm font-bold text-gray-500 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {tabs.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => setActiveTab(tab.value)}
+            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-black px-4 text-black transition" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition hover:text-[#2b210f]"}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div className="min-h-0 flex-1 overflow-y-auto">
+        <DesktopPlaceTabContent tab={activeTab} place={place} locationMessage={locationMessage} />
+      </div>
+    </article>
+  );
+}
+
+function DesktopPlaceTabContent({
+  tab,
+  place,
+  locationMessage,
+}: {
+  tab: DesktopPlaceTab;
+  place: Place;
+  locationMessage: string | null;
+}) {
+  if (tab === "menu") {
+    return <div className="space-y-3 p-4"><CompactInfoCard title="추천 메뉴" desc={place.desc || "등록된 추천 문구를 확인해 주세요."} /><CompactInfoCard title="가격대" desc={place.price} /></div>;
+  }
+  if (tab === "photos") {
+    return <div className="grid grid-cols-2 gap-2 p-4">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-square overflow-hidden rounded-[16px] bg-[#fff1bf]"><PlaceImagePane place={place} className="h-full" /></div>)}</div>;
+  }
+  if (tab === "comments") {
+    return <div className="space-y-3 p-4"><CompactInfoCard title={"댓글 " + place.commentCount + "개"} desc="댓글 상세 목록은 장소 상세 기능과 함께 연결될 예정이에요." /><CompactInfoCard title="가벼운 한마디" desc={place.desc || "동네 사람들이 추천한 꿀맛집이에요."} /></div>;
+  }
+  if (tab === "report") {
+    return <div className="space-y-3 p-4"><CompactInfoCard title="신고 안내" desc="잘못된 정보, 폐업, 부적절한 내용은 장소 상세 신고 기능으로 접수할 수 있어요." /><CompactInfoCard title="운영 기준" desc="신고 내용은 운영자가 확인한 뒤 필요한 조치를 진행해요." /></div>;
+  }
+  return (
+    <div>
+      <DetailInfoRow icon="시간" title="영업정보 준비 중" desc="방문 전 영업시간을 확인해 주세요" />
+      <DetailInfoRow icon="위치" title={place.address || place.regionName || "주소 정보 준비 중"} desc={place.distance} />
+      <DetailInfoRow icon="링크" title="https://www.honeytong.co.kr" />
+      <DetailInfoRow icon="전화" title="전화 정보 준비 중" />
+      <DetailInfoRow icon="주차" title="주차정보" desc="등록된 정보가 아직 없어요" />
+      {locationMessage && <p className="px-4 py-3 text-xs font-semibold text-[#2f6f5f]">{locationMessage}</p>}
+    </div>
+  );
+}
+
+function CompactInfoCard({ title, desc }: { title: string; desc: string }) {
+  return (
+    <div className="border-b border-gray-100 bg-white px-4 py-3">
+      <p className="text-sm font-black text-[#2b210f]">{title}</p>
+      <p className="mt-2 text-sm leading-6 text-gray-600">{desc}</p>
     </div>
   );
 }
@@ -820,6 +1219,9 @@ function PanelState({
   locationMessage,
   onToggleWish,
   onRetry,
+  full = false,
+  onStageChange,
+  onClose,
 }: {
   places: Place[];
   visiblePlaces: Place[];
@@ -830,154 +1232,214 @@ function PanelState({
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
   onRetry: () => void;
+  full?: boolean;
+  onStageChange?: (stage: MobileSheetStage) => void;
+  onClose?: () => void;
 }) {
-  if (loading) {
-    return <StateCard title="맛집을 불러오는 중이에요." />;
-  }
-
-  if (errorMessage) {
-    return (
-      <StateCard
-        title={errorMessage}
-        desc="잠시 뒤 다시 확인해보세요."
-        actionLabel="다시 불러오기"
-        onAction={onRetry}
-      />
-    );
-  }
-
-  if (places.length === 0) {
-    return (
-      <StateCard
-        title="아직 보여줄 맛집이 없어요."
-        desc="우리 동네 첫 꿀맛집을 등록해보세요."
-      />
-    );
-  }
-
-  if (visiblePlaces.length === 0) {
-    return (
-      <StateCard
-        title={`${getFoodCategoryLabel(selectedCategory)} 맛집이 아직 없어요.`}
-        desc="다른 카테고리도 둘러보세요."
-      />
-    );
-  }
-
-  if (!selectedPlace) {
-    return (
-      <StateCard
-        title="지도에서 맛집 마커를 선택해 주세요."
-        desc="선택한 맛집 정보가 여기에 표시돼요."
-      />
-    );
-  }
-
-  return (
-    <SelectedPlaceCard
-      place={selectedPlace}
-      locationMessage={locationMessage}
-      onToggleWish={() => onToggleWish(selectedPlace.id)}
-    />
-  );
+  if (loading) return <StateCard title="맛집을 불러오는 중이에요." />;
+  if (errorMessage) return <StateCard title={errorMessage} desc="잠시 뒤 다시 확인해보세요." actionLabel="다시 불러오기" onAction={onRetry} />;
+  if (places.length === 0) return <StateCard title="아직 보여줄 맛집이 없어요." desc="우리 동네 첫 꿀맛집을 등록해보세요." />;
+  if (visiblePlaces.length === 0) return <StateCard title={getFoodCategoryLabel(selectedCategory) + " 맛집이 아직 없어요"} desc="다른 카테고리를 둘러보세요." />;
+  if (!selectedPlace) return <StateCard title="지도에서 맛집 마커를 선택해 주세요." desc="선택한 맛집 정보가 여기에 표시돼요." />;
+  return <SelectedPlaceCard key={selectedPlace.id} place={selectedPlace} locationMessage={locationMessage} onToggleWish={() => onToggleWish(selectedPlace.id)} full={full} onStageChange={onStageChange} onClose={onClose} />;
 }
 
 function SelectedPlaceCard({
   place,
   locationMessage,
   onToggleWish,
+  full,
+  onStageChange,
+  onClose,
 }: {
   place: Place;
   locationMessage: string | null;
   onToggleWish: () => void;
+  full: boolean;
+  onStageChange?: (stage: MobileSheetStage) => void;
+  onClose?: () => void;
 }) {
+  const [activeTab, setActiveTab] = useState<DesktopPlaceTab>("home");
   const category = getFoodCategory(place.category);
+  const scoreText = place.rating > 0 ? place.rating.toFixed(1) : "평점 집계 중";
+  const reviewCount = place.reviewCount > 0 ? place.reviewCount : place.commentCount + place.visitCount + place.recommendCount;
+  const tabs: Array<{ value: DesktopPlaceTab; label: string }> = [
+    { value: "home", label: "홈" },
+    { value: "menu", label: "메뉴" },
+    { value: "photos", label: "사진" },
+    { value: "comments", label: "댓글" },
+    { value: "report", label: "신고" },
+  ];
+  const handleTabClick = (tab: DesktopPlaceTab) => {
+    setActiveTab(tab);
+    if (!full) {
+      onStageChange?.("full");
+    }
+  };
+
+  const handleImageClick = () => {
+    handleTabClick("photos");
+  };
 
   return (
-    <article className="overflow-hidden rounded-[26px] bg-white shadow-sm">
-      <div className="relative h-36 bg-[#fff1bf] sm:h-40 lg:h-44">
-        {place.imageUrl ? (
-          <img
-            src={place.imageUrl}
-            alt={`${place.title} 대표 이미지`}
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center px-6 text-center text-sm font-bold leading-6 text-[#8a6315]">
-            {category.emoji} 꿀맛집 이미지 준비 중
-          </div>
-        )}
-        <button
-          type="button"
-          aria-label={place.isWished ? "찜 해제" : "찜하기"}
-          onClick={onToggleWish}
-          className="absolute right-3 top-3 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#d99a00] shadow-sm active:scale-95"
+    <article className="flex h-full min-h-0 flex-col bg-white">
+      <button
+        type="button"
+        onClick={handleImageClick}
+        className={full ? "relative block shrink-0 px-2 pb-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45" : "relative block min-h-0 flex-1 basis-1/2 px-2 pb-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45"}
+        aria-label="사진 탭 보기"
+      >
+        <div
+          className={
+            full
+              ? "grid h-[202px] grid-cols-[1.05fr_1fr_0.82fr] gap-2 overflow-hidden rounded-[18px] bg-[#fff1bf]"
+              : "grid h-full min-h-[150px] grid-cols-3 gap-px overflow-hidden rounded-[16px] bg-[#fff1bf]"
+          }
         >
-          {place.isWished ? "♥" : "♡"}
-        </button>
+          <PlaceImagePane place={place} className="h-full" />
+          <PlaceImagePane place={place} className="h-full brightness-[0.98]" />
+          <PlaceImagePane place={place} className="h-full" />
+        </div>
+        <span className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">
+          1/6
+        </span>
+      </button>
+
+      <div className={full ? "shrink-0 px-4 pb-3" : "flex shrink-0 items-center px-4 py-3"}>
+        <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <div className="flex min-w-0 items-center gap-2">
+              <h2 className="min-w-0 truncate text-[22px] font-black leading-7 text-[#1f1a12]">{place.title}</h2>
+              <span className="shrink-0 text-xs font-bold text-gray-500">{category.label}</span>
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-gray-600">
+              <span className="text-[#f6b800]">★★★★★</span>
+              <span className="text-[#1f1a12]">{scoreText}</span>
+              <span>({reviewCount})</span>
+              <span className="text-[#2f8f5f]">영업정보 확인 중</span>
+            </div>
+          </div>
+          <div className="flex w-[84px] shrink-0 items-center justify-end gap-1.5">
+            <button
+              type="button"
+              aria-label={place.isWished ? "저장 해제" : "저장"}
+              onClick={onToggleWish}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-base font-black text-[#8a6315] shadow-sm active:scale-95"
+            >
+              {place.isWished ? "▰" : "▱"}
+            </button>
+            <button
+              type="button"
+              aria-label="맛집 상세 닫기"
+              onClick={onClose}
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-100 bg-white text-xl font-black text-[#2b210f] shadow-sm active:scale-95"
+            >
+              ×
+            </button>
+          </div>
+        </div>
       </div>
 
-      <div className="p-4">
-        <div className="flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs font-bold text-[#d99a00]">
-              {category.emoji} {category.label}
-            </p>
-            <h2 className="mt-1 line-clamp-2 text-lg font-bold leading-6 text-[#2b210f]">
-              {place.title}
-            </h2>
-          </div>
-          <span className="shrink-0 rounded-full bg-[#eaf7ef] px-3 py-1 text-xs font-bold text-[#2f6f5f]">
-            {place.regionName || "동네"}
-          </span>
-        </div>
-
-        <p className="mt-2 line-clamp-2 text-sm leading-6 text-gray-600">
-          {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
-        </p>
-
-        <div className="mt-3 grid grid-cols-3 gap-2 text-center text-xs font-bold text-[#8a6315]">
-          <InfoPill label="추천" value={String(place.recommendCount)} />
-          <InfoPill label="방문" value={String(place.visitCount)} />
-          <InfoPill label="댓글" value={String(place.commentCount)} />
-        </div>
-
-        <div className="mt-3 space-y-1 text-xs leading-5 text-gray-500">
-          <p className="line-clamp-1">위치: {place.address || place.regionName}</p>
-          <p className="line-clamp-1">가격: {place.price}</p>
-          {locationMessage && (
-            <p className="font-semibold text-[#2f6f5f]">{locationMessage}</p>
-          )}
-        </div>
-
-        <div className="mt-4 grid grid-cols-[1fr_1fr] gap-2">
-          <Link
-            to={`/places/${place.id}`}
-            className="flex h-11 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f]"
+      <div className="flex h-12 shrink-0 items-center overflow-x-auto border-y border-gray-100 px-2 text-sm font-bold text-gray-500 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+        {tabs.map((tab) => (
+          <button
+            key={tab.value}
+            type="button"
+            onClick={() => handleTabClick(tab.value)}
+            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-black px-4 text-black transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45 active:text-[#2b210f]"}
           >
-            상세보기
-          </Link>
-          <a
-            href={getKakaoMapUrl(place)}
-            target="_blank"
-            rel="noreferrer"
-            className="flex h-11 items-center justify-center rounded-full border border-[#f6d365] bg-white text-sm font-bold text-[#2b210f]"
-          >
-            카카오 지도
-          </a>
-        </div>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className={
+          full
+            ? "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(16px+env(safe-area-inset-bottom))] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            : "h-0 min-h-0 overflow-hidden"
+        }
+      >
+        {full && <MobilePlaceTabContent tab={activeTab} place={place} locationMessage={locationMessage} />}
       </div>
     </article>
   );
 }
 
-function InfoPill({ label, value }: { label: string; value: string }) {
+function MobilePlaceTabContent({
+  tab,
+  place,
+  locationMessage,
+}: {
+  tab: DesktopPlaceTab;
+  place: Place;
+  locationMessage: string | null;
+}) {
+  if (tab === "menu") {
+    return (
+      <div className="space-y-3 p-4">
+        <CompactInfoCard title="추천 메뉴" desc={place.desc || "등록된 추천 메뉴 정보가 아직 없어요."} />
+        <CompactInfoCard title="가격대" desc={place.price} />
+      </div>
+    );
+  }
+
+  if (tab === "photos") {
+    return (
+      <div className="grid grid-cols-3 gap-2 p-4">
+        {Array.from({ length: 6 }).map((_, index) => (
+          <div key={index} className="aspect-square overflow-hidden rounded-[14px] bg-[#fff1bf]">
+            <PlaceImagePane place={place} className="h-full" />
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (tab === "comments") {
+    return (
+      <div className="space-y-3 p-4">
+        <CompactInfoCard title={"댓글 " + place.commentCount + "개"} desc="댓글 목록은 장소 상세 기능과 함께 연결될 예정이에요." />
+        <CompactInfoCard title="동네 한마디" desc={place.desc || "동네 사람들이 추천한 꿀맛집이에요."} />
+      </div>
+    );
+  }
+
+  if (tab === "report") {
+    return (
+      <div className="space-y-3 p-4">
+        <CompactInfoCard title="신고" desc="잘못된 정보나 부적절한 내용은 신고 기능으로 접수할 수 있어요." />
+        <CompactInfoCard title="운영 확인" desc="신고 내용은 운영자가 확인한 뒤 필요한 조치를 진행해요." />
+      </div>
+    );
+  }
+
   return (
-    <div className="rounded-2xl bg-[#fff8db] px-2 py-2">
-      <p>{value}</p>
-      <p className="mt-0.5 text-[11px] font-semibold text-gray-500">{label}</p>
+    <div>
+      <div className="border-b border-gray-100 px-4 py-3">
+        <p className="text-xs font-black text-gray-400">소개</p>
+        <p className="mt-1 text-sm leading-6 text-[#2b210f]">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
+      </div>
+      <DetailInfoRow icon="시간" title="영업정보 준비 중" desc="방문 전 영업시간을 확인해 주세요" />
+      <DetailInfoRow icon="위치" title={place.address || place.regionName || "주소 정보 준비 중"} desc="복사" />
+      <DetailInfoRow icon="링크" title="https://www.honeytong.co.kr" />
+      <DetailInfoRow icon="전화" title="전화 정보 준비 중" />
+      <DetailInfoRow icon="주차" title="주차정보" desc="등록된 정보가 아직 없어요" />
+      {locationMessage && <p className="px-4 py-3 text-xs font-semibold text-[#2f6f5f]">{locationMessage}</p>}
     </div>
   );
+}
+
+function PlaceImagePane({ place, className }: { place: Place; className: string }) {
+  const category = getFoodCategory(place.category);
+  if (place.imageUrl) {
+    return <img src={place.imageUrl} alt={place.title + " 대표 이미지"} className={className + " w-full object-cover"} />;
+  }
+  return <div className={className + " flex w-full items-center justify-center bg-[#fff1bf] px-3 text-center text-xs font-bold leading-5 text-[#8a6315]"}>{category.emoji} 이미지 준비 중</div>;
+}
+
+function DetailInfoRow({ icon, title, desc }: { icon: string; title: string; desc?: string }) {
+  return <div className="flex min-h-[52px] items-center gap-3 border-b border-gray-100 px-4 py-3 text-sm"><span className="flex min-h-7 min-w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 px-2 text-[11px] font-black text-gray-500">{icon}</span><div className="min-w-0 flex-1"><p className="truncate font-bold text-[#2b210f]">{title}</p>{desc && <p className="mt-0.5 truncate text-xs text-gray-500">{desc}</p>}</div><span className="text-gray-300">›</span></div>;
 }
 
 function StateCard({
@@ -1637,7 +2099,7 @@ function PlaceMap({
 function MapStatus({ title, desc }: { title: string; desc: string }) {
   return (
     <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-[#eaf2e4] px-8 text-center">
-      <div className="rounded-[24px] bg-white/95 p-5 shadow-sm">
+      <div className="rounded-[24px] bg-white p-5 shadow-sm">
         <p className="text-sm font-bold text-[#2b210f]">{title}</p>
         <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>
       </div>
@@ -1649,36 +2111,21 @@ function createPlaceOverlay(place: Place, active: boolean) {
   const category = getFoodCategory(place.category);
   const root = document.createElement("div");
   root.dataset.placeMarkerRoot = "true";
-  root.className = "pointer-events-none flex h-12 w-fit items-center justify-center";
+  root.className = "pointer-events-none flex h-14 w-14 items-center justify-center";
   root.style.pointerEvents = "none";
-  root.style.width = "fit-content";
-  root.style.height = "48px";
-  root.style.maxWidth = "160px";
+  root.style.width = "56px";
+  root.style.height = "56px";
 
   const marker = document.createElement("button");
   marker.type = "button";
   marker.title = place.title;
   marker.dataset.placeMarkerHit = "true";
-  marker.className = `pointer-events-auto flex h-11 max-w-[148px] origin-bottom items-center justify-center gap-1.5 rounded-[24px_24px_24px_8px] border bg-[#fff8db] px-3 text-sm font-bold text-[#2b210f] shadow-md transition ${
-    active
-      ? "scale-110 border-[#f6b800] shadow-[0_10px_24px_rgba(217,154,0,0.35)] ring-4 ring-[#f6b800]/30"
-      : "border-white/90 hover:border-[#f6b800]"
-  }`;
+  marker.className = active
+    ? "pointer-events-auto flex h-12 w-12 origin-bottom scale-110 items-center justify-center rounded-[20px_20px_20px_7px] border-[3px] border-white bg-[#f35f4f] text-xl text-white shadow-[0_14px_32px_rgba(243,95,79,0.42)] ring-4 ring-[#f6d365]/50 transition active:scale-105"
+    : "pointer-events-auto flex h-10 w-10 origin-bottom items-center justify-center rounded-[18px_18px_18px_6px] border-2 border-white bg-[#f6b800] text-lg text-[#2b210f] shadow-[0_10px_24px_rgba(43,33,15,0.30)] ring-2 ring-[#2b210f]/10 transition hover:border-white hover:bg-[#ffd84d] active:scale-95";
   marker.style.pointerEvents = "auto";
-  marker.style.maxWidth = "148px";
-  marker.style.height = "44px";
+  marker.textContent = category.emoji;
 
-  const emoji = document.createElement("span");
-  emoji.textContent = category.emoji;
-  emoji.className = "pointer-events-none text-lg leading-none";
-  emoji.style.pointerEvents = "none";
-
-  const label = document.createElement("span");
-  label.textContent = active ? place.title : category.label;
-  label.className = "pointer-events-none max-w-[108px] truncate";
-  label.style.pointerEvents = "none";
-
-  marker.append(emoji, label);
   root.append(marker);
   return root;
 }
@@ -1711,12 +2158,6 @@ function getMapCenter(places: Place[]) {
     longitude:
       places.reduce((sum, place) => sum + place.longitude, 0) / places.length,
   };
-}
-
-function getKakaoMapUrl(place: Place) {
-  return `https://map.kakao.com/link/map/${encodeURIComponent(
-    place.title,
-  )},${place.latitude},${place.longitude}`;
 }
 
 function getCurrentPosition(): Promise<GeolocationPosition> {
