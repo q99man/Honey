@@ -18,7 +18,7 @@ export default function SearchBar({ onSearch }: Props) {
       <input
         name="keyword"
         aria-label="맛집 검색"
-        placeholder="동네 맛집이나 메뉴를 검색해보세요"
+        placeholder="검색어를 입력하세요"
         className="min-w-0 flex-1 bg-transparent text-[13px] text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
       />
     </form>

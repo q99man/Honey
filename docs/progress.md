@@ -509,12 +509,20 @@ Recent update:
 - [x] Home mobile map controls were realigned to the upper-right area directly below the search/category header, matching the desktop control placement pattern; the selected-place sheet now supports card-surface drag gestures with scroll/input guards, and the comments tab again loads place comments and provides an inline comment input.
 - [x] Home search UX now resets map selection on search, opens the result panel, shows a Korean no-result state with a full-list reset action, and keeps desktop/mobile search inputs in sync with the active keyword.
 - [x] Place search API now matches visible places by name, recommended menu, recommendation text, feature text, road/jibun address, and Korean/English city/district/dong names instead of place name only.
+- [x] Home mobile map browser visual QA was rerun with Chrome mobile device emulation at 360px, 393px, and 430px widths. Kakao map tiles loaded, the mobile search/category header, right-side map controls, registration FAB, and bottom navigation stayed within each viewport with no horizontal overflow (`scrollWidth` matched viewport width). App-owned place markers were not rendered in this run because the local `/api/places` response did not expose latitude/longitude values, so marker-click half sheet and expanded sheet visual QA remain blocked until the API-backed coordinate response is restored in the running target.
+- [x] Home mobile map control follow-up unified the mobile current-location, zoom-in, and zoom-out buttons with the desktop map control icon set and labels. Chrome DevTools mobile emulation at 360px, 393px, and 430px confirmed no horizontal overflow, right-side controls stayed inside the viewport, each control rendered as an SVG icon button, and API-backed map markers rendered again in the QA target.
+- [x] Home web/mobile UI follow-up applied the mobile bottom navigation SVG icons to the desktop side menu, restored full-surface mobile detail-sheet drag transitions for full, half, and closed states while preserving tap behavior, and added compact desktop detail/list scrollbars without visible arrow buttons.
+- [x] Home desktop My menu now renders the shared login/signup auth card directly inside the web side panel when the user is not logged in, avoiding route changes from the map UI and reusing the Korean-first MyPage authentication flow.
+- [x] Home desktop My panel now owns its authentication check instead of relying on a stale parent flag, so the My tab cannot fall back to the generic "마이 정보 준비 중" state; stale tokens are cleared on failed profile load, logged-out users see the inline auth card, and logged-in users see profile, certification, and activity summary cards inside the panel.
+- [x] Home web/mobile search header polish replaced the desktop text search glyph and mobile Honeytong `H` badge with a shared magnifying-glass SVG treatment, and removed the desktop menu-panel region title/description block so region context can be reintroduced elsewhere later.
+- [x] Home web follow-up moved region context back onto the desktop map as a compact overlay chip with current-location and clear-selection actions, and the desktop My panel now fetches the same profile, status, activity summary, my-region, and region-change policy APIs used by the mobile My Page after login.
 
 Next task:
 
-Search QA and ranking/performance follow-up
+Home seeded browser QA and My-panel parity follow-up
 
-- run browser QA with seeded data for search result, no-result, reset, and overlapping marker list flows once localhost access is available in the in-app browser
+- run browser QA against a running local backend with a disposable seeded login account to verify the web My panel's logged-in profile, activity summary, and region-verification states from real API data
+- run seeded data browser QA for search result, no-result, reset, and overlapping marker list flows
 - review whether expanded search needs database indexes or a dedicated search endpoint strategy before production-scale data
 - connect the community route to real community features when that domain enters scope
 - recommended reasoning level: medium

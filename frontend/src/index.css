@@ -36,3 +36,36 @@ input {
 #root {
   min-height: 100svh;
 }
+
+.desktop-compact-scrollbar {
+  scrollbar-color: #d1d5db transparent;
+  scrollbar-width: thin;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: #d1d5db;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: #9ca3af;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar-button {
+  display: none;
+  width: 0;
+  height: 0;
+}
+
+.desktop-compact-scrollbar::-webkit-scrollbar-corner {
+  background: transparent;
+}

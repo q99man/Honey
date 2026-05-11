@@ -7,14 +7,42 @@ import type {
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { getApiErrorMessage, hasStoredAccessToken } from "../api/http";
+import {
+  clearAuthTokens,
+  getApiErrorMessage,
+  hasStoredAccessToken,
+} from "../api/http";
 import {
   createComment,
   getPlaceComments,
   type CommentItem,
 } from "../api/participationApi";
+import { login, signup } from "../api/authApi";
+import {
+  getMyRegion,
+  getRegionChangePolicy,
+  verifyRegion,
+  type MyRegion,
+  type RegionChangePolicy,
+} from "../api/regionApi";
+import {
+  getMyActivitySummary,
+  getMyProfile,
+  getMyStatus,
+  type MyActivitySummary,
+  type MyProfile,
+  type MyStatus,
+} from "../api/userApi";
+import AuthCard, { type AuthMode } from "../components/AuthCard";
 import BottomNav from "../components/BottomNav";
 import CategoryTabs from "../components/CategoryTabs";
+import {
+  HomeIcon,
+  MessageIcon,
+  StarIcon,
+  TrophyIcon,
+  UserIcon,
+} from "../components/NavIcons";
 import {
   FOOD_CATEGORIES,
   getFoodCategory,
@@ -55,6 +83,84 @@ type PlaceClusterSelection = {
   anchorPlaceId: number;
   placeIds: number[];
 };
+
+const DEFAULT_MY_ACTIVITY_SUMMARY: MyActivitySummary = {
+  recommendedCount: 0,
+  visitCount: 0,
+  commentCount: 0,
+  registeredPlaceCount: 0,
+};
+
+const CurrentLocationIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.8"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="12" cy="12" r="8.5"></circle>
+    <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+    <path d="M12 3.5v3"></path>
+    <path d="M12 20.5v-3"></path>
+    <path d="M3.5 12h3"></path>
+    <path d="M20.5 12h-3"></path>
+  </svg>
+);
+
+const ZoomInIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <line x1="12" y1="5" x2="12" y2="19"></line>
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const ZoomOutIcon = () => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.5"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <line x1="5" y1="12" x2="19" y2="12"></line>
+  </svg>
+);
+
+const SearchIcon = () => (
+  <svg
+    width="21"
+    height="21"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.1"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <circle cx="10.8" cy="10.8" r="6.2"></circle>
+    <path d="M15.4 15.4 20 20"></path>
+  </svg>
+);
 
 const mapGestureStyle: CSSProperties & { WebkitUserDrag?: string } = {
   overscrollBehavior: "contain",
@@ -299,9 +405,7 @@ export default function HomePage({
               onToggleWish={onToggleWish}
               onSelectClusterPlace={handleSelectPlace}
               onRetry={() => onSearch("")}
-              onUseCurrentLocation={handleUseCurrentLocation}
               onSelectPlace={handleSelectPlace}
-              onClearSelection={handleClearMapSelection}
             />
           </aside>
 
@@ -342,6 +446,14 @@ export default function HomePage({
             onClose={() => setDesktopCategoryMenuOpen(false)}
           />
 
+          <DesktopMapRegionChip
+            selectedCategory={selectedCategory}
+            selectedPlace={selectedPlace}
+            panelCollapsed={desktopPanelCollapsed}
+            onUseCurrentLocation={handleUseCurrentLocation}
+            onClearSelection={handleClearMapSelection}
+          />
+
           <DesktopMapControls
             mapActions={mapActions}
             onUseCurrentLocation={handleUseCurrentLocation}
@@ -366,15 +478,15 @@ function DesktopSideNav({
   onSelectMode: (mode: DesktopPanelMode) => void;
 }) {
   const navItems = [
-    { mode: "map" as const, label: "\uC9C0\uB3C4", icon: "M" },
-    { mode: "ranking" as const, label: "\uB7AD\uD0B9", icon: "#" },
-    { mode: "saved" as const, label: "\uC800\uC7A5", icon: "*" },
+    { mode: "map" as const, label: "\uC9C0\uB3C4", icon: <HomeIcon /> },
+    { mode: "ranking" as const, label: "\uB7AD\uD0B9", icon: <TrophyIcon /> },
+    { mode: "saved" as const, label: "\uC800\uC7A5", icon: <StarIcon /> },
     {
       mode: "community" as const,
       label: "\uCEE4\uBBA4\uB2C8\uD2F0",
-      icon: "...",
+      icon: <MessageIcon />,
     },
-    { mode: "my" as const, label: "\uB9C8\uC774", icon: "i" },
+    { mode: "my" as const, label: "\uB9C8\uC774", icon: <UserIcon /> },
   ];
 
   return (
@@ -402,7 +514,9 @@ function DesktopSideNav({
                 : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
             }`}
           >
-            <span className="text-xl leading-none">{item.icon}</span>
+            <span className="flex h-6 w-6 items-center justify-center" aria-hidden="true">
+              {item.icon}
+            </span>
             <span>{item.label}</span>
           </button>
         ))}
@@ -529,6 +643,66 @@ function DesktopMapCategoryBar({
   );
 }
 
+function DesktopMapRegionChip({
+  selectedCategory,
+  selectedPlace,
+  panelCollapsed,
+  onUseCurrentLocation,
+  onClearSelection,
+}: {
+  selectedCategory: string;
+  selectedPlace: Place | null;
+  panelCollapsed: boolean;
+  onUseCurrentLocation: () => void;
+  onClearSelection: () => void;
+}) {
+  const title =
+    selectedPlace?.regionName || selectedPlace?.address || "현재 지도 중심 지역";
+  const desc = selectedPlace
+    ? getFoodCategory(selectedPlace.category).label
+    : selectedCategory === "ALL"
+      ? "내 주변 맛집을 탐색 중이에요."
+      : `${getFoodCategoryLabel(selectedCategory)} 맛집을 보는 중이에요.`;
+  const canClearSelection = selectedPlace != null || selectedCategory !== "ALL";
+
+  return (
+    <div
+      data-desktop-map-region-chip="root"
+      className={
+        "pointer-events-auto absolute top-[70px] z-30 transition-all " +
+        (panelCollapsed ? "left-[108px]" : "left-[452px] xl:left-[492px]")
+      }
+    >
+      <div className="flex min-h-12 max-w-[330px] items-center gap-3 rounded-[18px] border border-gray-100 bg-white px-3 py-2 shadow-[0_10px_28px_rgba(43,33,15,0.12)]">
+        <button
+          type="button"
+          onClick={onUseCurrentLocation}
+          aria-label="현재 위치 기준으로 보기"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-[#fff8df] text-[#8a6315] transition active:scale-95"
+        >
+          <CurrentLocationIcon />
+        </button>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-black text-[#2b210f]">{title}</p>
+          <p className="mt-0.5 truncate text-[11px] font-semibold text-gray-500">
+            {desc}
+          </p>
+        </div>
+        {canClearSelection && (
+          <button
+            type="button"
+            onClick={onClearSelection}
+            aria-label="지역 선택 초기화"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white text-base font-black text-gray-500 transition active:scale-95"
+          >
+            ×
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function DesktopMapControls({
   mapActions,
   onUseCurrentLocation,
@@ -539,37 +713,19 @@ function DesktopMapControls({
   const controls = [
     {
       label: "내 위치",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-          <circle cx="12" cy="12" r="8.5"></circle>
-          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"></circle>
-          <path d="M12 3.5v3"></path>
-          <path d="M12 20.5v-3"></path>
-          <path d="M3.5 12h3"></path>
-          <path d="M20.5 12h-3"></path>
-        </svg>
-      ),
+      icon: <CurrentLocationIcon />,
       onClick: onUseCurrentLocation,
       disabled: false,
     },
     {
       label: "확대",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="12" y1="5" x2="12" y2="19"></line>
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      ),
+      icon: <ZoomInIcon />,
       onClick: mapActions?.zoomIn,
       disabled: !mapActions,
     },
     {
       label: "축소",
-      icon: (
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-          <line x1="5" y1="12" x2="19" y2="12"></line>
-        </svg>
-      ),
+      icon: <ZoomOutIcon />,
       onClick: mapActions?.zoomOut,
       disabled: !mapActions,
     },
@@ -607,18 +763,20 @@ function DesktopPanelSearch({
 }) {
   return (
     <form
-      className="flex h-12 items-center gap-3 rounded-[16px] border-2 border-[#f6d365] bg-white px-4 shadow-[0_8px_22px_rgba(43,33,15,0.08)]"
+      className="flex h-12 items-center gap-3 rounded-[16px] border-2 border-[#f6d365] bg-white px-3 shadow-[0_8px_22px_rgba(43,33,15,0.08)]"
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         onSearch(String(form.get("keyword") ?? ""));
       }}
     >
-      <span className="shrink-0 text-base font-black text-[#d99a00]">⌕</span>
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff8df] text-[#d99a00]">
+        <SearchIcon />
+      </span>
       <input
         name="keyword"
         aria-label="맛집 검색"
-        placeholder="동네 맛집이나 메뉴를 검색해보세요"
+        placeholder="검색어를 입력하세요"
         className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
       />
     </form>
@@ -643,9 +801,7 @@ function DesktopPanelContent({
   onToggleWish,
   onSelectClusterPlace,
   onRetry,
-  onUseCurrentLocation,
   onSelectPlace,
-  onClearSelection,
 }: {
   mode: DesktopPanelMode;
   places: Place[];
@@ -664,50 +820,15 @@ function DesktopPanelContent({
   onToggleWish: (id: number) => void;
   onSelectClusterPlace: (placeId: number) => void;
   onRetry: () => void;
-  onUseCurrentLocation: () => void;
   onSelectPlace: (placeId: number) => void;
-  onClearSelection: () => void;
 }) {
   const modePlaces =
     mode === "ranking" ? rankedPlaces : mode === "saved" ? wishedPlaces : [];
-  const regionTitle = selectedPlace?.regionName || selectedPlace?.address || "부개3동";
-  const regionDesc = selectedPlace
-    ? getFoodCategory(selectedPlace.category).label
-    : selectedCategory === "ALL"
-      ? "현재 지도 중심 지역"
-      : getFoodCategoryLabel(selectedCategory) + " 맛집";
-  const canClearSelection = selectedPlace != null || selectedCategory !== "ALL";
 
   return (
     <>
       <div className="shrink-0">
         <DesktopPanelSearch onSearch={onSearch} />
-      </div>
-
-      <div className="mt-4 flex items-start justify-between gap-3 border-b border-gray-100 pb-4">
-        <div className="min-w-0">
-          <button
-            type="button"
-            onClick={onUseCurrentLocation}
-            className="flex max-w-full items-center gap-2 text-left text-xl font-black text-[#2b210f] transition active:scale-[0.99]"
-          >
-            <span className="truncate">{regionTitle}</span>
-            <span className="text-sm text-gray-400">⌄</span>
-          </button>
-          <p className="mt-1 truncate text-xs font-semibold text-gray-400">
-            {regionDesc}
-          </p>
-        </div>
-        {canClearSelection && (
-          <button
-            type="button"
-            onClick={onClearSelection}
-            aria-label="선택 초기화"
-            className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white text-lg font-black text-gray-500 shadow-sm active:scale-95"
-          >
-            ×
-          </button>
-        )}
       </div>
 
       {mode === "map" ? (
@@ -747,22 +868,24 @@ function DesktopModePanel({
   places: Place[];
   onSelectPlace: (placeId: number) => void;
 }) {
+  if (mode === "my") {
+    return <DesktopMyPanel />;
+  }
+
   const emptyMessage = {
     ranking: "아직 보여줄 랭킹 맛집이 없어요",
     saved: "저장한 맛집이 아직 없어요",
     community: "커뮤니티 소식은 준비 중이에요.",
-    my: "마이 정보는 준비 중이에요.",
   }[mode];
 
   const desc = {
     ranking: "지도는 유지한 채 반응 좋은 맛집을 빠르게 확인해요.",
     saved: "찜한 맛집을 지도 위에서 다시 살펴볼 수 있어요.",
     community: "동네 소식과 참여 기능은 다음 단계에서 연결할게요.",
-    my: "내 활동과 인증 상태는 현재 모바일 마이 화면 기준으로 운영해요.",
   }[mode];
 
   return (
-    <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+    <div className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
       {places.length > 0 ? (
         <div className="space-y-3">
           {places.map((place, index) => (
@@ -795,6 +918,314 @@ function DesktopModePanel({
         <StateCard title={emptyMessage} desc={desc} />
       )}
     </div>
+  );
+}
+
+function DesktopMyPanel() {
+  const [authMode, setAuthMode] = useState<AuthMode>("login");
+  const [authenticated, setAuthenticated] = useState(hasStoredAccessToken());
+  const [profile, setProfile] = useState<MyProfile | null>(null);
+  const [status, setStatus] = useState<MyStatus | null>(null);
+  const [summary, setSummary] = useState<MyActivitySummary>(
+    DEFAULT_MY_ACTIVITY_SUMMARY,
+  );
+  const [region, setRegion] = useState<MyRegion | null>(null);
+  const [regionPolicy, setRegionPolicy] =
+    useState<RegionChangePolicy | null>(null);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [nickname, setNickname] = useState("");
+  const [loading, setLoading] = useState(hasStoredAccessToken());
+  const [busy, setBusy] = useState(false);
+  const [regionBusy, setRegionBusy] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const loadDesktopMy = useCallback(async () => {
+    if (!hasStoredAccessToken()) {
+      setAuthenticated(false);
+      setLoading(false);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const [
+        nextProfile,
+        nextStatus,
+        nextSummary,
+        nextRegion,
+        nextRegionPolicy,
+      ] =
+        await Promise.all([
+          getMyProfile(),
+          getMyStatus(),
+          getMyActivitySummary(),
+          settle(getMyRegion()),
+          settle(getRegionChangePolicy()),
+        ]);
+      setProfile(nextProfile);
+      setStatus(nextStatus);
+      setSummary(nextSummary);
+      setRegion(nextRegion.ok ? nextRegion.value : null);
+      setRegionPolicy(nextRegionPolicy.ok ? nextRegionPolicy.value : null);
+      setAuthenticated(true);
+    } catch (error) {
+      clearAuthTokens();
+      setAuthenticated(false);
+      setProfile(null);
+      setStatus(null);
+      setSummary(DEFAULT_MY_ACTIVITY_SUMMARY);
+      setRegion(null);
+      setRegionPolicy(null);
+      setMessage(
+        getApiErrorMessage(
+          error,
+          "로그인 상태를 확인하지 못했어요. 다시 로그인해주세요.",
+        ),
+      );
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!hasStoredAccessToken()) {
+      return;
+    }
+    const timerId = window.setTimeout(() => {
+      void loadDesktopMy();
+    }, 0);
+    return () => window.clearTimeout(timerId);
+  }, [loadDesktopMy]);
+
+  const handleSubmit = async () => {
+    setBusy(true);
+    setMessage(null);
+    try {
+      if (authMode === "signup") {
+        await signup(email.trim(), password, nickname.trim());
+      }
+      await login(email.trim(), password);
+      setMessage(
+        authMode === "signup"
+          ? "회원가입과 로그인을 완료했어요."
+          : "로그인했어요.",
+      );
+      await loadDesktopMy();
+    } catch (error) {
+      setMessage(
+        getApiErrorMessage(
+          error,
+          authMode === "signup"
+            ? "회원가입 요청을 처리하지 못했어요."
+            : "로그인 요청을 처리하지 못했어요.",
+        ),
+      );
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleVerifyRegion = async () => {
+    setRegionBusy(true);
+    setMessage(null);
+    try {
+      const position = await getCurrentPosition();
+      const nextRegion = await verifyRegion(
+        position.coords.latitude,
+        position.coords.longitude,
+      );
+      setRegion(nextRegion);
+      await loadDesktopMy();
+      setMessage(`${formatDesktopRegionName(nextRegion)} 동네 인증이 완료됐어요.`);
+    } catch (error) {
+      setMessage(getApiErrorMessage(error, "동네 인증을 처리하지 못했어요."));
+    } finally {
+      setRegionBusy(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div
+        data-desktop-my-panel="loading"
+        className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      >
+        <section className="rounded-3xl bg-white p-4 shadow-sm">
+          <p className="text-sm font-semibold text-[#2b210f]">
+            내 정보를 불러오는 중이에요.
+          </p>
+          <div className="mt-4 space-y-3">
+            <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff8df]" />
+            <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff8df]" />
+            <div className="h-20 animate-pulse rounded-2xl bg-[#fffaf0]" />
+          </div>
+        </section>
+      </div>
+    );
+  }
+
+  if (!authenticated || !profile) {
+    return (
+      <div
+        data-desktop-my-auth-panel="root"
+        className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      >
+        <AuthCard
+          className="mt-0"
+          authMode={authMode}
+          setAuthMode={setAuthMode}
+          email={email}
+          setEmail={setEmail}
+          password={password}
+          setPassword={setPassword}
+          nickname={nickname}
+          setNickname={setNickname}
+          busy={busy}
+          onSubmit={handleSubmit}
+        />
+        {message && (
+          <p className="mt-4 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+            {message}
+          </p>
+        )}
+      </div>
+    );
+  }
+
+  const displayName = profile.nickname?.trim() || "꿀벌님";
+
+  return (
+    <div
+      data-desktop-my-panel="root"
+      className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+    >
+      <section className="rounded-3xl bg-white p-4 shadow-sm">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#f6b800] text-sm font-black text-[#2b210f]">
+            꿀벌
+          </div>
+          <div className="min-w-0 flex-1">
+            <h2 className="truncate text-xl font-black text-[#2b210f]">
+              {displayName}
+            </h2>
+            <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+              {region ? formatDesktopRegionName(region) : "아직 인증한 동네가 없어요."}
+            </p>
+          </div>
+        </div>
+
+        <div className="mt-4 grid grid-cols-2 gap-2">
+          <DesktopMyStatCard label="레벨" value={status ? String(status.level) : "-"} />
+          <DesktopMyStatCard
+            label="신뢰도"
+            value={status?.trustGrade || "확인 중"}
+          />
+          <DesktopMyStatCard
+            label="전화 인증"
+            value={profile.phoneVerified ? "완료" : "필요"}
+          />
+          <DesktopMyStatCard
+            label="동네 인증"
+            value={status?.regionVerified ? "완료" : "필요"}
+          />
+        </div>
+      </section>
+
+      <section className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <h3 className="text-base font-black text-[#2b210f]">동네 인증</h3>
+            <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+              {status?.regionVerified
+                ? "인증한 동네 기준으로 활동할 수 있어요."
+                : "현재 위치로 내 동네를 인증해보세요."}
+            </p>
+          </div>
+          <DesktopMyBadge verified={region?.verified === true}>
+            {region?.verified ? "인증 완료" : "인증 필요"}
+          </DesktopMyBadge>
+        </div>
+
+        <div className="mt-4 rounded-2xl bg-[#fffaf0] p-4">
+          <p className="text-xs font-semibold text-gray-500">현재 인증 동네</p>
+          <p className="mt-1 truncate text-base font-black text-[#2b210f]">
+            {region ? formatDesktopRegionName(region) : "아직 인증한 동네가 없어요."}
+          </p>
+          <p className="mt-2 text-xs font-semibold leading-5 text-gray-500">
+            {formatDesktopRegionPolicy(regionPolicy)}
+          </p>
+        </div>
+
+        <button
+          type="button"
+          onClick={handleVerifyRegion}
+          disabled={regionBusy}
+          className="mt-4 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {regionBusy ? "위치 확인 중..." : "현재 위치로 인증"}
+        </button>
+      </section>
+
+      <section className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
+        <h3 className="text-base font-black text-[#2b210f]">내 활동</h3>
+        <div className="mt-3 grid grid-cols-2 gap-2">
+          <DesktopMyStatCard
+            label="추천한 맛집"
+            value={String(summary.recommendedCount)}
+          />
+          <DesktopMyStatCard
+            label="방문 인증"
+            value={String(summary.visitCount)}
+          />
+          <DesktopMyStatCard label="댓글" value={String(summary.commentCount)} />
+          <DesktopMyStatCard
+            label="등록 맛집"
+            value={String(summary.registeredPlaceCount)}
+          />
+        </div>
+      </section>
+
+      {message && (
+        <p className="mt-4 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+          {message}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function DesktopMyStatCard({
+  label,
+  value,
+}: {
+  label: string;
+  value: string;
+}) {
+  return (
+    <div className="rounded-2xl bg-[#fffaf0] px-3 py-3">
+      <p className="text-[11px] font-semibold text-gray-500">{label}</p>
+      <p className="mt-1 truncate text-sm font-black text-[#2b210f]">{value}</p>
+    </div>
+  );
+}
+
+function DesktopMyBadge({
+  children,
+  verified,
+}: {
+  children: string;
+  verified: boolean;
+}) {
+  return (
+    <span
+      className={
+        "inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold " +
+        (verified ? "bg-[#f6b800] text-[#2b210f]" : "bg-[#fff8df] text-[#8a6315]")
+      }
+    >
+      {children}
+    </span>
   );
 }
 
@@ -879,17 +1310,13 @@ function MobileFloatingHeader({
           onSearch(String(form.get("keyword") ?? ""));
         }}
       >
-        <Link
-          to="/"
-          aria-label="Honeytong 홈"
-          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#f6b800] text-base font-black text-white shadow-sm active:scale-95"
-        >
-          H
-        </Link>
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff8df] text-[#d99a00]">
+          <SearchIcon />
+        </span>
         <input
           name="keyword"
           aria-label="맛집 검색"
-          placeholder="부평구 부평동"
+          placeholder="검색어를 입력하세요"
           className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
         />
         <button
@@ -921,38 +1348,49 @@ function FloatingMapActions({
   onUseCurrentLocation: () => void;
   onRegister: () => void;
 }) {
+  const controls = [
+    {
+      label: "내 위치",
+      icon: <CurrentLocationIcon />,
+      onClick: onUseCurrentLocation,
+      disabled: false,
+    },
+    {
+      label: "확대",
+      icon: <ZoomInIcon />,
+      onClick: mapActions?.zoomIn,
+      disabled: !mapActions,
+    },
+    {
+      label: "축소",
+      icon: <ZoomOutIcon />,
+      onClick: mapActions?.zoomOut,
+      disabled: !mapActions,
+    },
+  ];
+
   return (
     <>
       <div
         data-map-control="floating-actions"
         className="pointer-events-auto absolute right-4 top-[112px] z-20 flex flex-col overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-[0_14px_38px_rgba(43,33,15,0.14)] sm:right-5 sm:top-[120px] md:right-6"
       >
-        <button
-          type="button"
-          onClick={onUseCurrentLocation}
-          aria-label="현재 위치로 이동"
-          className="flex h-12 w-12 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df]"
-        >
-          ⌖
-        </button>
-        <button
-          type="button"
-          onClick={mapActions?.zoomIn}
-          disabled={!mapActions}
-          aria-label="지도 확대"
-          className="flex h-12 w-12 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50"
-        >
-          +
-        </button>
-        <button
-          type="button"
-          onClick={mapActions?.zoomOut}
-          disabled={!mapActions}
-          aria-label="지도 축소"
-          className="flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50"
-        >
-          -
-        </button>
+        {controls.map((control, index) => (
+          <button
+            key={control.label}
+            type="button"
+            onClick={control.onClick}
+            disabled={control.disabled}
+            aria-label={control.label}
+            title={control.label}
+            className={
+              "flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50" +
+              (index > 0 ? " border-t border-gray-100" : "")
+            }
+          >
+            {control.icon}
+          </button>
+        ))}
       </div>
       {!sheetOpen && (
         <button
@@ -1004,18 +1442,35 @@ function MobileSelectedPlaceSheet({
   onClose: () => void;
 }) {
   const startYRef = useRef<number | null>(null);
+  const draggedRef = useRef(false);
+  const suppressClickRef = useRef(false);
   const open = stage !== "closed";
   const full = stage === "full";
 
+  const resetDrag = () => {
+    startYRef.current = null;
+    draggedRef.current = false;
+  };
+
   const finishDrag = (clientY: number) => {
     const startY = startYRef.current;
-    startYRef.current = null;
     if (startY == null) {
       return;
     }
 
     const deltaY = clientY - startY;
-    if (deltaY > 36) {
+    const dragged = draggedRef.current || Math.abs(deltaY) > 8;
+    resetDrag();
+    if (!dragged) {
+      return;
+    }
+
+    suppressClickRef.current = true;
+    window.setTimeout(() => {
+      suppressClickRef.current = false;
+    }, 180);
+
+    if (deltaY > 48) {
       if (full) {
         onStageChange("half");
       } else {
@@ -1024,7 +1479,7 @@ function MobileSelectedPlaceSheet({
       return;
     }
 
-    if (deltaY < -24) {
+    if (deltaY < -32) {
       onStageChange("full");
     }
   };
@@ -1033,8 +1488,8 @@ function MobileSelectedPlaceSheet({
     if (!(target instanceof HTMLElement)) {
       return true;
     }
-    if (target.closest("button, a, input, textarea, select")) {
-      return target.closest("[data-mobile-sheet-drag-handle='true']") != null;
+    if (target.closest("input, textarea, select")) {
+      return false;
     }
     const scrollContainer = target.closest<HTMLElement>(
       "[data-mobile-sheet-scroll='content']",
@@ -1042,13 +1497,28 @@ function MobileSelectedPlaceSheet({
     return !(full && scrollContainer && scrollContainer.scrollTop > 0);
   };
 
+  const markDragProgress = (clientY: number) => {
+    const startY = startYRef.current;
+    if (startY == null) {
+      return;
+    }
+    if (Math.abs(clientY - startY) > 8) {
+      draggedRef.current = true;
+    }
+  };
+
   const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
     if (!shouldStartSheetDrag(event.target)) {
-      startYRef.current = null;
+      resetDrag();
       return;
     }
     startYRef.current = event.clientY;
-    event.currentTarget.setPointerCapture(event.pointerId);
+    draggedRef.current = false;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+  };
+
+  const handlePointerMove = (event: ReactPointerEvent<HTMLElement>) => {
+    markDragProgress(event.clientY);
   };
 
   const handlePointerUp = (event: ReactPointerEvent<HTMLElement>) => {
@@ -1056,15 +1526,20 @@ function MobileSelectedPlaceSheet({
   };
 
   const handlePointerCancel = () => {
-    startYRef.current = null;
+    resetDrag();
   };
 
   const handleMouseDown = (event: ReactMouseEvent<HTMLElement>) => {
     if (!shouldStartSheetDrag(event.target)) {
-      startYRef.current = null;
+      resetDrag();
       return;
     }
     startYRef.current = event.clientY;
+    draggedRef.current = false;
+  };
+
+  const handleMouseMove = (event: ReactMouseEvent<HTMLElement>) => {
+    markDragProgress(event.clientY);
   };
 
   const handleMouseUp = (event: ReactMouseEvent<HTMLElement>) => {
@@ -1073,25 +1548,46 @@ function MobileSelectedPlaceSheet({
 
   const handleTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
     if (!shouldStartSheetDrag(event.target)) {
-      startYRef.current = null;
+      resetDrag();
       return;
     }
     startYRef.current = event.touches[0]?.clientY ?? null;
+    draggedRef.current = false;
+  };
+
+  const handleTouchMove = (event: ReactTouchEvent<HTMLElement>) => {
+    const clientY = event.touches[0]?.clientY;
+    if (clientY != null) {
+      markDragProgress(clientY);
+    }
   };
 
   const handleTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
     finishDrag(event.changedTouches[0]?.clientY ?? startYRef.current ?? 0);
   };
 
+  const handleClickCapture = (event: ReactMouseEvent<HTMLElement>) => {
+    if (!suppressClickRef.current) {
+      return;
+    }
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClickRef.current = false;
+  };
+
   return (
     <section
       data-selected-place-sheet="mobile-sheet"
+      onClickCapture={handleClickCapture}
       onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
       onPointerCancel={handlePointerCancel}
       onMouseDown={handleMouseDown}
+      onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
       onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
       className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-white shadow-[0_-12px_34px_rgba(43,33,15,0.16)] transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
         open ? "translate-y-0" : "translate-y-[calc(100%+24px)]"
@@ -1174,7 +1670,7 @@ function DesktopSelectedPlacePanel({
       <PlaceClusterList
         places={clusterPlaces}
         onSelectPlace={onSelectClusterPlace}
-        className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+        className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
       />
     );
   }
@@ -1183,7 +1679,7 @@ function DesktopSelectedPlacePanel({
     return (
       <div
         data-desktop-selected-panel="root"
-        className="mt-0 min-h-0 flex-1 overflow-y-auto pr-1"
+        className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
       >
         <DesktopPlaceDetailCard
           key={selectedPlace.id}
@@ -1208,7 +1704,7 @@ function DesktopSelectedPlacePanel({
   return (
     <div
       data-desktop-selected-panel="root"
-      className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
     >
       <PanelState
         places={places}
@@ -1241,7 +1737,7 @@ function DesktopCategoryPlaceList({
 }) {
   if (places.length === 0) {
     return (
-      <div className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
+      <div className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1">
         <StateCard
           title={getFoodCategoryLabel(selectedCategory) + " 맛집이 아직 없어요"}
           desc="다른 카테고리를 둘러보세요."
@@ -1251,7 +1747,7 @@ function DesktopCategoryPlaceList({
   }
 
   return (
-    <div className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
+    <div className="desktop-compact-scrollbar mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
       <div className="divide-y divide-gray-100">
         {places.map((place) => {
           const category = getFoodCategory(place.category);
@@ -1371,7 +1867,7 @@ function DesktopPlaceDetailCard({
         ))}
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto">
+      <div className="desktop-compact-scrollbar min-h-0 flex-1 overflow-y-auto">
         <DesktopPlaceTabContent tab={activeTab} place={place} locationMessage={locationMessage} />
       </div>
     </article>
@@ -2570,6 +3066,38 @@ function getCurrentPosition(): Promise<GeolocationPosition> {
       enableHighAccuracy: true,
       timeout: 10000,
     });
+  });
+}
+
+async function settle<T>(promise: Promise<T>) {
+  try {
+    return { ok: true as const, value: await promise };
+  } catch {
+    return { ok: false as const };
+  }
+}
+
+function formatDesktopRegionName(region: MyRegion) {
+  return `${region.cityName} ${region.districtName} ${region.dongName}`;
+}
+
+function formatDesktopRegionPolicy(policy: RegionChangePolicy | null) {
+  if (!policy) {
+    return "동네 변경 가능 상태를 불러오지 못했어요.";
+  }
+  if (policy.changeAllowed) {
+    return `동네 변경 가능, 기준 주기 ${policy.cooldownDays}일`;
+  }
+  if (policy.nextAvailableAt) {
+    return `다음 변경 가능 시간: ${formatDateTime(policy.nextAvailableAt)}`;
+  }
+  return "현재는 동네를 변경할 수 없어요.";
+}
+
+function formatDateTime(value: string) {
+  return new Date(value).toLocaleString("ko-KR", {
+    dateStyle: "medium",
+    timeStyle: "short",
   });
 }
 

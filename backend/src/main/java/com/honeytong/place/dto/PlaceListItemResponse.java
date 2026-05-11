@@ -1,5 +1,6 @@
 package com.honeytong.place.dto;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 
 public record PlaceListItemResponse(
@@ -11,7 +12,9 @@ public record PlaceListItemResponse(
         Long dongId,
         String regionName,
         String address,
+        @JsonProperty("latitude")
         BigDecimal latitude,
+        @JsonProperty("longitude")
         BigDecimal longitude,
         String shortRecommendation,
         int starLevel,
