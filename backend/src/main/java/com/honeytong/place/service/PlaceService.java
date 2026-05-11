@@ -40,6 +40,7 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -202,9 +203,10 @@ public class PlaceService {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "검색어를 입력해 주세요.");
         }
         return placeRepository
-                .findTop50ByNameContainingIgnoreCaseAndDeletedAtIsNullAndExposureStatusOrderByCreatedAtDesc(
+                .searchVisiblePlaces(
                         keyword.trim(),
-                        PlaceExposureStatus.VISIBLE
+                        PlaceExposureStatus.VISIBLE,
+                        PageRequest.of(0, 50)
                 )
                 .stream()
                 .map(place -> toListItemResponse(place, getStats(place.getId()), null))

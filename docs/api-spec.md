@@ -513,6 +513,24 @@ Response items include `distanceMeter` when distance is calculated.
 GET /api/places?cityId={cityId}&districtId={districtId}&dongId={dongId}
 6.5 Search Places
 GET /api/places/search?keyword={keyword}
+
+Purpose:
+Returns visible, non-deleted places matching a user keyword for map discovery.
+
+Current searchable fields:
+- place name
+- recommended menu
+- short recommendation
+- feature text
+- road address
+- jibun address
+- Korean and English city, district, and dong names
+
+Notes:
+- blank keywords are rejected with `INVALID_REQUEST`
+- the response uses the same place list item shape as normal place list reads
+- frontend search reset should call the normal place list flow by submitting an empty keyword
+
 6.6 Get Popular Places
 GET /api/places/popular?regionType={regionType}&regionId={regionId}
 6.7 Update Place

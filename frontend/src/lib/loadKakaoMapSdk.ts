@@ -126,12 +126,20 @@ export type KakaoLatLngBounds = {
 export type KakaoMap = {
   getCenter: () => KakaoLatLng;
   getLevel: () => number;
+  getProjection: () => KakaoMapProjection;
   relayout: () => void;
   setDraggable: (draggable: boolean) => void;
   setBounds: (bounds: KakaoLatLngBounds) => void;
   setCenter: (latLng: KakaoLatLng) => void;
-  setLevel: (level: number) => void;
+  setLevel: (
+    level: number,
+    options?: { animate?: boolean | { duration: number }; anchor?: KakaoLatLng },
+  ) => void;
   setZoomable: (zoomable: boolean) => void;
+};
+
+export type KakaoMapProjection = {
+  containerPointFromCoords: (latLng: KakaoLatLng) => { x: number; y: number };
 };
 
 export type KakaoMarker = {

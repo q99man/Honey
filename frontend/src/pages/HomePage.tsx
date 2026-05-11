@@ -1,11 +1,18 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   CSSProperties,
+  FormEvent as ReactFormEvent,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
   TouchEvent as ReactTouchEvent,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { getApiErrorMessage, hasStoredAccessToken } from "../api/http";
+import {
+  createComment,
+  getPlaceComments,
+  type CommentItem,
+} from "../api/participationApi";
 import BottomNav from "../components/BottomNav";
 import CategoryTabs from "../components/CategoryTabs";
 import {
@@ -25,6 +32,8 @@ type Props = {
   places: Place[];
   loading: boolean;
   errorMessage: string | null;
+  searchKeyword: string;
+  searchActive: boolean;
   onToggleWish: (id: number) => void;
   onSearch: (keyword: string) => void;
 };
@@ -42,6 +51,10 @@ type MapActions = {
 type MobileSheetStage = "closed" | "half" | "full";
 type DesktopPanelMode = "map" | "ranking" | "saved" | "community" | "my";
 type DesktopPlaceTab = "home" | "menu" | "photos" | "comments" | "report";
+type PlaceClusterSelection = {
+  anchorPlaceId: number;
+  placeIds: number[];
+};
 
 const mapGestureStyle: CSSProperties & { WebkitUserDrag?: string } = {
   overscrollBehavior: "contain",
@@ -61,6 +74,8 @@ export default function HomePage({
   places,
   loading,
   errorMessage,
+  searchKeyword,
+  searchActive,
   onToggleWish,
   onSearch,
 }: Props) {
@@ -76,6 +91,8 @@ export default function HomePage({
   const [userLocation, setUserLocation] = useState<UserLocation | null>(null);
   const [locationMessage, setLocationMessage] = useState<string | null>(null);
   const [mapActions, setMapActions] = useState<MapActions | null>(null);
+  const [placeClusterSelection, setPlaceClusterSelection] =
+    useState<PlaceClusterSelection | null>(null);
 
   const visiblePlaces = useMemo(() => {
     if (selectedCategory === "ALL") {
@@ -87,6 +104,16 @@ export default function HomePage({
   const selectedPlace = useMemo(() => {
     return visiblePlaces.find((place) => place.id === selectedPlaceId) ?? null;
   }, [selectedPlaceId, visiblePlaces]);
+
+  const selectedClusterPlaces = useMemo(() => {
+    if (!placeClusterSelection) {
+      return [];
+    }
+    const placesById = new Map(visiblePlaces.map((place) => [place.id, place]));
+    return placeClusterSelection.placeIds
+      .map((placeId) => placesById.get(placeId))
+      .filter((place): place is Place => place != null);
+  }, [placeClusterSelection, visiblePlaces]);
 
   const rankedPlaces = useMemo(() => {
     return [...visiblePlaces]
@@ -105,8 +132,17 @@ export default function HomePage({
     [places],
   );
 
-  const handleSelectPlace = useCallback((placeId: number) => {
-    setSelectedPlaceId(placeId);
+  const handleSelectPlace = useCallback((placeId: number, nearbyPlaces?: Place[]) => {
+    if (nearbyPlaces && nearbyPlaces.length > 1) {
+      setSelectedPlaceId(null);
+      setPlaceClusterSelection({
+        anchorPlaceId: placeId,
+        placeIds: nearbyPlaces.map((place) => place.id),
+      });
+    } else {
+      setSelectedPlaceId(placeId);
+      setPlaceClusterSelection(null);
+    }
     setMobileSheetStage("half");
     setDesktopPanelMode("map");
     setDesktopPanelCollapsed(false);
@@ -115,6 +151,7 @@ export default function HomePage({
   const handleSelectCategory = useCallback((value: string) => {
     setSelectedCategory(value);
     setSelectedPlaceId(null);
+    setPlaceClusterSelection(null);
     setDesktopPanelMode("map");
     setDesktopPanelCollapsed(false);
     setMobileSheetStage("closed");
@@ -124,12 +161,14 @@ export default function HomePage({
   const handleClearMapSelection = useCallback(() => {
     setSelectedCategory("ALL");
     setSelectedPlaceId(null);
+    setPlaceClusterSelection(null);
     setDesktopCategoryMenuOpen(false);
     setMobileSheetStage("closed");
   }, []);
 
   const handleCloseMobileSheet = useCallback(() => {
     setSelectedPlaceId(null);
+    setPlaceClusterSelection(null);
     setMobileSheetStage("closed");
   }, []);
 
@@ -157,7 +196,9 @@ export default function HomePage({
       <main className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-[#eaf2e4]">
         <PlaceMap
           places={visiblePlaces}
-          selectedPlaceId={selectedPlace?.id ?? null}
+          selectedPlaceId={
+            selectedPlace?.id ?? placeClusterSelection?.anchorPlaceId ?? null
+          }
           userLocation={userLocation}
           onSelectPlace={handleSelectPlace}
           onMapActionsReady={setMapActions}
@@ -195,12 +236,16 @@ export default function HomePage({
               places={places}
               visiblePlaces={visiblePlaces}
               selectedPlace={selectedPlace}
+              clusterPlaces={selectedClusterPlaces}
               stage={mobileSheetStage}
               loading={loading}
               errorMessage={errorMessage}
               selectedCategory={selectedCategory}
+              searchKeyword={searchKeyword}
+              searchActive={searchActive}
               locationMessage={locationMessage}
               onToggleWish={onToggleWish}
+              onSelectClusterPlace={handleSelectPlace}
               onRetry={() => onSearch("")}
               onStageChange={setMobileSheetStage}
               onClose={handleCloseMobileSheet}
@@ -243,12 +288,16 @@ export default function HomePage({
               wishedPlaces={wishedPlaces}
               rankedPlaces={rankedPlaces}
               selectedPlace={selectedPlace}
+              clusterPlaces={selectedClusterPlaces}
               loading={loading}
               errorMessage={errorMessage}
               selectedCategory={selectedCategory}
+              searchKeyword={searchKeyword}
+              searchActive={searchActive}
               locationMessage={locationMessage}
               onSearch={onSearch}
               onToggleWish={onToggleWish}
+              onSelectClusterPlace={handleSelectPlace}
               onRetry={() => onSearch("")}
               onUseCurrentLocation={handleUseCurrentLocation}
               onSelectPlace={handleSelectPlace}
@@ -413,7 +462,12 @@ function DesktopMapCategoryBar({
                   : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
               }
             >
-              <span aria-hidden="true">{category.emoji}</span>
+              <span
+                aria-hidden="true"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-base shadow-inner"
+              >
+                {category.emoji}
+              </span>
               <span className="truncate">{category.label}</span>
             </button>
           ))}
@@ -457,7 +511,10 @@ function DesktopMapCategoryBar({
                         : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
                     }
                   >
-                    <span className="text-lg" aria-hidden="true">
+                    <span
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-lg shadow-inner"
+                      aria-hidden="true"
+                    >
                       {category.emoji}
                     </span>
                     <span className="line-clamp-1">{category.label}</span>
@@ -482,19 +539,37 @@ function DesktopMapControls({
   const controls = [
     {
       label: "내 위치",
-      icon: "◎",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="8.5"></circle>
+          <circle cx="12" cy="12" r="2" fill="currentColor" stroke="none"></circle>
+          <path d="M12 3.5v3"></path>
+          <path d="M12 20.5v-3"></path>
+          <path d="M3.5 12h3"></path>
+          <path d="M20.5 12h-3"></path>
+        </svg>
+      ),
       onClick: onUseCurrentLocation,
       disabled: false,
     },
     {
       label: "확대",
-      icon: "+",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"></line>
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      ),
       onClick: mapActions?.zoomIn,
       disabled: !mapActions,
     },
     {
       label: "축소",
-      icon: "-",
+      icon: (
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="5" y1="12" x2="19" y2="12"></line>
+        </svg>
+      ),
       onClick: mapActions?.zoomOut,
       disabled: !mapActions,
     },
@@ -557,12 +632,16 @@ function DesktopPanelContent({
   wishedPlaces,
   rankedPlaces,
   selectedPlace,
+  clusterPlaces,
   loading,
   errorMessage,
   selectedCategory,
+  searchKeyword,
+  searchActive,
   locationMessage,
   onSearch,
   onToggleWish,
+  onSelectClusterPlace,
   onRetry,
   onUseCurrentLocation,
   onSelectPlace,
@@ -574,12 +653,16 @@ function DesktopPanelContent({
   wishedPlaces: Place[];
   rankedPlaces: Place[];
   selectedPlace: Place | null;
+  clusterPlaces: Place[];
   loading: boolean;
   errorMessage: string | null;
   selectedCategory: string;
+  searchKeyword: string;
+  searchActive: boolean;
   locationMessage: string | null;
   onSearch: (keyword: string) => void;
   onToggleWish: (id: number) => void;
+  onSelectClusterPlace: (placeId: number) => void;
   onRetry: () => void;
   onUseCurrentLocation: () => void;
   onSelectPlace: (placeId: number) => void;
@@ -632,11 +715,15 @@ function DesktopPanelContent({
           places={places}
           visiblePlaces={visiblePlaces}
           selectedPlace={selectedPlace}
+          clusterPlaces={clusterPlaces}
           loading={loading}
           errorMessage={errorMessage}
           selectedCategory={selectedCategory}
+          searchKeyword={searchKeyword}
+          searchActive={searchActive}
           locationMessage={locationMessage}
           onToggleWish={onToggleWish}
+          onSelectClusterPlace={onSelectClusterPlace}
           onRetry={onRetry}
           onSelectPlace={onSelectPlace}
         />
@@ -711,6 +798,65 @@ function DesktopModePanel({
   );
 }
 
+function PlaceClusterList({
+  places,
+  onSelectPlace,
+  className,
+}: {
+  places: Place[];
+  onSelectPlace: (placeId: number) => void;
+  className: string;
+}) {
+  return (
+    <section className={className}>
+      <div className="sticky top-0 z-10 bg-white pb-3 pt-1">
+        <p className="text-base font-black text-[#2b210f]">
+          이 위치의 맛집 {places.length}곳
+        </p>
+        <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+          마커가 겹쳐 보여요. 확인할 맛집을 선택해 주세요.
+        </p>
+      </div>
+      <div className="divide-y divide-gray-100">
+        {places.map((place) => {
+          const category = getFoodCategory(place.category);
+          return (
+            <button
+              key={place.id}
+              type="button"
+              onClick={() => onSelectPlace(place.id)}
+              className="block w-full bg-white py-3 text-left transition hover:bg-[#fffaf0] active:scale-[0.995]"
+            >
+              <div className="flex items-start gap-3">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[#fff1bf]">
+                  <PlaceImagePane place={place} className="h-full" />
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="flex min-w-0 items-center gap-2">
+                    <h3 className="truncate text-[15px] font-black text-[#2b210f]">
+                      {place.title}
+                    </h3>
+                    <span className="shrink-0 text-xs font-bold text-gray-400">
+                      {category.label}
+                    </span>
+                  </div>
+                  <p className="mt-1 truncate text-xs font-semibold text-gray-400">
+                    {place.address || place.regionName || place.distance}
+                  </p>
+                  <p className="mt-1 text-xs font-semibold text-[#8a6315]">
+                    추천 {place.recommendCount} · 방문 {place.visitCount} · 댓글{" "}
+                    {place.commentCount}
+                  </p>
+                </div>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function MobileFloatingHeader({
   selectedCategory,
   onSelectCategory,
@@ -779,13 +925,13 @@ function FloatingMapActions({
     <>
       <div
         data-map-control="floating-actions"
-        className="pointer-events-auto absolute right-3 top-[206px] z-20 flex flex-col overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-[0_10px_28px_rgba(43,33,15,0.16)] sm:top-[214px]"
+        className="pointer-events-auto absolute right-4 top-[112px] z-20 flex flex-col overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-[0_14px_38px_rgba(43,33,15,0.14)] sm:right-5 sm:top-[120px] md:right-6"
       >
         <button
           type="button"
           onClick={onUseCurrentLocation}
           aria-label="현재 위치로 이동"
-          className="flex h-11 w-11 items-center justify-center border-b border-gray-100 text-base font-black text-[#2f6f5f] active:bg-[#fff8db] active:scale-95"
+          className="flex h-12 w-12 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df]"
         >
           ⌖
         </button>
@@ -794,7 +940,7 @@ function FloatingMapActions({
           onClick={mapActions?.zoomIn}
           disabled={!mapActions}
           aria-label="지도 확대"
-          className="flex h-11 w-11 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] active:bg-[#fff8db] active:scale-95 disabled:opacity-50"
+          className="flex h-12 w-12 items-center justify-center border-b border-gray-100 text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50"
         >
           +
         </button>
@@ -803,7 +949,7 @@ function FloatingMapActions({
           onClick={mapActions?.zoomOut}
           disabled={!mapActions}
           aria-label="지도 축소"
-          className="flex h-11 w-11 items-center justify-center text-lg font-black text-[#2b210f] active:bg-[#fff8db] active:scale-95 disabled:opacity-50"
+          className="flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50"
         >
           -
         </button>
@@ -826,12 +972,16 @@ function MobileSelectedPlaceSheet({
   places,
   visiblePlaces,
   selectedPlace,
+  clusterPlaces,
   stage,
   loading,
   errorMessage,
   selectedCategory,
+  searchKeyword,
+  searchActive,
   locationMessage,
   onToggleWish,
+  onSelectClusterPlace,
   onRetry,
   onStageChange,
   onClose,
@@ -839,12 +989,16 @@ function MobileSelectedPlaceSheet({
   places: Place[];
   visiblePlaces: Place[];
   selectedPlace: Place | null;
+  clusterPlaces: Place[];
   stage: MobileSheetStage;
   loading: boolean;
   errorMessage: string | null;
   selectedCategory: string;
+  searchKeyword: string;
+  searchActive: boolean;
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
+  onSelectClusterPlace: (placeId: number) => void;
   onRetry: () => void;
   onStageChange: (stage: MobileSheetStage) => void;
   onClose: () => void;
@@ -875,34 +1029,70 @@ function MobileSelectedPlaceSheet({
     }
   };
 
-  const handlePointerDown = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const shouldStartSheetDrag = (target: EventTarget | null) => {
+    if (!(target instanceof HTMLElement)) {
+      return true;
+    }
+    if (target.closest("button, a, input, textarea, select")) {
+      return target.closest("[data-mobile-sheet-drag-handle='true']") != null;
+    }
+    const scrollContainer = target.closest<HTMLElement>(
+      "[data-mobile-sheet-scroll='content']",
+    );
+    return !(full && scrollContainer && scrollContainer.scrollTop > 0);
+  };
+
+  const handlePointerDown = (event: ReactPointerEvent<HTMLElement>) => {
+    if (!shouldStartSheetDrag(event.target)) {
+      startYRef.current = null;
+      return;
+    }
     startYRef.current = event.clientY;
     event.currentTarget.setPointerCapture(event.pointerId);
   };
 
-  const handlePointerUp = (event: ReactPointerEvent<HTMLButtonElement>) => {
+  const handlePointerUp = (event: ReactPointerEvent<HTMLElement>) => {
     finishDrag(event.clientY);
   };
 
-  const handleMouseDown = (event: ReactMouseEvent<HTMLButtonElement>) => {
+  const handlePointerCancel = () => {
+    startYRef.current = null;
+  };
+
+  const handleMouseDown = (event: ReactMouseEvent<HTMLElement>) => {
+    if (!shouldStartSheetDrag(event.target)) {
+      startYRef.current = null;
+      return;
+    }
     startYRef.current = event.clientY;
   };
 
-  const handleMouseUp = (event: ReactMouseEvent<HTMLButtonElement>) => {
+  const handleMouseUp = (event: ReactMouseEvent<HTMLElement>) => {
     finishDrag(event.clientY);
   };
 
-  const handleTouchStart = (event: ReactTouchEvent<HTMLButtonElement>) => {
+  const handleTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
+    if (!shouldStartSheetDrag(event.target)) {
+      startYRef.current = null;
+      return;
+    }
     startYRef.current = event.touches[0]?.clientY ?? null;
   };
 
-  const handleTouchEnd = (event: ReactTouchEvent<HTMLButtonElement>) => {
+  const handleTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
     finishDrag(event.changedTouches[0]?.clientY ?? startYRef.current ?? 0);
   };
 
   return (
     <section
       data-selected-place-sheet="mobile-sheet"
+      onPointerDown={handlePointerDown}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerCancel}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
       className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-white shadow-[0_-12px_34px_rgba(43,33,15,0.16)] transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
         open ? "translate-y-0" : "translate-y-[calc(100%+24px)]"
       } ${
@@ -914,14 +1104,9 @@ function MobileSelectedPlaceSheet({
       <div className="relative h-6 shrink-0">
         <button
           type="button"
+          data-mobile-sheet-drag-handle="true"
           aria-label={full ? "맛집 상세 접기" : "맛집 상세 펼치기"}
           onClick={() => (full ? onStageChange("half") : onStageChange("full"))}
-          onPointerDown={handlePointerDown}
-          onPointerUp={handlePointerUp}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
           className="absolute left-1/2 top-0 flex h-6 w-28 -translate-x-1/2 items-center justify-center"
         >
           <span className="h-1 w-11 rounded-full bg-gray-300" />
@@ -933,11 +1118,15 @@ function MobileSelectedPlaceSheet({
             places={places}
             visiblePlaces={visiblePlaces}
             selectedPlace={selectedPlace}
+            clusterPlaces={clusterPlaces}
             loading={loading}
             errorMessage={errorMessage}
             selectedCategory={selectedCategory}
+            searchKeyword={searchKeyword}
+            searchActive={searchActive}
             locationMessage={locationMessage}
             onToggleWish={onToggleWish}
+            onSelectClusterPlace={onSelectClusterPlace}
             onRetry={onRetry}
             full={full}
             onStageChange={onStageChange}
@@ -953,25 +1142,43 @@ function DesktopSelectedPlacePanel({
   places,
   visiblePlaces,
   selectedPlace,
+  clusterPlaces,
   loading,
   errorMessage,
   selectedCategory,
+  searchKeyword,
+  searchActive,
   locationMessage,
   onToggleWish,
+  onSelectClusterPlace,
   onRetry,
   onSelectPlace,
 }: {
   places: Place[];
   visiblePlaces: Place[];
   selectedPlace: Place | null;
+  clusterPlaces: Place[];
   loading: boolean;
   errorMessage: string | null;
   selectedCategory: string;
+  searchKeyword: string;
+  searchActive: boolean;
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
+  onSelectClusterPlace: (placeId: number) => void;
   onRetry: () => void;
   onSelectPlace: (placeId: number) => void;
 }) {
+  if (clusterPlaces.length > 1) {
+    return (
+      <PlaceClusterList
+        places={clusterPlaces}
+        onSelectPlace={onSelectClusterPlace}
+        className="mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
+      />
+    );
+  }
+
   if (selectedPlace) {
     return (
       <div
@@ -1007,11 +1214,15 @@ function DesktopSelectedPlacePanel({
         places={places}
         visiblePlaces={visiblePlaces}
         selectedPlace={selectedPlace}
+        clusterPlaces={clusterPlaces}
         loading={loading}
         errorMessage={errorMessage}
         selectedCategory={selectedCategory}
+        searchKeyword={searchKeyword}
+        searchActive={searchActive}
         locationMessage={locationMessage}
         onToggleWish={onToggleWish}
+        onSelectClusterPlace={onSelectClusterPlace}
         onRetry={onRetry}
         full
       />
@@ -1139,9 +1350,9 @@ function DesktopPlaceDetailCard({
               <span className="text-[#2f8f5f]">영업정보 확인 중</span>
             </div>
           </div>
-          <button type="button" aria-label={place.isWished ? "저장 해제" : "저장"} onClick={onToggleWish} className="flex h-10 shrink-0 items-center justify-center gap-1.5 rounded-full border border-[#f6d365] bg-[#fff8df] px-3 text-xs font-black text-[#8a6315] shadow-sm active:scale-95">
-            <span className="text-base leading-none">{place.isWished ? "▰" : "▱"}</span>
-            저장
+          <button type="button" aria-label={place.isWished ? "저장 취소" : "저장"} onClick={onToggleWish} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm active:scale-95">
+            {place.isWished ? "★" : "☆"}
+
           </button>
         </div>
         <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
@@ -1183,7 +1394,7 @@ function DesktopPlaceTabContent({
     return <div className="grid grid-cols-2 gap-2 p-4">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-square overflow-hidden rounded-[16px] bg-[#fff1bf]"><PlaceImagePane place={place} className="h-full" /></div>)}</div>;
   }
   if (tab === "comments") {
-    return <div className="space-y-3 p-4"><CompactInfoCard title={"댓글 " + place.commentCount + "개"} desc="댓글 상세 목록은 장소 상세 기능과 함께 연결될 예정이에요." /><CompactInfoCard title="가벼운 한마디" desc={place.desc || "동네 사람들이 추천한 꿀맛집이에요."} /></div>;
+    return <PlaceCommentsPanel place={place} className="p-4" />;
   }
   if (tab === "report") {
     return <div className="space-y-3 p-4"><CompactInfoCard title="신고 안내" desc="잘못된 정보, 폐업, 부적절한 내용은 장소 상세 신고 기능으로 접수할 수 있어요." /><CompactInfoCard title="운영 기준" desc="신고 내용은 운영자가 확인한 뒤 필요한 조치를 진행해요." /></div>;
@@ -1209,15 +1420,160 @@ function CompactInfoCard({ title, desc }: { title: string; desc: string }) {
   );
 }
 
+function PlaceCommentsPanel({
+  place,
+  className,
+}: {
+  place: Place;
+  className?: string;
+}) {
+  const [comments, setComments] = useState<CommentItem[]>([]);
+  const [commentText, setCommentText] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  const loadComments = useCallback(async () => {
+    setLoading(true);
+    setMessage(null);
+    try {
+      setComments(await getPlaceComments(place.id));
+    } catch (error) {
+      setComments([]);
+      setMessage(getApiErrorMessage(error, "댓글을 불러오지 못했어요."));
+    } finally {
+      setLoading(false);
+    }
+  }, [place.id]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      void loadComments();
+    }, 0);
+    return () => window.clearTimeout(timer);
+  }, [loadComments]);
+
+  const handleSubmit = async (event: ReactFormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const content = commentText.trim();
+    if (!content) {
+      setMessage("댓글 내용을 입력해 주세요.");
+      return;
+    }
+
+    setSubmitting(true);
+    setMessage(null);
+    try {
+      await createComment(place.id, content);
+      setCommentText("");
+      setMessage("댓글을 남겼어요.");
+      await loadComments();
+    } catch (error) {
+      setMessage(getApiErrorMessage(error, "댓글을 저장하지 못했어요."));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  return (
+    <section className={className}>
+      <div className="space-y-3">
+        <div>
+          <p className="text-base font-black text-[#2b210f]">
+            댓글 {comments.length || place.commentCount}개
+          </p>
+          <p className="mt-1 text-xs font-semibold text-gray-500">
+            이 맛집에 대한 동네 이웃들의 한마디예요.
+          </p>
+        </div>
+
+        {loading ? (
+          <CompactInfoCard title="댓글을 불러오는 중이에요." desc="잠시만 기다려 주세요." />
+        ) : comments.length === 0 ? (
+          <CompactInfoCard title="아직 댓글이 없어요." desc="첫 번째 동네 한마디를 남겨보세요." />
+        ) : (
+          <div className="space-y-2">
+            {comments.map((comment) => (
+              <article
+                key={comment.commentId}
+                className="rounded-[16px] border border-gray-100 bg-white p-3 shadow-sm"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <p className="truncate text-sm font-black text-[#2b210f]">
+                    {comment.nickname || "꿀벌님"}
+                  </p>
+                  <time className="shrink-0 text-[11px] font-semibold text-gray-400">
+                    {formatCommentTime(comment.createdAt)}
+                  </time>
+                </div>
+                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-600">
+                  {comment.content}
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+
+        {message && (
+          <p className="rounded-[14px] bg-[#fff8df] px-3 py-2 text-xs font-semibold text-[#8a6315]">
+            {message}
+          </p>
+        )}
+      </div>
+
+      <form
+        onSubmit={handleSubmit}
+        className="sticky bottom-0 mt-4 flex gap-2 border-t border-gray-100 bg-white pt-3"
+      >
+        <input
+          value={commentText}
+          onChange={(event) => setCommentText(event.target.value)}
+          maxLength={500}
+          placeholder={
+            hasStoredAccessToken()
+              ? "댓글을 입력해 주세요."
+              : "로그인하면 댓글을 남길 수 있어요."
+          }
+          className="min-w-0 flex-1 rounded-[14px] border border-gray-100 bg-[#fafafa] px-3 py-3 text-sm font-semibold text-[#2b210f] outline-none transition placeholder:text-gray-400 focus:border-[#f6b800] focus:bg-white"
+        />
+        <button
+          type="submit"
+          disabled={submitting}
+          className="flex h-12 w-16 shrink-0 items-center justify-center rounded-[14px] bg-[#f6b800] text-sm font-black text-[#2b210f] shadow-sm active:scale-95 disabled:opacity-60"
+        >
+          {submitting ? "등록 중" : "등록"}
+        </button>
+      </form>
+    </section>
+  );
+}
+
+function formatCommentTime(value: string) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("ko-KR", {
+    month: "numeric",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+}
+
 function PanelState({
   places,
   visiblePlaces,
   selectedPlace,
+  clusterPlaces,
   loading,
   errorMessage,
   selectedCategory,
+  searchKeyword,
+  searchActive,
   locationMessage,
   onToggleWish,
+  onSelectClusterPlace,
   onRetry,
   full = false,
   onStageChange,
@@ -1226,11 +1582,15 @@ function PanelState({
   places: Place[];
   visiblePlaces: Place[];
   selectedPlace: Place | null;
+  clusterPlaces: Place[];
   loading: boolean;
   errorMessage: string | null;
   selectedCategory: string;
+  searchKeyword: string;
+  searchActive: boolean;
   locationMessage: string | null;
   onToggleWish: (id: number) => void;
+  onSelectClusterPlace: (placeId: number) => void;
   onRetry: () => void;
   full?: boolean;
   onStageChange?: (stage: MobileSheetStage) => void;
@@ -1238,8 +1598,10 @@ function PanelState({
 }) {
   if (loading) return <StateCard title="맛집을 불러오는 중이에요." />;
   if (errorMessage) return <StateCard title={errorMessage} desc="잠시 뒤 다시 확인해보세요." actionLabel="다시 불러오기" onAction={onRetry} />;
+  if (searchActive && places.length === 0) return <StateCard title={`"${searchKeyword}" 검색 결과가 없어요.`} desc="다른 맛집 이름, 메뉴, 지역명으로 다시 검색해보세요." actionLabel="전체 맛집 보기" onAction={onRetry} />;
   if (places.length === 0) return <StateCard title="아직 보여줄 맛집이 없어요." desc="우리 동네 첫 꿀맛집을 등록해보세요." />;
   if (visiblePlaces.length === 0) return <StateCard title={getFoodCategoryLabel(selectedCategory) + " 맛집이 아직 없어요"} desc="다른 카테고리를 둘러보세요." />;
+  if (clusterPlaces.length > 1) return <PlaceClusterList places={clusterPlaces} onSelectPlace={onSelectClusterPlace} className="h-full overflow-y-auto px-4 pb-4" />;
   if (!selectedPlace) return <StateCard title="지도에서 맛집 마커를 선택해 주세요." desc="선택한 맛집 정보가 여기에 표시돼요." />;
   return <SelectedPlaceCard key={selectedPlace.id} place={selectedPlace} locationMessage={locationMessage} onToggleWish={() => onToggleWish(selectedPlace.id)} full={full} onStageChange={onStageChange} onClose={onClose} />;
 }
@@ -1283,27 +1645,37 @@ function SelectedPlaceCard({
 
   return (
     <article className="flex h-full min-h-0 flex-col bg-white">
-      <button
-        type="button"
-        onClick={handleImageClick}
-        className={full ? "relative block shrink-0 px-2 pb-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45" : "relative block min-h-0 flex-1 basis-1/2 px-2 pb-0 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45"}
-        aria-label="사진 탭 보기"
-      >
-        <div
-          className={
-            full
-              ? "grid h-[202px] grid-cols-[1.05fr_1fr_0.82fr] gap-2 overflow-hidden rounded-[18px] bg-[#fff1bf]"
-              : "grid h-full min-h-[150px] grid-cols-3 gap-px overflow-hidden rounded-[16px] bg-[#fff1bf]"
-          }
+      <div className={full ? "relative block shrink-0 px-2 pb-3 text-left" : "relative block min-h-0 flex-1 basis-1/2 px-2 pb-0 text-left"}>
+        <button
+          type="button"
+          onClick={handleImageClick}
+          className="block h-full w-full text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45"
+          aria-label="사진 탭 보기"
         >
-          <PlaceImagePane place={place} className="h-full" />
-          <PlaceImagePane place={place} className="h-full brightness-[0.98]" />
-          <PlaceImagePane place={place} className="h-full" />
-        </div>
-        <span className="absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">
+          <div
+            className={
+              full
+                ? "grid h-[202px] grid-cols-[1.05fr_1fr_0.82fr] gap-2 overflow-hidden rounded-[18px] bg-[#fff1bf]"
+                : "grid h-full min-h-[150px] grid-cols-3 gap-px overflow-hidden rounded-[16px] bg-[#fff1bf]"
+            }
+          >
+            <PlaceImagePane place={place} className="h-full" />
+            <PlaceImagePane place={place} className="h-full brightness-[0.98]" />
+            <PlaceImagePane place={place} className="h-full" />
+          </div>
+        </button>
+        <span className="pointer-events-none absolute bottom-6 left-1/2 -translate-x-1/2 rounded-full bg-black/55 px-3 py-1 text-xs font-bold text-white">
           1/6
         </span>
-      </button>
+        <button
+          type="button"
+          aria-label="맛집 상세 닫기"
+          onClick={onClose}
+          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-lg font-black text-[#2b210f] shadow-sm backdrop-blur-md transition active:scale-95"
+        >
+          ×
+        </button>
+      </div>
 
       <div className={full ? "shrink-0 px-4 pb-3" : "flex shrink-0 items-center px-4 py-3"}>
         <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
@@ -1319,23 +1691,23 @@ function SelectedPlaceCard({
               <span className="text-[#2f8f5f]">영업정보 확인 중</span>
             </div>
           </div>
-          <div className="flex w-[84px] shrink-0 items-center justify-end gap-1.5">
+          <div className="flex shrink-0 items-center justify-end">
             <button
               type="button"
-              aria-label={place.isWished ? "저장 해제" : "저장"}
+              aria-label={place.isWished ? "저장 취소" : "저장"}
               onClick={onToggleWish}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-base font-black text-[#8a6315] shadow-sm active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm active:scale-95"
             >
-              {place.isWished ? "▰" : "▱"}
+              {place.isWished ? "★" : "☆"}
             </button>
-            <button
-              type="button"
-              aria-label="맛집 상세 닫기"
-              onClick={onClose}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-gray-100 bg-white text-xl font-black text-[#2b210f] shadow-sm active:scale-95"
-            >
-              ×
-            </button>
+
+
+
+
+
+
+
+
           </div>
         </div>
       </div>
@@ -1354,6 +1726,7 @@ function SelectedPlaceCard({
       </div>
 
       <div
+        data-mobile-sheet-scroll="content"
         className={
           full
             ? "min-h-0 flex-1 overflow-y-auto overscroll-contain pb-[calc(16px+env(safe-area-inset-bottom))] [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
@@ -1397,12 +1770,7 @@ function MobilePlaceTabContent({
   }
 
   if (tab === "comments") {
-    return (
-      <div className="space-y-3 p-4">
-        <CompactInfoCard title={"댓글 " + place.commentCount + "개"} desc="댓글 목록은 장소 상세 기능과 함께 연결될 예정이에요." />
-        <CompactInfoCard title="동네 한마디" desc={place.desc || "동네 사람들이 추천한 꿀맛집이에요."} />
-      </div>
-    );
+    return <PlaceCommentsPanel place={place} className="p-4" />;
   }
 
   if (tab === "report") {
@@ -1435,7 +1803,7 @@ function PlaceImagePane({ place, className }: { place: Place; className: string 
   if (place.imageUrl) {
     return <img src={place.imageUrl} alt={place.title + " 대표 이미지"} className={className + " w-full object-cover"} />;
   }
-  return <div className={className + " flex w-full items-center justify-center bg-[#fff1bf] px-3 text-center text-xs font-bold leading-5 text-[#8a6315]"}>{category.emoji} 이미지 준비 중</div>;
+  return <div className={className + " flex w-full items-center justify-center bg-[#fff1bf] px-3 text-center text-xs font-bold leading-5 text-[#8a6315]"}>{category.label} 이미지 준비 중</div>;
 }
 
 function DetailInfoRow({ icon, title, desc }: { icon: string; title: string; desc?: string }) {
@@ -1482,7 +1850,7 @@ function PlaceMap({
   places: Place[];
   selectedPlaceId: number | null;
   userLocation: UserLocation | null;
-  onSelectPlace: (placeId: number) => void;
+  onSelectPlace: (placeId: number, nearbyPlaces?: Place[]) => void;
   onMapActionsReady: (actions: MapActions | null) => void;
 }) {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -1990,7 +2358,10 @@ function PlaceMap({
             "[data-place-marker-hit='true']",
           );
           hitTarget?.addEventListener("click", () => {
-            onSelectPlace(place.id);
+            onSelectPlace(
+              place.id,
+              getVisuallyOverlappingMarkerPlaces(place, validPlaces, map, kakao),
+            );
           });
 
           const overlay = new kakao.maps.CustomOverlay({
@@ -2090,7 +2461,7 @@ function PlaceMap({
     <div
       ref={containerRef}
       aria-label="맛집 지도"
-      className="pointer-events-auto absolute inset-0 z-0 h-full w-full touch-none select-none overflow-hidden bg-[#eaf2e4]"
+      className="pointer-events-auto absolute inset-0 z-0 h-full w-full touch-none select-none overflow-hidden bg-[#fffaf0]"
       style={mapGestureStyle}
     />
   );
@@ -2098,7 +2469,7 @@ function PlaceMap({
 
 function MapStatus({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-[#eaf2e4] px-8 text-center">
+    <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-[#fffaf0] px-8 text-center">
       <div className="rounded-[24px] bg-white p-5 shadow-sm">
         <p className="text-sm font-bold text-[#2b210f]">{title}</p>
         <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>
@@ -2111,20 +2482,26 @@ function createPlaceOverlay(place: Place, active: boolean) {
   const category = getFoodCategory(place.category);
   const root = document.createElement("div");
   root.dataset.placeMarkerRoot = "true";
-  root.className = "pointer-events-none flex h-14 w-14 items-center justify-center";
+  root.className = "pointer-events-none flex h-16 w-16 items-center justify-center";
   root.style.pointerEvents = "none";
-  root.style.width = "56px";
-  root.style.height = "56px";
+  root.style.width = "64px";
+  root.style.height = "64px";
 
   const marker = document.createElement("button");
   marker.type = "button";
   marker.title = place.title;
   marker.dataset.placeMarkerHit = "true";
   marker.className = active
-    ? "pointer-events-auto flex h-12 w-12 origin-bottom scale-110 items-center justify-center rounded-[20px_20px_20px_7px] border-[3px] border-white bg-[#f35f4f] text-xl text-white shadow-[0_14px_32px_rgba(243,95,79,0.42)] ring-4 ring-[#f6d365]/50 transition active:scale-105"
-    : "pointer-events-auto flex h-10 w-10 origin-bottom items-center justify-center rounded-[18px_18px_18px_6px] border-2 border-white bg-[#f6b800] text-lg text-[#2b210f] shadow-[0_10px_24px_rgba(43,33,15,0.30)] ring-2 ring-[#2b210f]/10 transition hover:border-white hover:bg-[#ffd84d] active:scale-95";
+    ? "pointer-events-auto flex h-12 w-12 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-[3px] border-white bg-[#f35f4f] shadow-[0_14px_30px_rgba(43,33,15,0.34)] ring-4 ring-[#f6d365]/50 transition hover:-translate-y-0.5 active:scale-95"
+    : "pointer-events-auto flex h-11 w-11 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-2 border-white bg-[#f6b800] shadow-[0_12px_24px_rgba(43,33,15,0.28)] ring-2 ring-[#2b210f]/10 transition hover:-translate-y-0.5 hover:bg-[#ffd84d] active:scale-95";
   marker.style.pointerEvents = "auto";
-  marker.textContent = category.emoji;
+
+  const icon = document.createElement("span");
+  icon.className = active
+    ? "pointer-events-none flex rotate-45 items-center justify-center text-[22px] leading-none drop-shadow-[0_1px_0_rgba(255,255,255,0.75)]"
+    : "pointer-events-none flex rotate-45 items-center justify-center text-[20px] leading-none drop-shadow-[0_1px_0_rgba(255,255,255,0.75)]";
+  icon.textContent = category.emoji;
+  marker.append(icon);
 
   root.append(marker);
   return root;
@@ -2145,6 +2522,33 @@ function createUserLocationOverlay() {
 
 function isPlaceWithCoordinates(place: Place) {
   return Number.isFinite(place.latitude) && Number.isFinite(place.longitude);
+}
+
+function getVisuallyOverlappingMarkerPlaces(
+  anchorPlace: Place,
+  places: Place[],
+  map: KakaoMap,
+  kakao: Awaited<ReturnType<typeof loadKakaoMapSdk>>,
+) {
+  const markerBodyOverlapPx = 40;
+  const projection = map.getProjection();
+  const anchorPoint = projection.containerPointFromCoords(
+    new kakao.maps.LatLng(anchorPlace.latitude, anchorPlace.longitude),
+  );
+
+  return places
+    .map((place) => {
+      const point = projection.containerPointFromCoords(
+        new kakao.maps.LatLng(place.latitude, place.longitude),
+      );
+      return {
+        place,
+        distancePx: Math.hypot(point.x - anchorPoint.x, point.y - anchorPoint.y),
+      };
+    })
+    .filter((item) => item.distancePx <= markerBodyOverlapPx)
+    .sort((a, b) => a.distancePx - b.distancePx)
+    .map((item) => item.place);
 }
 
 function getMapCenter(places: Place[]) {

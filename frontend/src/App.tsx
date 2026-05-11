@@ -37,6 +37,7 @@ function App() {
   });
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [searchKeyword, setSearchKeyword] = useState("");
   const initialWishedIdsRef = useRef<Set<number> | null>(null);
 
   if (initialWishedIdsRef.current === null) {
@@ -89,9 +90,11 @@ function App() {
 
   const search = useCallback(
     async (keyword: string) => {
+      const trimmedKeyword = keyword.trim();
       setLoading(true);
       try {
-        await loadPlaces(keyword, wishedIds);
+        await loadPlaces(trimmedKeyword, wishedIds);
+        setSearchKeyword(trimmedKeyword);
       } catch {
         setErrorMessage(SEARCH_LOAD_ERROR);
       } finally {
@@ -151,6 +154,8 @@ function App() {
               places={places}
               loading={loading}
               errorMessage={errorMessage}
+              searchKeyword={searchKeyword}
+              searchActive={searchKeyword.length > 0}
               onToggleWish={toggleWish}
               onSearch={search}
             />

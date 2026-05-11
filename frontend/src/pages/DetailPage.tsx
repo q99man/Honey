@@ -381,17 +381,19 @@ export default function DetailPage({
             type="button"
             aria-label="뒤로가기"
             onClick={() => navigate(-1)}
-            className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#2b210f] shadow-sm"
+            className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#2b210f] shadow-sm transition active:scale-95"
           >
-            ‹
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M15 18l-6-6 6-6" />
+            </svg>
           </button>
           <button
             type="button"
             aria-label={isWished ? "찜 해제" : "찜하기"}
             onClick={() => onToggleWish(place.id)}
-            className="absolute right-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#d99a00] shadow-sm"
+            className="absolute right-4 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm transition active:scale-95"
           >
-            {isWished ? "♥" : "♡"}
+            {isWished ? "★" : "☆"}
           </button>
         </section>
 

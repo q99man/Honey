@@ -53,9 +53,9 @@ export default function SpaceCard({
               event.stopPropagation();
               onToggleWish(event);
             }}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full bg-white/95 text-lg font-bold text-[#d99a00] shadow-sm transition active:scale-95"
+            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-lg font-bold text-[#8a6315] shadow-sm transition active:scale-95"
           >
-            {isWished ? "♥" : "♡"}
+            {isWished ? "★" : "☆"}
           </button>
         )}
       </div>

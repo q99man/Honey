@@ -441,7 +441,7 @@ function AuthCard({
         로그인하면 내 동네와 활동 기록을 한눈에 볼 수 있어요.
       </p>
 
-      <div className="mt-5 grid grid-cols-2 gap-2 rounded-full bg-[#fff7dc] p-1">
+      <div className="mt-5 grid grid-cols-2 gap-2 rounded-full bg-[#fff8df] p-1">
         {(["login", "signup"] as AuthMode[]).map((mode) => (
           <button
             key={mode}
@@ -494,8 +494,8 @@ function LoadingCard() {
         내 정보를 불러오는 중이에요.
       </p>
       <div className="mt-4 space-y-3">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff1bf]" />
-        <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff1bf]" />
+        <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff8df]" />
+        <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff8df]" />
         <div className="h-16 animate-pulse rounded-2xl bg-[#fffaf0]" />
       </div>
     </section>
@@ -516,7 +516,7 @@ function ProfileSummaryCard({
   return (
     <section className="rounded-3xl bg-white p-4 shadow-sm">
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#5c3b13]">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f]">
           꿀벌
         </div>
         <div className="min-w-0 flex-1">
@@ -752,8 +752,8 @@ function Badge({
 }) {
   const toneClass =
     tone === "green"
-      ? "bg-[#e9f8ef] text-[#2f6f5f]"
-      : "bg-[#fff1bf] text-[#5c3b13]";
+      ? "bg-[#f6b800] text-[#2b210f]"
+      : "bg-[#fff8df] text-[#8a6315]";
 
   return (
     <span

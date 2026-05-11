@@ -26,7 +26,10 @@ export default function CategoryTabs({
                 : "border-white/80 bg-white/95 text-gray-600"
             }`}
           >
-            <span aria-hidden="true" className="text-sm leading-none">
+            <span
+              aria-hidden="true"
+              className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-base shadow-inner"
+            >
               {category.emoji}
             </span>
             <span>{category.label}</span>

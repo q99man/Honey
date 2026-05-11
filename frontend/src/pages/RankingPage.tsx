@@ -219,11 +219,11 @@ function RankingItem({
     <Link
       to={`/places/${item.placeId}`}
       className={`block rounded-3xl bg-white p-4 shadow-sm ${
-        highlight ? "border border-[#f6d365]" : ""
+        highlight ? "border-2 border-[#f6b800]" : ""
       }`}
     >
       <div className="flex items-start gap-3">
-        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#8a6315]">
+        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f]">
           {item.rank}
         </div>
         <div className="min-w-0 flex-1">

@@ -223,11 +223,11 @@ class PlaceServiceTest {
         Place place = createPlaceEntity(targetDong);
         ReflectionTestUtils.setField(place, "id", 100L);
         PlaceStats stats = new PlaceStats(place);
-        when(placeRepository
-                .findTop50ByNameContainingIgnoreCaseAndDeletedAtIsNullAndExposureStatusOrderByCreatedAtDesc(
-                        "Place",
-                        PlaceExposureStatus.VISIBLE
-                )).thenReturn(List.of(place));
+        when(placeRepository.searchVisiblePlaces(
+                eq("Place"),
+                eq(PlaceExposureStatus.VISIBLE),
+                any()
+        )).thenReturn(List.of(place));
         when(placeStatsRepository.findById(100L)).thenReturn(Optional.of(stats));
         when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
 

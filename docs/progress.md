@@ -494,13 +494,28 @@ Recent update:
 - [x] Home mobile final QA pass checked 360px, 393px, and 430px browser widths with seeded Kakao map markers: the compact search row, highlighted map markers, half-sheet layout, hidden BottomNav/register action while a sheet is open, image-to-photo-tab expansion, menu/comment tab expansion, full-sheet internal content, and Korean UI text all rendered without critical overlap. A small focus-outline polish, hidden-content accessibility cleanup, and mouse/touch drag handler fallback were applied during QA.
 - [x] Home mobile final polish fixed the half-sheet title/action row so long place names cannot push the save/close buttons off the right edge, added consistent `px-2` image padding to half and full image strips, and changed mobile sheet close behavior to clear the selected place marker as well as closing the sheet.
 - [x] Home UI second-refactor final visual cleanup removed glass/blur styling from the web information panel, web side rail, web category chips/popover, web map controls, mobile search row, mobile map controls, mobile place sheet, and map status card; these surfaces now use solid white backgrounds for a cleaner unified UI.
+- [x] Home UI detail polish (2nd round): Kakao map markers updated to use a pure CSS teardrop pin shape (`rounded-[50%_50%_50%_0] -rotate-45`) with accurate downward shadows instead of emoji-only boxes, providing a sharper and more professional look.
+- [x] Home UI detail polish (2nd round): Map background changed to `bg-[#fffaf0]` to align with the warm honey/cream design system instead of greenish `#eaf2e4`.
+- [x] Home UI detail polish (2nd round): Unified mobile and desktop map controls (My Location, Zoom In, Zoom Out) into an identical UI, positioning them seamlessly below the top header/category region on both platforms.
+- [x] Home UI detail polish (2nd round): Changed Kakao map zoom level transitions to use smooth animations (`animate: { duration: 300 }`) matching native app feel.
+- [x] Home UI detail polish (2nd round): Expanded mobile selected-place sheet drag UX to the entire card area and added intelligent scroll-conflict prevention (`scrollTop > 0` bypass) so users can naturally swipe up/down anywhere to expand/collapse.
+- [x] Sub-screen UI detail polish (2nd round): Unified Ranking, Wishlist, and MyPage UI to match the new Home honey/cream theme, adjusting card paddings, highlighting badges with `bg-[#f6b800] text-[#2b210f]`, and normalizing form field active states.
+- [x] UI QA Polish (2nd round): Improved desktop panel toggle 시인성(visibility) by increasing button size and adding shadows; adjusted mobile sheet vertical spacing and tab contrast; unified wishlist icons to `★`/`☆` across all screens; and reinforced map control borders for better contrast on bright map backgrounds.
+- [x] Home selected-place comment tab now reads real place comments, shows loading/empty/error states, and provides a bottom input for immediate comment creation on both desktop and mobile detail panels while leaving authentication, phone verification, duplicate-comment, and sanction validation to the backend.
+- [x] Home overlapping marker UX now groups nearby place markers by current Kakao map zoom level and opens a Korean place-selection list in the mobile bottom sheet or desktop left panel before showing a single place detail card.
+- [x] Home overlapping marker detection radius was widened to better match visible marker/touch overlap, including close-zoom cases where adjacent pins visually collide.
+- [x] Home overlapping marker detection was refined to use the Kakao projection screen distance and a marker-body-sized `40px` threshold, so the list opens only when marker bodies visually overlap instead of when nearby-but-separated pins are clicked.
+- [x] Home category and marker visual regression was cleaned up by restoring Korean category metadata with dedicated food emoji values, rendering category chips with emoji badges, and restoring map markers to centered teardrop pins with rotated-back emoji contents.
+- [x] Home mobile map controls were realigned to the upper-right area directly below the search/category header, matching the desktop control placement pattern; the selected-place sheet now supports card-surface drag gestures with scroll/input guards, and the comments tab again loads place comments and provides an inline comment input.
+- [x] Home search UX now resets map selection on search, opens the result panel, shows a Korean no-result state with a full-list reset action, and keeps desktop/mobile search inputs in sync with the active keyword.
+- [x] Place search API now matches visible places by name, recommended menu, recommendation text, feature text, road/jibun address, and Korean/English city/district/dong names instead of place name only.
 
 Next task:
 
-2nd UI polish round
+Search QA and ranking/performance follow-up
 
-- rerun the selected-place desktop information panel screenshot QA in a normal browser session with real Kakao map markers visible, then tune only spacing or tab content density if the visual pass shows overlap
-- then polish Detail/Ranking/Wishlist/MyPage spacing only where a seeded browser QA pass shows real overlap or density issues
+- run browser QA with seeded data for search result, no-result, reset, and overlapping marker list flows once localhost access is available in the in-app browser
+- review whether expanded search needs database indexes or a dedicated search endpoint strategy before production-scale data
 - connect the community route to real community features when that domain enters scope
 - recommended reasoning level: medium
 
