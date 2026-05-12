@@ -29,6 +29,10 @@ pnpm-debug.log*
 .DS_Store
 Thumbs.db
 
+# MarkDown
+*.md
+!README.md
+
 # Java / Gradle
 .gradle/
 backend/.gradle/
@@ -37,3 +41,13 @@ backend/.gradle-user-home/
 
 # Codex / temporary
 *.tmp
+
+# git
+.github/
+.githooks/
+
+# Scripts
+scripts/
+
+# skills
+skills/
