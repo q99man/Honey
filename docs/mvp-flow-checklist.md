@@ -7,13 +7,13 @@
 - [x] Phone verification enables protected actions.
 - [x] Region verification sets the user's active neighborhood.
 - [x] Place list, search, nearby, and detail load.
-- [ ] Authenticated user can create, edit, and delete own place.
-- [ ] Authenticated user can recommend and cancel recommendation.
-- [ ] Authenticated user can verify a visit within policy limits.
-- [ ] Authenticated user can create, edit, and delete own place comment.
+- [x] Authenticated user can create, edit, and delete own place.
+- [x] Authenticated user can recommend and cancel recommendation.
+- [x] Authenticated user can verify a visit within policy limits.
+- [x] Authenticated user can create, edit, and delete own place comment.
 - [x] Authenticated user can create, edit, and delete own community post.
-- [ ] Authenticated user can report supported targets.
-- [ ] My page shows profile, activity, registered places, and reports.
+- [x] Authenticated user can report supported targets.
+- [x] My page shows profile, activity, registered places, and reports.
 
 ## Admin Flows
 
