@@ -17,19 +17,19 @@
 
 ## Admin Flows
 
-- [ ] Admin dashboard loads.
-- [ ] Admin can review users.
-- [ ] Admin can sanction users and adjust trust.
-- [ ] Admin can moderate places.
-- [ ] Admin can process reports.
-- [ ] Admin can invalidate recommendations and visits.
-- [ ] Super admin can update policies.
-- [ ] Audit logs capture admin actions.
+- [x] Admin dashboard loads.
+- [x] Admin can review users.
+- [x] Admin can sanction users and adjust trust.
+- [x] Admin can moderate places.
+- [x] Admin can process reports.
+- [x] Admin can invalidate recommendations and visits.
+- [x] Super admin can update policies.
+- [x] Audit logs capture admin actions.
 
 ## Technical Gates
 
 - [x] Backend test suite passes.
 - [x] Frontend production build passes.
 - [x] Local backend starts with documented `.env`.
-- [ ] Local frontend connects to backend through `VITE_API_BASE_URL`.
-- [ ] Production profile requirements are documented.
+- [x] Local frontend connects to backend through `VITE_API_BASE_URL`.
+- [x] Production profile requirements are documented.

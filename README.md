@@ -8,3 +8,5 @@ Honeytong은 **모바일 퍼스트**, **위치 기반**의 로컬 맛집 탐험/
 현재 목표: MVP 기능 범위 잠금 및 핵심 사용자/관리자 흐름 검증.
 
 커뮤니티는 1차 범위에서 자유게시판 CRUD 1개로 고정하고, 댓글/좋아요/카테고리/신고/관리자 모더레이션은 후속 확장으로 보류합니다.
+
+MVP 흐름 검증 상태는 `docs/mvp-flow-checklist.md`에서 관리합니다. 프로덕션 실행 기준은 `.env.example`의 Production baseline과 `backend/src/main/resources/application-prod.yml`을 함께 확인합니다.
