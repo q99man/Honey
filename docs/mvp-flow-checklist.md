@@ -4,14 +4,14 @@
 
 - [x] Signup creates an account.
 - [x] Login stores access and refresh tokens.
-- [ ] Phone verification enables protected actions.
-- [ ] Region verification sets the user's active neighborhood.
-- [ ] Place list, search, nearby, and detail load.
+- [x] Phone verification enables protected actions.
+- [x] Region verification sets the user's active neighborhood.
+- [x] Place list, search, nearby, and detail load.
 - [ ] Authenticated user can create, edit, and delete own place.
 - [ ] Authenticated user can recommend and cancel recommendation.
 - [ ] Authenticated user can verify a visit within policy limits.
 - [ ] Authenticated user can create, edit, and delete own place comment.
-- [ ] Authenticated user can create, edit, and delete own community post.
+- [x] Authenticated user can create, edit, and delete own community post.
 - [ ] Authenticated user can report supported targets.
 - [ ] My page shows profile, activity, registered places, and reports.
 
