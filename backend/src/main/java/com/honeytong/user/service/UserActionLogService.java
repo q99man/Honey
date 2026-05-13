@@ -17,10 +17,14 @@ public class UserActionLogService {
     public static final String ACTION_COMMENT_CREATE = "COMMENT_CREATE";
     public static final String ACTION_COMMENT_UPDATE = "COMMENT_UPDATE";
     public static final String ACTION_COMMENT_DELETE = "COMMENT_DELETE";
+    public static final String ACTION_COMMUNITY_POST_CREATE = "COMMUNITY_POST_CREATE";
+    public static final String ACTION_COMMUNITY_POST_UPDATE = "COMMUNITY_POST_UPDATE";
+    public static final String ACTION_COMMUNITY_POST_DELETE = "COMMUNITY_POST_DELETE";
     public static final String ACTION_REPORT_CREATE = "REPORT_CREATE";
 
     public static final String TARGET_PLACE = "PLACE";
     public static final String TARGET_COMMENT = "COMMENT";
+    public static final String TARGET_COMMUNITY_POST = "COMMUNITY_POST";
     public static final String TARGET_REPORT = "REPORT";
 
     private final UserActionLogWriter userActionLogWriter;

@@ -32,6 +32,8 @@ Thumbs.db
 # MarkDown
 *.md
 !README.md
+!2026-05-14-mvp-flow-lock.md
+!mvp-flow-checklist.md
 
 # Java / Gradle
 .gradle/

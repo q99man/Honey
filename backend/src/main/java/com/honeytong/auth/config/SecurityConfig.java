@@ -44,6 +44,8 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/api/places/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rankings/places").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/rankings/seasons/current").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/posts").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/community/posts/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/actuator/health", "/actuator/health/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/admin/**").hasAnyRole("ADMIN", "SUPER_ADMIN")
                         .requestMatchers(HttpMethod.PATCH, "/api/admin/policies/**").hasRole("SUPER_ADMIN")

@@ -288,6 +288,21 @@ CREATE TABLE comments (
   CONSTRAINT fk_comments_place FOREIGN KEY (place_id) REFERENCES places (id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE community_posts (
+  id BIGINT NOT NULL AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  title VARCHAR(120) NOT NULL,
+  content VARCHAR(2000) NOT NULL,
+  status VARCHAR(20) NOT NULL DEFAULT 'VISIBLE',
+  deleted_at DATETIME(6),
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  PRIMARY KEY (id),
+  KEY idx_community_posts_status_created (status, created_at),
+  KEY idx_community_posts_user_status_created (user_id, status, created_at),
+  CONSTRAINT fk_community_posts_user FOREIGN KEY (user_id) REFERENCES users (id)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE seasons (
   id BIGINT NOT NULL AUTO_INCREMENT,
   season_code VARCHAR(30) NOT NULL,
