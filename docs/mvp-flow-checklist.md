@@ -2,8 +2,8 @@
 
 ## User Flows
 
-- [ ] Signup creates an account.
-- [ ] Login stores access and refresh tokens.
+- [x] Signup creates an account.
+- [x] Login stores access and refresh tokens.
 - [ ] Phone verification enables protected actions.
 - [ ] Region verification sets the user's active neighborhood.
 - [ ] Place list, search, nearby, and detail load.
@@ -28,8 +28,8 @@
 
 ## Technical Gates
 
-- [ ] Backend test suite passes.
-- [ ] Frontend production build passes.
-- [ ] Local backend starts with documented `.env`.
+- [x] Backend test suite passes.
+- [x] Frontend production build passes.
+- [x] Local backend starts with documented `.env`.
 - [ ] Local frontend connects to backend through `VITE_API_BASE_URL`.
 - [ ] Production profile requirements are documented.
