@@ -299,7 +299,7 @@ export default function HomePage({
 
   return (
     <div className="min-h-screen bg-neutral-100">
-      <main className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-[#eaf2e4]">
+      <main className="relative h-[100dvh] min-h-[640px] w-full overflow-hidden bg-m3-surface">
         <PlaceMap
           places={visiblePlaces}
           selectedPlaceId={
@@ -380,7 +380,7 @@ export default function HomePage({
           <aside
             data-desktop-place-panel="root"
             className={
-              "pointer-events-auto absolute inset-y-0 left-[84px] z-20 flex w-[348px] min-h-0 flex-col border-r border-gray-100 bg-white p-5 shadow-[12px_0_36px_rgba(43,33,15,0.10)] transition-[transform,opacity] duration-300 ease-out xl:w-[388px] " +
+              "pointer-events-auto absolute inset-y-0 left-[84px] z-20 flex w-[348px] min-h-0 flex-col border-r border-m3-outline-variant bg-m3-surface-container-lowest p-5 text-m3-on-surface shadow-m3-2 transition-[transform,opacity] duration-300 ease-out xl:w-[388px] " +
               (desktopPanelCollapsed
                 ? "-translate-x-[calc(100%+16px)] opacity-0"
                 : "translate-x-0 opacity-100")
@@ -410,7 +410,7 @@ export default function HomePage({
           </aside>
 
           <div
-            className={`pointer-events-none absolute inset-y-0 z-10 w-px bg-gray-200/80 transition-all ${
+            className={`pointer-events-none absolute inset-y-0 z-10 w-px bg-m3-outline-variant transition-all ${
               desktopPanelCollapsed
                 ? "left-[84px]"
                 : "left-[432px] xl:left-[472px]"
@@ -426,7 +426,7 @@ export default function HomePage({
             aria-label={
               desktopPanelCollapsed ? "정보 패널 펼치기" : "정보 패널 접기"
             }
-            className={`pointer-events-auto absolute top-1/2 z-30 flex h-16 w-9 -translate-y-1/2 items-center justify-center rounded-r-2xl border border-l-0 border-gray-100 bg-white text-lg font-black text-[#8a6315] shadow-[0_8px_24px_rgba(43,33,15,0.14)] transition-all active:scale-95 ${
+            className={`pointer-events-auto absolute top-1/2 z-30 flex h-16 w-9 -translate-y-1/2 items-center justify-center rounded-r-m3-lg border border-l-0 border-m3-outline-variant bg-m3-surface-container-lowest text-lg font-black text-m3-primary shadow-m3-2 transition-all active:scale-95 ${
               desktopPanelCollapsed
                 ? "left-[84px]"
                 : "left-[432px] xl:left-[472px]"
@@ -492,11 +492,11 @@ function DesktopSideNav({
   return (
     <nav
       data-desktop-side-nav="root"
-      className="pointer-events-auto absolute inset-y-0 left-0 z-30 flex w-[84px] flex-col items-center border-r border-gray-100 bg-white py-6 shadow-[8px_0_30px_rgba(43,33,15,0.08)]"
+      className="pointer-events-auto absolute inset-y-0 left-0 z-30 flex w-[84px] flex-col items-center border-r border-m3-outline-variant bg-m3-surface-container-low py-6 shadow-m3-2"
     >
       <Link
         to="/"
-        className="flex h-11 w-11 items-center justify-center rounded-2xl bg-[#f6b800] text-xl font-black text-white shadow-sm"
+        className="flex h-11 w-11 items-center justify-center rounded-m3-lg bg-m3-primary text-xl font-black text-m3-on-primary shadow-m3-1"
         aria-label="Honeytong \uD648"
       >
         H
@@ -504,10 +504,10 @@ function DesktopSideNav({
 
       <div className="mt-8 flex w-full flex-1 flex-col items-center gap-2">
         {navItems.map((item) => {
-          const className = `flex w-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-bold transition ${
+          const className = `flex w-[68px] flex-col items-center justify-center gap-1 rounded-m3-xl px-2 py-3 text-m3-label-md transition ${
             activeMode === item.mode
-              ? "bg-[#fff3c4] text-[#8a6315]"
-              : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
+              ? "bg-m3-secondary-container text-m3-on-secondary-container"
+              : "text-m3-on-surface-variant hover:bg-m3-surface-container-high hover:text-m3-on-surface"
           }`;
           const content = (
             <>
@@ -579,7 +579,7 @@ function DesktopMapCategoryBar({
       }
     >
       <div className="pointer-events-auto flex w-fit max-w-[calc(100vw-560px)] items-start gap-2 xl:max-w-[760px]">
-        <div className="flex min-w-0 max-w-[calc(100vw-632px)] items-center gap-2 overflow-x-auto rounded-[24px] bg-transparent p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:max-w-[704px] [&::-webkit-scrollbar]:hidden">
+        <div className="flex min-w-0 max-w-[calc(100vw-632px)] items-center gap-2 overflow-x-auto rounded-m3-xl bg-transparent p-0.5 [-ms-overflow-style:none] [scrollbar-width:none] xl:max-w-[704px] [&::-webkit-scrollbar]:hidden">
           {primaryCategories.map((category) => (
             <button
               key={category.value}
@@ -587,15 +587,15 @@ function DesktopMapCategoryBar({
               type="button"
               onClick={() => onSelectCategory(category.value)}
               className={
-                "flex h-10 min-w-[92px] shrink-0 items-center justify-center gap-2 rounded-full border px-3 text-sm font-bold shadow-[0_8px_22px_rgba(43,33,15,0.10)] transition active:scale-[0.98] " +
+                "flex h-10 min-w-[92px] shrink-0 items-center justify-center gap-2 rounded-m3-full border px-3 text-m3-label-lg shadow-m3-1 transition active:scale-[0.98] " +
                 (selectedCategory === category.value
-                  ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                  : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
+                  ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                  : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface hover:border-m3-primary")
               }
             >
               <span
                 aria-hidden="true"
-                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-base shadow-inner"
+                className="flex h-6 w-6 shrink-0 items-center justify-center rounded-m3-full bg-m3-surface-container-high text-base"
               >
                 {category.emoji}
               </span>
@@ -612,10 +612,10 @@ function DesktopMapCategoryBar({
             aria-expanded={open}
             aria-label="카테고리 더보기"
             className={
-              "flex h-10 w-10 items-center justify-center rounded-full border text-lg font-black shadow-[0_8px_22px_rgba(43,33,15,0.10)] transition active:scale-95 " +
+              "flex h-10 w-10 items-center justify-center rounded-m3-full border text-lg font-black shadow-m3-1 transition active:scale-95 " +
               (open
-                ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                : "border-gray-100 bg-white text-[#2b210f]")
+                ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface")
             }
           >
             ...
@@ -624,7 +624,7 @@ function DesktopMapCategoryBar({
           {open && (
             <div
               data-desktop-category-popover="root"
-              className="absolute left-0 top-12 z-50 w-[300px] max-w-[calc(100vw-32px)] rounded-[24px] border border-gray-100 bg-white p-3 shadow-[0_18px_48px_rgba(43,33,15,0.18)]"
+              className="absolute left-0 top-12 z-50 w-[300px] max-w-[calc(100vw-32px)] rounded-m3-xl border border-m3-outline-variant bg-m3-surface-container-lowest p-3 text-m3-on-surface shadow-m3-3"
             >
               <div className="grid grid-cols-3 gap-2">
                 {extraCategories.map((category) => (
@@ -636,14 +636,14 @@ function DesktopMapCategoryBar({
                       onClose();
                     }}
                     className={
-                      "flex min-h-16 flex-col items-center justify-center gap-1 rounded-[18px] border px-2 py-2 text-xs font-bold transition active:scale-[0.98] " +
+                      "flex min-h-16 flex-col items-center justify-center gap-1 rounded-m3-lg border px-2 py-2 text-m3-label-md transition active:scale-[0.98] " +
                       (selectedCategory === category.value
-                        ? "border-[#f6d365] bg-[#fff3c4] text-[#8a6315]"
-                        : "border-gray-100 bg-white text-[#2b210f] hover:border-[#f6d365]")
+                        ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                        : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface hover:border-m3-primary")
                     }
                   >
                     <span
-                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-lg shadow-inner"
+                      className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-full bg-m3-surface-container-high text-lg"
                       aria-hidden="true"
                     >
                       {category.emoji}
@@ -690,18 +690,18 @@ function DesktopMapRegionChip({
         (panelCollapsed ? "left-[108px]" : "left-[452px] xl:left-[492px]")
       }
     >
-      <div className="flex min-h-12 max-w-[330px] items-center gap-3 rounded-[18px] border border-gray-100 bg-white px-3 py-2 shadow-[0_10px_28px_rgba(43,33,15,0.12)]">
+      <div className="flex min-h-12 max-w-[330px] items-center gap-3 rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-lowest px-3 py-2 text-m3-on-surface shadow-m3-2">
         <button
           type="button"
           onClick={onUseCurrentLocation}
           aria-label="현재 위치 기준으로 보기"
-          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-[13px] bg-[#fff8df] text-[#8a6315] transition active:scale-95"
+          className="flex h-9 w-9 shrink-0 items-center justify-center rounded-m3-md bg-m3-primary-container text-m3-on-primary-container transition active:scale-95"
         >
           <CurrentLocationIcon />
         </button>
         <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-black text-[#2b210f]">{title}</p>
-          <p className="mt-0.5 truncate text-[11px] font-semibold text-gray-500">
+          <p className="truncate text-m3-title-sm text-m3-on-surface">{title}</p>
+          <p className="mt-0.5 truncate text-m3-body-sm text-m3-on-surface-variant">
             {desc}
           </p>
         </div>
@@ -710,7 +710,7 @@ function DesktopMapRegionChip({
             type="button"
             onClick={onClearSelection}
             aria-label="지역 선택 초기화"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-gray-100 bg-white text-base font-black text-gray-500 transition active:scale-95"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest text-base font-black text-m3-on-surface-variant transition active:scale-95"
           >
             ×
           </button>
@@ -751,7 +751,7 @@ function DesktopMapControls({
   return (
     <div
       data-desktop-map-controls="root"
-      className="pointer-events-auto absolute right-6 top-[92px] z-20 flex flex-col overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-[0_14px_38px_rgba(43,33,15,0.14)]"
+      className="pointer-events-auto absolute right-6 top-[92px] z-20 flex flex-col overflow-hidden rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-3"
     >
       {controls.map((control, index) => (
         <button
@@ -762,8 +762,8 @@ function DesktopMapControls({
           disabled={control.disabled}
           title={control.label}
           className={
-            "flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition hover:bg-[#fff8df] active:scale-[0.98] disabled:opacity-50" +
-            (index > 0 ? " border-t border-gray-100" : "")
+            "flex h-12 w-12 items-center justify-center text-lg font-black transition hover:bg-m3-primary-container/60 active:scale-[0.98] disabled:opacity-50" +
+            (index > 0 ? " border-t border-m3-outline-variant" : "")
           }
         >
           {control.icon}
@@ -780,21 +780,21 @@ function DesktopPanelSearch({
 }) {
   return (
     <form
-      className="flex h-12 items-center gap-3 rounded-[16px] border-2 border-[#f6d365] bg-white px-3 shadow-[0_8px_22px_rgba(43,33,15,0.08)]"
+      className="flex h-12 items-center gap-3 rounded-m3-lg border border-m3-outline bg-m3-surface-container-lowest px-3 text-m3-on-surface shadow-m3-1 transition focus-within:border-m3-primary focus-within:ring-2 focus-within:ring-m3-primary/20"
       onSubmit={(event) => {
         event.preventDefault();
         const form = new FormData(event.currentTarget);
         onSearch(String(form.get("keyword") ?? ""));
       }}
     >
-      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff8df] text-[#d99a00]">
+      <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-md bg-m3-primary-container text-m3-on-primary-container">
         <SearchIcon />
       </span>
       <input
         name="keyword"
         aria-label="맛집 검색"
         placeholder="검색어를 입력하세요"
-        className="min-w-0 flex-1 bg-transparent text-sm font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
+        className="min-w-0 flex-1 bg-transparent text-m3-body-md text-m3-on-surface placeholder:text-m3-on-surface-variant focus:outline-none"
       />
     </form>
   );
@@ -910,20 +910,20 @@ function DesktopModePanel({
               key={place.id}
               type="button"
               onClick={() => onSelectPlace(place.id)}
-              className="block w-full rounded-[20px] border border-gray-100 bg-white p-4 text-left shadow-sm transition hover:border-[#f6d365] active:scale-[0.99]"
+              className="block w-full rounded-m3-xl border border-m3-outline-variant bg-m3-surface-container-lowest p-4 text-left text-m3-on-surface shadow-m3-1 transition hover:border-m3-primary hover:bg-m3-surface-container-low active:scale-[0.99]"
             >
               <div className="flex items-start gap-3">
-                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-[#fff1bf] text-sm font-bold text-[#8a6315]">
+                <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-m3-full bg-m3-primary-container text-m3-label-lg text-m3-on-primary-container">
                   {mode === "ranking" ? index + 1 : getFoodCategory(place.category).emoji}
                 </span>
                 <div className="min-w-0 flex-1">
-                  <h3 className="truncate text-sm font-black text-[#2b210f]">
+                  <h3 className="truncate text-m3-title-sm text-m3-on-surface">
                     {place.title}
                   </h3>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                  <p className="mt-1 line-clamp-2 text-m3-body-sm text-m3-on-surface-variant">
                     {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
                   </p>
-                  <p className="mt-2 text-xs font-semibold text-[#8a6315]">
+                  <p className="mt-2 text-m3-body-sm font-medium text-m3-tertiary">
                     추천 {place.recommendCount} · 방문 {place.visitCount}
                   </p>
                 </div>
@@ -1068,14 +1068,14 @@ function DesktopMyPanel() {
         data-desktop-my-panel="loading"
         className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
       >
-        <section className="rounded-3xl bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-[#2b210f]">
+        <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-1">
+          <p className="text-m3-title-sm">
             내 정보를 불러오는 중이에요.
           </p>
           <div className="mt-4 space-y-3">
-            <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff8df]" />
-            <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff8df]" />
-            <div className="h-20 animate-pulse rounded-2xl bg-[#fffaf0]" />
+            <div className="h-4 w-3/4 animate-pulse rounded-m3-full bg-m3-surface-container-high" />
+            <div className="h-4 w-1/2 animate-pulse rounded-m3-full bg-m3-surface-container-high" />
+            <div className="h-20 animate-pulse rounded-m3-lg bg-m3-surface-container" />
           </div>
         </section>
       </div>
@@ -1102,7 +1102,7 @@ function DesktopMyPanel() {
           onSubmit={handleSubmit}
         />
         {message && (
-          <p className="mt-4 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+          <p className="mt-4 rounded-m3-xl bg-m3-secondary-container px-4 py-3 text-m3-body-md text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
@@ -1117,16 +1117,16 @@ function DesktopMyPanel() {
       data-desktop-my-panel="root"
       className="desktop-compact-scrollbar mt-4 min-h-0 flex-1 overflow-y-auto pr-1"
     >
-      <section className="rounded-3xl bg-white p-4 shadow-sm">
+      <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-1">
         <div className="flex items-center gap-4">
-          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-[#f6b800] text-sm font-black text-[#2b210f]">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1">
             꿀벌
           </div>
           <div className="min-w-0 flex-1">
-            <h2 className="truncate text-xl font-black text-[#2b210f]">
+            <h2 className="truncate text-m3-title-lg text-m3-on-surface">
               {displayName}
             </h2>
-            <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+            <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
               {region ? formatDesktopRegionName(region) : "아직 인증한 동네가 없어요."}
             </p>
           </div>
@@ -1149,11 +1149,11 @@ function DesktopMyPanel() {
         </div>
       </section>
 
-      <section className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
+      <section className="mt-4 rounded-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-1">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <h3 className="text-base font-black text-[#2b210f]">동네 인증</h3>
-            <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+            <h3 className="text-m3-title-md text-m3-on-surface">동네 인증</h3>
+            <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
               {status?.regionVerified
                 ? "인증한 동네 기준으로 활동할 수 있어요."
                 : "현재 위치로 내 동네를 인증해보세요."}
@@ -1164,12 +1164,12 @@ function DesktopMyPanel() {
           </DesktopMyBadge>
         </div>
 
-        <div className="mt-4 rounded-2xl bg-[#fffaf0] p-4">
-          <p className="text-xs font-semibold text-gray-500">현재 인증 동네</p>
-          <p className="mt-1 truncate text-base font-black text-[#2b210f]">
+        <div className="mt-4 rounded-m3-lg bg-m3-surface-container-low p-4">
+          <p className="text-m3-label-md text-m3-on-surface-variant">현재 인증 동네</p>
+          <p className="mt-1 truncate text-m3-title-md text-m3-on-surface">
             {region ? formatDesktopRegionName(region) : "아직 인증한 동네가 없어요."}
           </p>
-          <p className="mt-2 text-xs font-semibold leading-5 text-gray-500">
+          <p className="mt-2 text-m3-body-sm text-m3-on-surface-variant">
             {formatDesktopRegionPolicy(regionPolicy)}
           </p>
         </div>
@@ -1178,14 +1178,14 @@ function DesktopMyPanel() {
           type="button"
           onClick={handleVerifyRegion}
           disabled={regionBusy}
-          className="mt-4 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          className="mt-4 h-11 w-full rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
         >
           {regionBusy ? "위치 확인 중..." : "현재 위치로 인증"}
         </button>
       </section>
 
-      <section className="mt-4 rounded-3xl bg-white p-4 shadow-sm">
-        <h3 className="text-base font-black text-[#2b210f]">내 활동</h3>
+      <section className="mt-4 rounded-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-1">
+        <h3 className="text-m3-title-md text-m3-on-surface">내 활동</h3>
         <div className="mt-3 grid grid-cols-2 gap-2">
           <DesktopMyStatCard
             label="추천한 맛집"
@@ -1204,7 +1204,7 @@ function DesktopMyPanel() {
       </section>
 
       {message && (
-        <p className="mt-4 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+        <p className="mt-4 rounded-m3-xl bg-m3-secondary-container px-4 py-3 text-m3-body-md text-m3-on-secondary-container shadow-m3-1">
           {message}
         </p>
       )}
@@ -1220,9 +1220,9 @@ function DesktopMyStatCard({
   value: string;
 }) {
   return (
-    <div className="rounded-2xl bg-[#fffaf0] px-3 py-3">
-      <p className="text-[11px] font-semibold text-gray-500">{label}</p>
-      <p className="mt-1 truncate text-sm font-black text-[#2b210f]">{value}</p>
+    <div className="rounded-m3-lg bg-m3-surface-container-low px-3 py-3">
+      <p className="text-m3-label-md text-m3-on-surface-variant">{label}</p>
+      <p className="mt-1 truncate text-m3-title-sm text-m3-on-surface">{value}</p>
     </div>
   );
 }
@@ -1237,8 +1237,8 @@ function DesktopMyBadge({
   return (
     <span
       className={
-        "inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold " +
-        (verified ? "bg-[#f6b800] text-[#2b210f]" : "bg-[#fff8df] text-[#8a6315]")
+        "inline-flex shrink-0 items-center rounded-m3-full px-3 py-1 text-m3-label-md " +
+        (verified ? "bg-m3-primary text-m3-on-primary" : "bg-m3-secondary-container text-m3-on-secondary-container")
       }
     >
       {children}
@@ -1257,15 +1257,15 @@ function PlaceClusterList({
 }) {
   return (
     <section className={className}>
-      <div className="sticky top-0 z-10 bg-white pb-3 pt-1">
-        <p className="text-base font-black text-[#2b210f]">
+      <div className="sticky top-0 z-10 bg-m3-surface-container-lowest pb-3 pt-1 text-m3-on-surface">
+        <p className="text-m3-title-md">
           이 위치의 맛집 {places.length}곳
         </p>
-        <p className="mt-1 text-xs font-semibold leading-5 text-gray-500">
+        <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
           마커가 겹쳐 보여요. 확인할 맛집을 선택해 주세요.
         </p>
       </div>
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-m3-outline-variant">
         {places.map((place) => {
           const category = getFoodCategory(place.category);
           return (
@@ -1273,25 +1273,25 @@ function PlaceClusterList({
               key={place.id}
               type="button"
               onClick={() => onSelectPlace(place.id)}
-              className="block w-full bg-white py-3 text-left transition hover:bg-[#fffaf0] active:scale-[0.995]"
+              className="block w-full bg-m3-surface-container-lowest py-3 text-left text-m3-on-surface transition hover:bg-m3-surface-container-low active:scale-[0.995]"
             >
               <div className="flex items-start gap-3">
-                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-[14px] bg-[#fff1bf]">
+                <div className="h-14 w-14 shrink-0 overflow-hidden rounded-m3-md bg-m3-primary-container">
                   <PlaceImagePane place={place} className="h-full" />
                 </div>
                 <div className="min-w-0 flex-1">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h3 className="truncate text-[15px] font-black text-[#2b210f]">
+                    <h3 className="truncate text-m3-title-sm text-m3-on-surface">
                       {place.title}
                     </h3>
-                    <span className="shrink-0 text-xs font-bold text-gray-400">
+                    <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">
                       {category.label}
                     </span>
                   </div>
-                  <p className="mt-1 truncate text-xs font-semibold text-gray-400">
+                  <p className="mt-1 truncate text-m3-body-sm text-m3-on-surface-variant">
                     {place.address || place.regionName || place.distance}
                   </p>
-                  <p className="mt-1 text-xs font-semibold text-[#8a6315]">
+                  <p className="mt-1 text-m3-body-sm font-medium text-m3-tertiary">
                     추천 {place.recommendCount} · 방문 {place.visitCount} · 댓글{" "}
                     {place.commentCount}
                   </p>
@@ -1320,25 +1320,25 @@ function MobileFloatingHeader({
       className="pointer-events-auto space-y-2 md:mx-auto md:w-full md:max-w-[680px]"
     >
       <form
-        className="flex h-11 items-center gap-2 rounded-[15px] border border-gray-100 bg-white px-3 shadow-[0_6px_20px_rgba(43,33,15,0.10)]"
+        className="flex h-12 items-center gap-2 rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-lowest px-3 text-m3-on-surface shadow-m3-2 transition focus-within:border-m3-primary focus-within:ring-2 focus-within:ring-m3-primary/20"
         onSubmit={(event) => {
           event.preventDefault();
           const form = new FormData(event.currentTarget);
           onSearch(String(form.get("keyword") ?? ""));
         }}
       >
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-[#fff8df] text-[#d99a00]">
+        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-md bg-m3-primary-container text-m3-on-primary-container">
           <SearchIcon />
         </span>
         <input
           name="keyword"
           aria-label="맛집 검색"
           placeholder="검색어를 입력하세요"
-          className="min-w-0 flex-1 bg-transparent text-[13px] font-semibold text-[#2b210f] placeholder:text-gray-400 focus:outline-none"
+          className="min-w-0 flex-1 bg-transparent text-m3-body-md text-m3-on-surface placeholder:text-m3-on-surface-variant focus:outline-none"
         />
         <button
           type="submit"
-          className="flex h-9 w-12 shrink-0 items-center justify-center rounded-[12px] bg-[#2563eb] text-xs font-black text-white shadow-sm active:scale-95"
+          className="flex h-9 w-12 shrink-0 items-center justify-center rounded-m3-md bg-m3-primary text-m3-label-md text-m3-on-primary shadow-m3-1 active:scale-95"
         >
           검색
         </button>
@@ -1390,7 +1390,7 @@ function FloatingMapActions({
     <>
       <div
         data-map-control="floating-actions"
-        className="pointer-events-auto absolute right-4 top-[112px] z-20 flex flex-col overflow-hidden rounded-[18px] border border-gray-100 bg-white shadow-[0_14px_38px_rgba(43,33,15,0.14)] sm:right-5 sm:top-[120px] md:right-6"
+        className="pointer-events-auto absolute right-4 top-[112px] z-20 flex flex-col overflow-hidden rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-3 sm:right-5 sm:top-[120px] md:right-6"
       >
         {controls.map((control, index) => (
           <button
@@ -1401,8 +1401,8 @@ function FloatingMapActions({
             aria-label={control.label}
             title={control.label}
             className={
-              "flex h-12 w-12 items-center justify-center text-lg font-black text-[#2b210f] transition active:scale-[0.98] active:bg-[#fff8df] disabled:opacity-50" +
-              (index > 0 ? " border-t border-gray-100" : "")
+              "flex h-12 w-12 items-center justify-center text-lg font-black transition hover:bg-m3-primary-container/60 active:scale-[0.98] disabled:opacity-50" +
+              (index > 0 ? " border-t border-m3-outline-variant" : "")
             }
           >
             {control.icon}
@@ -1414,7 +1414,7 @@ function FloatingMapActions({
           type="button"
           onClick={onRegister}
           aria-label="맛집 등록"
-          className="pointer-events-auto absolute bottom-[calc(92px+env(safe-area-inset-bottom))] right-4 z-20 flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-[#f6b800] text-2xl font-black text-[#2b210f] shadow-[0_12px_30px_rgba(217,154,0,0.30)] transition active:scale-95"
+          className="pointer-events-auto absolute bottom-[calc(92px+env(safe-area-inset-bottom))] right-4 z-20 flex h-[56px] w-[56px] items-center justify-center rounded-m3-lg bg-m3-primary text-2xl font-black text-m3-on-primary shadow-m3-3 transition active:scale-95"
         >
           +
         </button>
@@ -1606,7 +1606,7 @@ function MobileSelectedPlaceSheet({
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
-      className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-[22px] bg-white shadow-[0_-12px_34px_rgba(43,33,15,0.16)] transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
+      className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-m3-xl bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-3 transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
         open ? "translate-y-0" : "translate-y-[calc(100%+24px)]"
       } ${
         full
@@ -1622,7 +1622,7 @@ function MobileSelectedPlaceSheet({
           onClick={() => (full ? onStageChange("half") : onStageChange("full"))}
           className="absolute left-1/2 top-0 flex h-6 w-28 -translate-x-1/2 items-center justify-center"
         >
-          <span className="h-1 w-11 rounded-full bg-gray-300" />
+          <span className="h-1 w-11 rounded-m3-full bg-m3-outline-variant" />
         </button>
       </div>
       <div className="min-h-0 flex-1 overflow-hidden">
@@ -1765,7 +1765,7 @@ function DesktopCategoryPlaceList({
 
   return (
     <div className="desktop-compact-scrollbar mt-2 min-h-0 flex-1 overflow-y-auto pr-1">
-      <div className="divide-y divide-gray-100">
+      <div className="divide-y divide-m3-outline-variant">
         {places.map((place) => {
           const category = getFoodCategory(place.category);
           const scoreText =
@@ -1775,31 +1775,31 @@ function DesktopCategoryPlaceList({
               key={place.id}
               type="button"
               onClick={() => onSelectPlace(place.id)}
-              className="block w-full bg-white px-0 py-4 text-left transition hover:bg-[#fffaf0] active:scale-[0.995]"
+              className="block w-full bg-m3-surface-container-lowest px-0 py-4 text-left transition hover:bg-m3-surface-container active:scale-[0.995]"
             >
               <div className="flex items-start gap-3">
-                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-[14px] bg-[#fff1bf]">
+                <div className="h-16 w-16 shrink-0 overflow-hidden rounded-m3-md bg-m3-primary-container">
                   <PlaceImagePane place={place} className="h-full" />
                 </div>
                 <div className="min-w-0 flex-1 pt-0.5">
                   <div className="flex min-w-0 items-center gap-2">
-                    <h3 className="truncate text-[15px] font-black text-[#2b210f]">
+                    <h3 className="truncate text-m3-title-sm text-m3-on-surface">
                       {place.title}
                     </h3>
-                    <span className="shrink-0 text-xs font-bold text-gray-400">
+                    <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">
                       {category.label}
                     </span>
                   </div>
-                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-xs font-semibold text-gray-500">
-                    <span className="text-[#f6b800]">★★★★★</span>
-                    <span className="text-[#2b210f]">{scoreText}</span>
+                  <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-m3-body-sm text-m3-on-surface-variant">
+                    <span className="text-m3-tertiary">★★★★★</span>
+                    <span className="text-m3-on-surface">{scoreText}</span>
                     <span>추천 {place.recommendCount}</span>
                     <span>방문 {place.visitCount}</span>
                   </p>
-                  <p className="mt-1 truncate text-xs font-semibold text-gray-400">
+                  <p className="mt-1 truncate text-m3-body-sm text-m3-on-surface-variant">
                     {place.address || place.regionName || place.distance}
                   </p>
-                  <p className="mt-1 line-clamp-2 text-xs leading-5 text-gray-500">
+                  <p className="mt-1 line-clamp-2 text-m3-body-sm text-m3-on-surface-variant">
                     {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
                   </p>
                 </div>
@@ -1837,9 +1837,9 @@ function DesktopPlaceDetailCard({
   ];
 
   return (
-    <article className="flex min-h-full flex-col overflow-hidden bg-white">
+    <article className="flex min-h-full flex-col overflow-hidden rounded-m3-xl bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-1">
       <button type="button" onClick={() => setActiveTab("photos")} className="relative block w-full text-left" aria-label="사진 탭 보기">
-        <div className="grid h-[178px] grid-cols-[1.2fr_0.9fr] gap-1 overflow-hidden bg-[#fff1bf]">
+        <div className="grid h-[178px] grid-cols-[1.2fr_0.9fr] gap-1 overflow-hidden bg-m3-primary-container">
           <PlaceImagePane place={place} className="h-full" />
           <div className="grid h-full grid-rows-2 gap-1">
             <PlaceImagePane place={place} className="h-full brightness-[0.98]" />
@@ -1853,31 +1853,31 @@ function DesktopPlaceDetailCard({
         <div className="flex items-start gap-3">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h2 className="truncate text-[21px] font-black leading-7 text-[#1f1a12]">{place.title}</h2>
-              <span className="shrink-0 text-xs font-bold text-gray-500">{category.label}</span>
+              <h2 className="truncate text-m3-title-lg text-m3-on-surface">{place.title}</h2>
+              <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">{category.label}</span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-gray-600">
-              <span className="text-[#f6b800]">★★★★★</span>
-              <span className="text-[#1f1a12]">{scoreText}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-m3-body-md text-m3-on-surface-variant">
+              <span className="text-m3-tertiary">★★★★★</span>
+              <span className="text-m3-on-surface">{scoreText}</span>
               <span>({reviewCount})</span>
-              <span className="text-[#2f8f5f]">영업정보 확인 중</span>
+              <span className="text-m3-tertiary">영업정보 확인 중</span>
             </div>
           </div>
-          <button type="button" aria-label={place.isWished ? "저장 취소" : "저장"} onClick={onToggleWish} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm active:scale-95">
+          <button type="button" aria-label={place.isWished ? "저장 취소" : "저장"} onClick={onToggleWish} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-[20px] font-black text-m3-on-secondary-container shadow-m3-1 transition active:scale-95">
             {place.isWished ? "★" : "☆"}
 
           </button>
         </div>
-        <p className="mt-3 line-clamp-2 text-sm leading-6 text-gray-600">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
+        <p className="mt-3 line-clamp-2 text-m3-body-md text-m3-on-surface-variant">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
       </div>
 
-      <div className="flex h-12 items-center overflow-x-auto border-y border-gray-100 px-2 text-sm font-bold text-gray-500 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-12 items-center overflow-x-auto border-y border-m3-outline-variant px-2 text-m3-label-lg text-m3-on-surface-variant [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
             onClick={() => setActiveTab(tab.value)}
-            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-black px-4 text-black transition" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition hover:text-[#2b210f]"}
+            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-m3-primary px-4 text-m3-primary transition focus:outline-none focus-visible:ring-2 focus-visible:ring-m3-primary/20" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition hover:text-m3-on-surface focus:outline-none focus-visible:ring-2 focus-visible:ring-m3-primary/20"}
           >
             {tab.label}
           </button>
@@ -1904,7 +1904,7 @@ function DesktopPlaceTabContent({
     return <div className="space-y-3 p-4"><CompactInfoCard title="추천 메뉴" desc={place.desc || "등록된 추천 문구를 확인해 주세요."} /><CompactInfoCard title="가격대" desc={place.price} /></div>;
   }
   if (tab === "photos") {
-    return <div className="grid grid-cols-2 gap-2 p-4">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-square overflow-hidden rounded-[16px] bg-[#fff1bf]"><PlaceImagePane place={place} className="h-full" /></div>)}</div>;
+    return <div className="grid grid-cols-2 gap-2 p-4">{Array.from({ length: 6 }).map((_, index) => <div key={index} className="aspect-square overflow-hidden rounded-m3-lg bg-m3-primary-container"><PlaceImagePane place={place} className="h-full" /></div>)}</div>;
   }
   if (tab === "comments") {
     return <PlaceCommentsPanel place={place} className="p-4" />;
@@ -1919,16 +1919,16 @@ function DesktopPlaceTabContent({
       <DetailInfoRow icon="링크" title="https://www.honeytong.co.kr" />
       <DetailInfoRow icon="전화" title="전화 정보 준비 중" />
       <DetailInfoRow icon="주차" title="주차정보" desc="등록된 정보가 아직 없어요" />
-      {locationMessage && <p className="px-4 py-3 text-xs font-semibold text-[#2f6f5f]">{locationMessage}</p>}
+      {locationMessage && <p className="px-4 py-3 text-m3-body-sm font-medium text-m3-tertiary">{locationMessage}</p>}
     </div>
   );
 }
 
 function CompactInfoCard({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="border-b border-gray-100 bg-white px-4 py-3">
-      <p className="text-sm font-black text-[#2b210f]">{title}</p>
-      <p className="mt-2 text-sm leading-6 text-gray-600">{desc}</p>
+    <div className="border-b border-m3-outline-variant bg-m3-surface-container-lowest px-4 py-3">
+      <p className="text-m3-title-sm text-m3-on-surface">{title}</p>
+      <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">{desc}</p>
     </div>
   );
 }
@@ -1992,10 +1992,10 @@ function PlaceCommentsPanel({
     <section className={className}>
       <div className="space-y-3">
         <div>
-          <p className="text-base font-black text-[#2b210f]">
+          <p className="text-m3-title-md text-m3-on-surface">
             댓글 {comments.length || place.commentCount}개
           </p>
-          <p className="mt-1 text-xs font-semibold text-gray-500">
+          <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
             이 맛집에 대한 동네 이웃들의 한마디예요.
           </p>
         </div>
@@ -2009,17 +2009,17 @@ function PlaceCommentsPanel({
             {comments.map((comment) => (
               <article
                 key={comment.commentId}
-                className="rounded-[16px] border border-gray-100 bg-white p-3 shadow-sm"
+                className="rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-lowest p-3 shadow-m3-1"
               >
                 <div className="flex items-center justify-between gap-3">
-                  <p className="truncate text-sm font-black text-[#2b210f]">
+                  <p className="truncate text-m3-title-sm text-m3-on-surface">
                     {comment.nickname || "꿀벌님"}
                   </p>
-                  <time className="shrink-0 text-[11px] font-semibold text-gray-400">
+                  <time className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">
                     {formatCommentTime(comment.createdAt)}
                   </time>
                 </div>
-                <p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-gray-600">
+                <p className="mt-2 whitespace-pre-wrap text-m3-body-md text-m3-on-surface-variant">
                   {comment.content}
                 </p>
               </article>
@@ -2028,7 +2028,7 @@ function PlaceCommentsPanel({
         )}
 
         {message && (
-          <p className="rounded-[14px] bg-[#fff8df] px-3 py-2 text-xs font-semibold text-[#8a6315]">
+          <p className="rounded-m3-md bg-m3-secondary-container px-3 py-2 text-m3-body-sm text-m3-on-secondary-container">
             {message}
           </p>
         )}
@@ -2036,7 +2036,7 @@ function PlaceCommentsPanel({
 
       <form
         onSubmit={handleSubmit}
-        className="sticky bottom-0 mt-4 flex gap-2 border-t border-gray-100 bg-white pt-3"
+        className="sticky bottom-0 mt-4 flex gap-2 border-t border-m3-outline-variant bg-m3-surface-container-lowest pt-3"
       >
         <input
           value={commentText}
@@ -2047,12 +2047,12 @@ function PlaceCommentsPanel({
               ? "댓글을 입력해 주세요."
               : "로그인하면 댓글을 남길 수 있어요."
           }
-          className="min-w-0 flex-1 rounded-[14px] border border-gray-100 bg-[#fafafa] px-3 py-3 text-sm font-semibold text-[#2b210f] outline-none transition placeholder:text-gray-400 focus:border-[#f6b800] focus:bg-white"
+          className="min-w-0 flex-1 rounded-m3-md border border-m3-outline bg-m3-surface-container-lowest px-3 py-3 text-m3-body-md text-m3-on-surface outline-none transition placeholder:text-m3-on-surface-variant focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20"
         />
         <button
           type="submit"
           disabled={submitting}
-          className="flex h-12 w-16 shrink-0 items-center justify-center rounded-[14px] bg-[#f6b800] text-sm font-black text-[#2b210f] shadow-sm active:scale-95 disabled:opacity-60"
+          className="flex h-12 w-16 shrink-0 items-center justify-center rounded-m3-md bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1 active:scale-95 disabled:opacity-60"
         >
           {submitting ? "등록 중" : "등록"}
         </button>
@@ -2157,7 +2157,7 @@ function SelectedPlaceCard({
   };
 
   return (
-    <article className="flex h-full min-h-0 flex-col bg-white">
+    <article className="flex h-full min-h-0 flex-col bg-m3-surface-container-lowest text-m3-on-surface">
       <div className={full ? "relative block shrink-0 px-2 pb-3 text-left" : "relative block min-h-0 flex-1 basis-1/2 px-2 pb-0 text-left"}>
         <button
           type="button"
@@ -2168,8 +2168,8 @@ function SelectedPlaceCard({
           <div
             className={
               full
-                ? "grid h-[202px] grid-cols-[1.05fr_1fr_0.82fr] gap-2 overflow-hidden rounded-[18px] bg-[#fff1bf]"
-                : "grid h-full min-h-[150px] grid-cols-3 gap-px overflow-hidden rounded-[16px] bg-[#fff1bf]"
+                ? "grid h-[202px] grid-cols-[1.05fr_1fr_0.82fr] gap-2 overflow-hidden rounded-m3-lg bg-m3-primary-container"
+                : "grid h-full min-h-[150px] grid-cols-3 gap-px overflow-hidden rounded-m3-lg bg-m3-primary-container"
             }
           >
             <PlaceImagePane place={place} className="h-full" />
@@ -2184,7 +2184,7 @@ function SelectedPlaceCard({
           type="button"
           aria-label="맛집 상세 닫기"
           onClick={onClose}
-          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-full bg-white/90 text-lg font-black text-[#2b210f] shadow-sm backdrop-blur-md transition active:scale-95"
+          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-m3-full bg-m3-surface-container-lowest/90 text-lg font-black text-m3-on-surface shadow-m3-1 backdrop-blur-md transition active:scale-95"
         >
           ×
         </button>
@@ -2194,14 +2194,14 @@ function SelectedPlaceCard({
         <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-start gap-2">
           <div className="min-w-0 flex-1">
             <div className="flex min-w-0 items-center gap-2">
-              <h2 className="min-w-0 truncate text-[22px] font-black leading-7 text-[#1f1a12]">{place.title}</h2>
-              <span className="shrink-0 text-xs font-bold text-gray-500">{category.label}</span>
+              <h2 className="min-w-0 truncate text-m3-title-lg text-m3-on-surface">{place.title}</h2>
+              <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">{category.label}</span>
             </div>
-            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm font-semibold text-gray-600">
-              <span className="text-[#f6b800]">★★★★★</span>
-              <span className="text-[#1f1a12]">{scoreText}</span>
+            <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-m3-body-md text-m3-on-surface-variant">
+              <span className="text-m3-tertiary">★★★★★</span>
+              <span className="text-m3-on-surface">{scoreText}</span>
               <span>({reviewCount})</span>
-              <span className="text-[#2f8f5f]">영업정보 확인 중</span>
+              <span className="text-m3-tertiary">영업정보 확인 중</span>
             </div>
           </div>
           <div className="flex shrink-0 items-center justify-end">
@@ -2209,7 +2209,7 @@ function SelectedPlaceCard({
               type="button"
               aria-label={place.isWished ? "저장 취소" : "저장"}
               onClick={onToggleWish}
-              className="flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm active:scale-95"
+              className="flex h-10 w-10 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-[20px] font-black text-m3-on-secondary-container shadow-m3-1 active:scale-95"
             >
               {place.isWished ? "★" : "☆"}
             </button>
@@ -2225,13 +2225,13 @@ function SelectedPlaceCard({
         </div>
       </div>
 
-      <div className="flex h-12 shrink-0 items-center overflow-x-auto border-y border-gray-100 px-2 text-sm font-bold text-gray-500 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+      <div className="flex h-12 shrink-0 items-center overflow-x-auto border-y border-m3-outline-variant px-2 text-m3-label-lg text-m3-on-surface-variant [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
         {tabs.map((tab) => (
           <button
             key={tab.value}
             type="button"
             onClick={() => handleTabClick(tab.value)}
-            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-black px-4 text-black transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-[#f6b800]/45 active:text-[#2b210f]"}
+            className={activeTab === tab.value ? "flex h-full shrink-0 items-center border-b-2 border-m3-primary px-4 text-m3-primary transition focus:outline-none focus-visible:ring-2 focus-visible:ring-m3-primary/20" : "flex h-full shrink-0 items-center border-b-2 border-transparent px-4 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-m3-primary/20 active:text-m3-on-surface"}
           >
             {tab.label}
           </button>
@@ -2274,7 +2274,7 @@ function MobilePlaceTabContent({
     return (
       <div className="grid grid-cols-3 gap-2 p-4">
         {Array.from({ length: 6 }).map((_, index) => (
-          <div key={index} className="aspect-square overflow-hidden rounded-[14px] bg-[#fff1bf]">
+          <div key={index} className="aspect-square overflow-hidden rounded-m3-md bg-m3-primary-container">
             <PlaceImagePane place={place} className="h-full" />
           </div>
         ))}
@@ -2297,16 +2297,16 @@ function MobilePlaceTabContent({
 
   return (
     <div>
-      <div className="border-b border-gray-100 px-4 py-3">
-        <p className="text-xs font-black text-gray-400">소개</p>
-        <p className="mt-1 text-sm leading-6 text-[#2b210f]">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
+      <div className="border-b border-m3-outline-variant px-4 py-3">
+        <p className="text-m3-label-md text-m3-on-surface-variant">소개</p>
+        <p className="mt-1 text-m3-body-md text-m3-on-surface">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
       </div>
       <DetailInfoRow icon="시간" title="영업정보 준비 중" desc="방문 전 영업시간을 확인해 주세요" />
       <DetailInfoRow icon="위치" title={place.address || place.regionName || "주소 정보 준비 중"} desc="복사" />
       <DetailInfoRow icon="링크" title="https://www.honeytong.co.kr" />
       <DetailInfoRow icon="전화" title="전화 정보 준비 중" />
       <DetailInfoRow icon="주차" title="주차정보" desc="등록된 정보가 아직 없어요" />
-      {locationMessage && <p className="px-4 py-3 text-xs font-semibold text-[#2f6f5f]">{locationMessage}</p>}
+      {locationMessage && <p className="px-4 py-3 text-m3-body-sm font-medium text-m3-tertiary">{locationMessage}</p>}
     </div>
   );
 }
@@ -2316,11 +2316,11 @@ function PlaceImagePane({ place, className }: { place: Place; className: string 
   if (place.imageUrl) {
     return <img src={place.imageUrl} alt={place.title + " 대표 이미지"} className={className + " w-full object-cover"} />;
   }
-  return <div className={className + " flex w-full items-center justify-center bg-[#fff1bf] px-3 text-center text-xs font-bold leading-5 text-[#8a6315]"}>{category.label} 이미지 준비 중</div>;
+  return <div className={className + " flex w-full items-center justify-center bg-m3-primary-container px-3 text-center text-m3-label-md text-m3-on-primary-container"}>{category.label} 이미지 준비 중</div>;
 }
 
 function DetailInfoRow({ icon, title, desc }: { icon: string; title: string; desc?: string }) {
-  return <div className="flex min-h-[52px] items-center gap-3 border-b border-gray-100 px-4 py-3 text-sm"><span className="flex min-h-7 min-w-10 shrink-0 items-center justify-center rounded-full bg-gray-100 px-2 text-[11px] font-black text-gray-500">{icon}</span><div className="min-w-0 flex-1"><p className="truncate font-bold text-[#2b210f]">{title}</p>{desc && <p className="mt-0.5 truncate text-xs text-gray-500">{desc}</p>}</div><span className="text-gray-300">›</span></div>;
+  return <div className="flex min-h-[52px] items-center gap-3 border-b border-m3-outline-variant px-4 py-3 text-m3-body-md"><span className="flex min-h-7 min-w-10 shrink-0 items-center justify-center rounded-m3-full bg-m3-surface-container-high px-2 text-m3-label-md text-m3-on-surface-variant">{icon}</span><div className="min-w-0 flex-1"><p className="truncate text-m3-title-sm text-m3-on-surface">{title}</p>{desc && <p className="mt-0.5 truncate text-m3-body-sm text-m3-on-surface-variant">{desc}</p>}</div><span className="text-m3-on-surface-variant">›</span></div>;
 }
 
 function StateCard({
@@ -2337,14 +2337,14 @@ function StateCard({
   flush?: boolean;
 }) {
   return (
-    <div className={`${flush ? "mt-5" : ""} rounded-[24px] bg-white p-5 text-center shadow-sm`}>
-      <p className="text-sm font-semibold text-[#2b210f]">{title}</p>
-      {desc && <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>}
+    <div className={`${flush ? "mt-5" : ""} rounded-m3-xl bg-m3-surface-container-low p-5 text-center text-m3-on-surface shadow-m3-1`}>
+      <p className="text-m3-title-sm">{title}</p>
+      {desc && <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">{desc}</p>}
       {actionLabel && onAction && (
         <button
           type="button"
           onClick={onAction}
-          className="mt-4 h-10 rounded-full bg-[#f6b800] px-5 text-sm font-semibold text-[#2b210f]"
+          className="mt-4 h-10 rounded-m3-full bg-m3-primary px-5 text-m3-label-lg text-m3-on-primary shadow-m3-1"
         >
           {actionLabel}
         </button>
@@ -2811,9 +2811,16 @@ function PlaceMap({
           });
           debugListenersAddedRef.current = true;
         }
+        const zoomWithAnimation = (nextLevel: number) => {
+          if (nextLevel === map.getLevel()) {
+            return;
+          }
+          map.setLevel(nextLevel, { animate: { duration: 250 } });
+        };
+
         onMapActionsReady({
-          zoomIn: () => map.setLevel(Math.max(1, map.getLevel() - 1)),
-          zoomOut: () => map.setLevel(Math.min(14, map.getLevel() + 1)),
+          zoomIn: () => zoomWithAnimation(Math.max(1, map.getLevel() - 1)),
+          zoomOut: () => zoomWithAnimation(Math.min(14, map.getLevel() + 1)),
         });
         const markerRect = containerRef.current.getBoundingClientRect();
         if (!isUsableMapContainerRect(containerRef.current, markerRect)) {
@@ -2974,7 +2981,7 @@ function PlaceMap({
     <div
       ref={containerRef}
       aria-label="맛집 지도"
-      className="pointer-events-auto absolute inset-0 z-0 h-full w-full touch-none select-none overflow-hidden bg-[#fffaf0]"
+      className="pointer-events-auto absolute inset-0 z-0 h-full w-full touch-none select-none overflow-hidden bg-m3-surface-container-low"
       style={mapGestureStyle}
     />
   );
@@ -2982,10 +2989,10 @@ function PlaceMap({
 
 function MapStatus({ title, desc }: { title: string; desc: string }) {
   return (
-    <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-[#fffaf0] px-8 text-center">
-      <div className="rounded-[24px] bg-white p-5 shadow-sm">
-        <p className="text-sm font-bold text-[#2b210f]">{title}</p>
-        <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>
+    <div className="absolute left-0 top-0 z-[1] flex h-full min-h-screen w-full items-center justify-center bg-m3-surface-container-low px-8 text-center">
+      <div className="rounded-m3-xl bg-m3-surface-container-lowest p-5 text-m3-on-surface shadow-m3-1">
+        <p className="text-m3-title-sm">{title}</p>
+        <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">{desc}</p>
       </div>
     </div>
   );
@@ -3005,8 +3012,8 @@ function createPlaceOverlay(place: Place, active: boolean) {
   marker.title = place.title;
   marker.dataset.placeMarkerHit = "true";
   marker.className = active
-    ? "pointer-events-auto flex h-12 w-12 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-[3px] border-white bg-[#f35f4f] shadow-[0_14px_30px_rgba(43,33,15,0.34)] ring-4 ring-[#f6d365]/50 transition hover:-translate-y-0.5 active:scale-95"
-    : "pointer-events-auto flex h-11 w-11 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-2 border-white bg-[#f6b800] shadow-[0_12px_24px_rgba(43,33,15,0.28)] ring-2 ring-[#2b210f]/10 transition hover:-translate-y-0.5 hover:bg-[#ffd84d] active:scale-95";
+    ? "pointer-events-auto flex h-12 w-12 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-[3px] border-m3-surface-container-lowest bg-m3-primary shadow-m3-3 ring-4 ring-m3-primary/20 transition hover:-translate-y-0.5 active:scale-95"
+    : "pointer-events-auto flex h-11 w-11 origin-bottom -rotate-45 items-center justify-center rounded-[50%_50%_50%_0] border-2 border-m3-surface-container-lowest bg-m3-tertiary shadow-m3-2 ring-2 ring-m3-outline-variant transition hover:-translate-y-0.5 hover:bg-m3-primary active:scale-95";
   marker.style.pointerEvents = "auto";
 
   const icon = document.createElement("span");
@@ -3023,11 +3030,11 @@ function createPlaceOverlay(place: Place, active: boolean) {
 function createUserLocationOverlay() {
   const dot = document.createElement("div");
   dot.className =
-    "pointer-events-none flex h-6 w-6 items-center justify-center rounded-full bg-[#2563eb] shadow-[0_0_0_10px_rgba(37,99,235,0.18)]";
+    "pointer-events-none flex h-6 w-6 items-center justify-center rounded-m3-full bg-m3-primary shadow-[0_0_0_10px_rgba(103,80,164,0.18)]";
   dot.style.pointerEvents = "none";
 
   const core = document.createElement("div");
-  core.className = "pointer-events-none h-3 w-3 rounded-full border-2 border-white bg-[#2563eb]";
+  core.className = "pointer-events-none h-3 w-3 rounded-m3-full border-2 border-m3-surface-container-lowest bg-m3-primary";
   core.style.pointerEvents = "none";
   dot.append(core);
   return dot;

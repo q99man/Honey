@@ -1,9 +1,9 @@
 import { NavLink } from "react-router-dom";
 import {
   HomeIcon,
-  TrophyIcon,
-  StarIcon,
   MessageIcon,
+  StarIcon,
+  TrophyIcon,
   UserIcon,
 } from "./NavIcons";
 
@@ -19,7 +19,7 @@ export default function BottomNav() {
   return (
     <nav
       aria-label="하단 내비게이션"
-      className="fixed bottom-0 left-0 z-50 h-[calc(70px+env(safe-area-inset-bottom))] w-full border-t border-gray-100 bg-white/95 px-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-md shadow-[0_-8px_24px_rgba(43,33,15,0.04)]"
+      className="fixed bottom-0 left-0 z-50 h-[calc(72px+env(safe-area-inset-bottom))] w-full border-t border-m3-outline-variant bg-m3-surface-container-low/95 px-2 pb-[env(safe-area-inset-bottom)] shadow-m3-2 backdrop-blur-md"
     >
       <div className="grid h-full grid-cols-5">
         {navItems.map((item) => (
@@ -28,17 +28,23 @@ export default function BottomNav() {
             to={item.to}
             end={item.to === "/"}
             className={({ isActive }) =>
-              `group relative flex min-w-0 flex-col items-center justify-center gap-1.5 text-[10px] font-bold transition-all duration-300 ${
-                isActive ? "text-[#f6b800]" : "text-gray-400 hover:text-gray-600"
+              `group relative flex min-w-0 flex-col items-center justify-center gap-1 text-m3-label-md transition-all duration-200 ${
+                isActive
+                  ? "text-m3-on-secondary-container"
+                  : "text-m3-on-surface-variant hover:text-m3-on-surface"
               }`
             }
           >
             {({ isActive }) => (
               <>
-                {isActive && (
-                  <span className="absolute -top-px left-1/2 h-1 w-8 -translate-x-1/2 rounded-b-full bg-[#f6b800] transition-all" />
-                )}
-                <span className={`transition-transform duration-300 ${isActive ? "-translate-y-0.5 scale-110" : "scale-100"}`}>
+                <span
+                  className={`flex h-8 min-w-14 items-center justify-center rounded-m3-full transition-colors duration-200 ${
+                    isActive
+                      ? "bg-m3-secondary-container"
+                      : "group-hover:bg-m3-surface-container-high"
+                  }`}
+                  aria-hidden="true"
+                >
                   {item.icon}
                 </span>
                 <span className="max-w-full truncate">{item.label}</span>

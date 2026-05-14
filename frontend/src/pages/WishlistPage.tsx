@@ -19,21 +19,23 @@ export default function WishlistPage({
   const wishedPlaces = places.filter((place) => place.isWished);
 
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] px-4 pb-24 pt-6">
+    <div className="min-h-screen bg-m3-surface">
+      <main className="mx-auto min-h-screen max-w-[430px] bg-m3-surface px-4 pb-24 pt-6 text-m3-on-surface">
         <header>
-          <p className="text-xs font-semibold text-[#d99a00]">찜 목록</p>
-          <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
-            내 꿀단지
+          <p className="text-m3-label-md text-m3-primary">찜 목록</p>
+          <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">
+            다시 가고 싶은 맛집
           </h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">
-            다시 가보고 싶은 동네 맛집을 모아두었어요.
+          <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
+            마음에 들어 저장해 둔 동네 맛집을 모아봤어요.
           </p>
         </header>
 
-        <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
-          <p className="text-sm font-semibold text-gray-500">찜한 맛집</p>
-          <p className="mt-1 text-3xl font-bold text-[#2b210f]">
+        <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
+          <p className="text-m3-label-md text-m3-on-surface-variant">
+            찜한 맛집
+          </p>
+          <p className="mt-1 text-[32px] font-medium leading-10 text-m3-on-surface">
             {wishedPlaces.length}개
           </p>
         </section>
@@ -43,14 +45,14 @@ export default function WishlistPage({
         {!loading && errorMessage && (
           <StateCard
             title={errorMessage}
-            desc="목록을 다시 불러오면 찜한 맛집도 함께 확인할 수 있어요."
+            desc="목록을 다시 불러오면 찜한 맛집을 확인할 수 있어요."
           />
         )}
 
         {!loading && !errorMessage && wishedPlaces.length === 0 && (
           <StateCard
             title="아직 찜한 맛집이 없어요."
-            desc="마음에 드는 맛집의 하트를 눌러 꿀단지에 담아보세요."
+            desc="마음에 드는 맛집의 하트를 눌러 이곳에 모아보세요."
           />
         )}
 
@@ -80,9 +82,9 @@ export default function WishlistPage({
 
 function StateCard({ title, desc }: { title: string; desc?: string }) {
   return (
-    <section className="mt-5 rounded-3xl bg-white p-5 text-center shadow-sm">
-      <p className="text-sm font-semibold text-[#2b210f]">{title}</p>
-      {desc && <p className="mt-2 text-sm leading-6 text-gray-500">{desc}</p>}
+    <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-center text-m3-on-surface shadow-m3-1">
+      <p className="text-m3-title-sm">{title}</p>
+      {desc && <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">{desc}</p>}
     </section>
   );
 }

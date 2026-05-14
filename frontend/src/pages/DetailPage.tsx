@@ -49,6 +49,12 @@ const PLACE_LOAD_ERROR = "맛집 정보를 불러오지 못했어요.";
 const LOGIN_REQUIRED = "로그인이 필요한 기능이에요.";
 const GEOLOCATION_UNAVAILABLE = "현재 위치를 확인할 수 없어요.";
 const PLACE_IMAGE_FALLBACK = "꿀맛집 이미지 준비 중";
+const TEXTAREA_CLASS =
+  "w-full rounded-m3-lg border border-m3-outline bg-m3-surface-container-lowest p-3 text-m3-body-md text-m3-on-surface outline-none transition placeholder:text-m3-on-surface-variant focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20 disabled:opacity-60";
+const PRIMARY_BUTTON_CLASS =
+  "h-11 rounded-m3-full bg-m3-primary px-4 text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+const OUTLINED_BUTTON_CLASS =
+  "rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest px-4 py-2 text-m3-label-lg text-m3-on-surface transition active:scale-[0.98]";
 
 const reportReasons = [
   { code: "FAKE_INFO", label: "잘못된 정보" },
@@ -256,7 +262,7 @@ export default function DetailPage({
       },
       () => {
         setBusyAction(null);
-        setMessage("위치 권한을 허용하면 방문 인증을 할 수 있어요.");
+        setMessage("위치 권한을 허용하면 방문 인증할 수 있어요.");
       },
       { enableHighAccuracy: true, timeout: 10000 },
     );
@@ -269,7 +275,7 @@ export default function DetailPage({
     }
     const content = commentText.trim();
     if (!content) {
-      setMessage("댓글 내용을 입력해주세요.");
+      setMessage("댓글 내용을 입력해 주세요.");
       return;
     }
 
@@ -363,9 +369,9 @@ export default function DetailPage({
   }
 
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] pb-24">
-        <section className="relative h-64 bg-[#fff1bf]">
+    <div className="min-h-screen bg-m3-surface">
+      <main className="mx-auto min-h-screen max-w-[430px] bg-m3-surface pb-24 text-m3-on-surface">
+        <section className="relative h-64 bg-m3-primary-container">
           {place.imageUrl ? (
             <img
               src={place.imageUrl}
@@ -373,7 +379,7 @@ export default function DetailPage({
               className="h-full w-full object-cover"
             />
           ) : (
-            <div className="flex h-full items-center justify-center px-6 text-center text-sm font-semibold text-[#8a6315]">
+            <div className="flex h-full items-center justify-center px-6 text-center text-m3-label-lg text-m3-on-primary-container">
               {PLACE_IMAGE_FALLBACK}
             </div>
           )}
@@ -381,7 +387,7 @@ export default function DetailPage({
             type="button"
             aria-label="뒤로가기"
             onClick={() => navigate(-1)}
-            className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-full bg-white/95 text-xl font-bold text-[#2b210f] shadow-sm transition active:scale-95"
+            className="absolute left-4 top-5 flex h-10 w-10 items-center justify-center rounded-m3-full bg-m3-surface-container-lowest/95 text-xl font-bold text-m3-on-surface shadow-m3-1 transition active:scale-95"
           >
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
               <path d="M15 18l-6-6 6-6" />
@@ -391,21 +397,21 @@ export default function DetailPage({
             type="button"
             aria-label={isWished ? "찜 해제" : "찜하기"}
             onClick={() => onToggleWish(place.id)}
-            className="absolute right-4 top-5 flex h-10 w-10 items-center justify-center rounded-full border border-[#f6d365] bg-[#fff8df] text-[20px] font-black text-[#8a6315] shadow-sm transition active:scale-95"
+            className="absolute right-4 top-5 flex h-10 w-10 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-[20px] font-black text-m3-on-secondary-container shadow-m3-1 transition active:scale-95"
           >
             {isWished ? "★" : "☆"}
           </button>
         </section>
 
         <div className="px-4">
-          <section className="-mt-8 rounded-3xl bg-white p-5 shadow-sm">
-            <p className="text-xs font-semibold text-[#d99a00]">
+          <section className="-mt-8 rounded-m3-xl bg-m3-surface-container-lowest p-5 shadow-m3-1">
+            <p className="text-m3-label-md text-m3-primary">
               {place.regionName || "우리 동네"}
             </p>
-            <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
+            <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">
               {place.title}
             </h1>
-            <p className="mt-3 text-sm leading-6 text-gray-600">
+            <p className="mt-3 text-m3-body-md text-m3-on-surface-variant">
               {place.desc || "동네 사람들이 추천한 꿀맛집이에요."}
             </p>
             <div className="mt-4 grid grid-cols-3 gap-2 text-center">
@@ -415,15 +421,15 @@ export default function DetailPage({
             </div>
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+          <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
             <SectionHeader title="위치 정보" desc="방문 전에 주소를 확인해보세요." />
-            <p className="mt-3 rounded-2xl bg-[#fffaf0] p-3 text-sm leading-6 text-[#2b210f]">
+            <p className="mt-3 rounded-m3-lg bg-m3-surface-container-low p-3 text-m3-body-md text-m3-on-surface">
               {place.address || "주소 정보가 아직 준비되지 않았어요."}
             </p>
             <PlaceLocationMap place={place} />
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+          <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
             <SectionHeader
               title="참여"
               desc="추천과 방문 인증으로 동네 랭킹에 힘을 보탤 수 있어요."
@@ -444,7 +450,7 @@ export default function DetailPage({
             </div>
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+          <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
             <div className="flex items-start justify-between gap-3">
               <SectionHeader
                 title="신고하기"
@@ -455,14 +461,14 @@ export default function DetailPage({
                 onClick={() =>
                   setReportTarget({ type: "PLACE", id: place.id })
                 }
-                className="shrink-0 whitespace-nowrap rounded-full border border-gray-200 px-4 py-2 text-sm font-semibold text-gray-600"
+                className={OUTLINED_BUTTON_CLASS}
               >
                 신고
               </button>
             </div>
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+          <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
             <SectionHeader title="댓글" desc="동네 이웃들의 한마디를 확인해보세요." />
             <div className="mt-4 flex flex-col gap-3">
               <textarea
@@ -471,19 +477,19 @@ export default function DetailPage({
                 disabled={!authenticated}
                 placeholder={
                   authenticated
-                    ? "이 맛집의 좋은 점을 짧게 남겨주세요."
+                    ? "이 맛집이 좋았던 점을 짧게 남겨주세요."
                     : "로그인하면 댓글을 남길 수 있어요."
                 }
-                className="min-h-24 rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm leading-6 outline-none focus:border-[#f6b800] disabled:opacity-60"
+                className={`${TEXTAREA_CLASS} min-h-24`}
               />
               <button
                 type="button"
                 onClick={handleCommentSubmit}
                 disabled={busyAction !== null || !authenticated}
-                className="h-11 rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] disabled:cursor-not-allowed disabled:opacity-50"
+                className={PRIMARY_BUTTON_CLASS}
               >
                 {busyAction === "comment"
-                  ? "저장 중..."
+                  ? "저장 중"
                   : editingCommentId
                     ? "댓글 수정"
                     : "댓글 남기기"}
@@ -491,7 +497,7 @@ export default function DetailPage({
             </div>
 
             {comments.length === 0 ? (
-              <p className="mt-5 text-sm leading-6 text-gray-500">
+              <p className="mt-5 text-m3-body-md text-m3-on-surface-variant">
                 아직 남겨진 댓글이 없어요.
               </p>
             ) : (
@@ -499,14 +505,14 @@ export default function DetailPage({
                 {comments.map((comment) => (
                   <article
                     key={comment.commentId}
-                    className="rounded-2xl bg-[#fffaf0] p-3 text-sm"
+                    className="rounded-m3-lg bg-m3-surface-container-low p-3 text-m3-body-md"
                   >
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <p className="font-bold text-[#2b210f]">
+                        <p className="text-m3-title-sm text-m3-on-surface">
                           {comment.nickname || "꿀벌님"}
                         </p>
-                        <p className="mt-1 text-xs text-gray-400">
+                        <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
                           {formatDateTime(comment.createdAt)}
                         </p>
                       </div>
@@ -517,7 +523,7 @@ export default function DetailPage({
                             setEditingCommentId(comment.commentId);
                             setCommentText(comment.content);
                           }}
-                          className="text-xs font-semibold text-gray-500"
+                          className="text-m3-label-md text-m3-on-surface-variant"
                         >
                           수정
                         </button>
@@ -525,7 +531,7 @@ export default function DetailPage({
                           type="button"
                           onClick={() => handleCommentDelete(comment.commentId)}
                           disabled={busyAction !== null}
-                          className="text-xs font-semibold text-red-500 disabled:opacity-50"
+                          className="text-m3-label-md text-m3-error disabled:opacity-50"
                         >
                           삭제
                         </button>
@@ -537,13 +543,13 @@ export default function DetailPage({
                               id: comment.commentId,
                             })
                           }
-                          className="text-xs font-semibold text-gray-500"
+                          className="text-m3-label-md text-m3-on-surface-variant"
                         >
                           신고
                         </button>
                       </div>
                     </div>
-                    <p className="mt-3 leading-6 text-gray-700">
+                    <p className="mt-3 text-m3-body-md text-m3-on-surface-variant">
                       {comment.content}
                     </p>
                   </article>
@@ -552,13 +558,13 @@ export default function DetailPage({
             )}
           </section>
 
-          <section className="mt-5 rounded-3xl bg-white p-4 shadow-sm">
+          <section className="mt-5 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
             <SectionHeader
               title="랭킹 히스토리"
               desc="확정된 시즌 랭킹 기록을 모아봤어요."
             />
             {!history || history.items.length === 0 ? (
-              <p className="mt-4 text-sm leading-6 text-gray-500">
+              <p className="mt-4 text-m3-body-md text-m3-on-surface-variant">
                 아직 확정된 랭킹 기록이 없어요.
               </p>
             ) : (
@@ -566,17 +572,17 @@ export default function DetailPage({
                 {history.items.slice(0, 5).map((item) => (
                   <div
                     key={`${item.seasonId}-${item.regionType}-${item.regionId}`}
-                    className="rounded-2xl bg-[#fffaf0] p-3 text-sm"
+                    className="rounded-m3-lg bg-m3-surface-container-low p-3 text-m3-body-md"
                   >
                     <div className="flex items-center justify-between gap-3">
-                      <p className="font-bold text-[#2b210f]">
+                      <p className="text-m3-title-sm text-m3-on-surface">
                         {item.seasonName}
                       </p>
-                      <span className="rounded-full bg-white px-3 py-1 text-xs font-semibold text-[#8a6315]">
+                      <span className="rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
                         {regionTypeLabel(item.regionType)} {item.rank}위
                       </span>
                     </div>
-                    <p className="mt-2 text-xs text-gray-500">
+                    <p className="mt-2 text-m3-body-sm text-m3-on-surface-variant">
                       별 {item.starLevel} · {item.totalScore}점
                     </p>
                   </div>
@@ -586,7 +592,7 @@ export default function DetailPage({
           </section>
 
           {message && (
-            <p className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+            <p className="mt-5 rounded-m3-xl bg-m3-secondary-container px-4 py-3 text-m3-body-md text-m3-on-secondary-container shadow-m3-1">
               {message}
             </p>
           )}
@@ -594,31 +600,31 @@ export default function DetailPage({
 
         {reportTarget && (
           <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/30 px-4">
-            <section className="w-full max-w-[430px] rounded-t-3xl bg-white p-4 shadow-sm">
+            <section className="w-full max-w-[430px] rounded-t-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-3">
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <h2 className="text-lg font-bold text-[#2b210f]">
+                  <h2 className="text-m3-title-md text-m3-on-surface">
                     {reportTargetLabel(reportTarget.type)} 신고
                   </h2>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-m3-body-md text-m3-on-surface-variant">
                     운영자가 확인할 수 있도록 사유를 남겨주세요.
                   </p>
                 </div>
                 <button
                   type="button"
                   onClick={() => setReportTarget(null)}
-                  className="rounded-full border border-gray-200 px-3 py-1 text-sm font-semibold text-gray-500"
+                  className={OUTLINED_BUTTON_CLASS}
                 >
                   닫기
                 </button>
               </div>
 
-              <label className="mt-4 block text-sm font-semibold text-[#2b210f]">
+              <label className="mt-4 block text-m3-label-lg text-m3-on-surface">
                 신고 사유
                 <select
                   value={reportReason}
                   onChange={(event) => setReportReason(event.target.value)}
-                  className="mt-2 h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
+                  className="mt-2 h-11 w-full rounded-m3-lg border border-m3-outline bg-m3-surface-container-lowest px-3 text-m3-body-md outline-none focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20"
                 >
                   {reportReasons.map((reason) => (
                     <option key={reason.code} value={reason.code}>
@@ -631,17 +637,17 @@ export default function DetailPage({
               <textarea
                 value={reportText}
                 onChange={(event) => setReportText(event.target.value)}
-                placeholder="운영자가 확인할 내용을 입력해주세요."
-                className="mt-3 min-h-24 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] p-3 text-sm leading-6 outline-none focus:border-[#f6b800]"
+                placeholder="운영자가 확인할 내용을 입력해 주세요."
+                className={`${TEXTAREA_CLASS} mt-3 min-h-24`}
               />
 
               <button
                 type="button"
                 onClick={handleReport}
                 disabled={busyAction !== null}
-                className="mt-3 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] disabled:cursor-not-allowed disabled:opacity-50"
+                className={`${PRIMARY_BUTTON_CLASS} mt-3 w-full`}
               >
-                {busyAction === "report" ? "접수 중..." : "신고 접수"}
+                {busyAction === "report" ? "접수 중" : "신고 접수"}
               </button>
             </section>
           </div>
@@ -661,17 +667,15 @@ function Shell({
   onAction?: () => void;
 }) {
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <main className="mx-auto flex min-h-screen max-w-[430px] items-center justify-center bg-[#fffaf0] px-4 pb-24">
-        <section className="w-full rounded-3xl bg-white p-5 text-center shadow-sm">
-          <p className="text-sm font-semibold leading-6 text-[#2b210f]">
-            {message}
-          </p>
+    <div className="min-h-screen bg-m3-surface">
+      <main className="mx-auto flex min-h-screen max-w-[430px] items-center justify-center bg-m3-surface px-4 pb-24 text-m3-on-surface">
+        <section className="w-full rounded-m3-xl bg-m3-surface-container-lowest p-5 text-center shadow-m3-1">
+          <p className="text-m3-body-md text-m3-on-surface">{message}</p>
           {actionLabel && onAction && (
             <button
               type="button"
               onClick={onAction}
-              className="mt-4 h-11 rounded-full bg-[#f6b800] px-5 text-sm font-semibold text-[#2b210f]"
+              className={`${PRIMARY_BUTTON_CLASS} mt-4 px-5`}
             >
               {actionLabel}
             </button>
@@ -685,8 +689,8 @@ function Shell({
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div>
-      <h2 className="text-lg font-bold text-[#2b210f]">{title}</h2>
-      <p className="mt-1 text-sm leading-5 text-gray-500">{desc}</p>
+      <h2 className="text-m3-title-md text-m3-on-surface">{title}</h2>
+      <p className="mt-1 text-m3-body-md text-m3-on-surface-variant">{desc}</p>
     </div>
   );
 }
@@ -749,7 +753,7 @@ function PlaceLocationMap({ place }: { place: Place }) {
   }
 
   if (!appKey) {
-    return <MapStatus title="카카오맵 키가 설정되지 않았어요." />;
+    return <MapStatus title="Kakao 지도 키가 설정되지 않았어요." />;
   }
 
   if (loadFailed) {
@@ -760,24 +764,24 @@ function PlaceLocationMap({ place }: { place: Place }) {
     <div
       ref={containerRef}
       aria-label={`${place.title} 지도`}
-      className="mt-3 h-48 overflow-hidden rounded-2xl bg-[#eaf2e4]"
+      className="mt-3 h-48 overflow-hidden rounded-m3-lg bg-m3-surface-container-low"
     />
   );
 }
 
 function MapStatus({ title }: { title: string }) {
   return (
-    <div className="mt-3 flex h-48 items-center justify-center rounded-2xl bg-[#eaf2e4] px-4 text-center">
-      <p className="text-sm font-semibold text-[#2b210f]">{title}</p>
+    <div className="mt-3 flex h-48 items-center justify-center rounded-m3-lg bg-m3-surface-container-low px-4 text-center">
+      <p className="text-m3-body-md text-m3-on-surface">{title}</p>
     </div>
   );
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-2xl bg-[#fffaf0] p-3">
-      <p className="text-lg font-bold text-[#2b210f]">{value}</p>
-      <p className="mt-1 text-xs font-semibold text-gray-500">{label}</p>
+    <div className="rounded-m3-lg bg-m3-surface-container-low p-3">
+      <p className="text-m3-title-md text-m3-on-surface">{value}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
@@ -798,12 +802,12 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="rounded-2xl bg-[#fffaf0] p-3 text-left transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+      className="rounded-m3-lg bg-m3-surface-container-low p-3 text-left transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
     >
-      <span className="block text-sm font-bold text-[#2b210f]">
-        {busy ? "처리 중..." : label}
+      <span className="block text-m3-title-sm text-m3-on-surface">
+        {busy ? "처리 중" : label}
       </span>
-      <span className="mt-2 block text-xs leading-5 text-gray-500">
+      <span className="mt-2 block text-m3-body-sm text-m3-on-surface-variant">
         {status}
       </span>
     </button>

@@ -20,15 +20,15 @@ export default function CategoryTabs({
             type="button"
             aria-pressed={active}
             onClick={() => onSelectCategory(category.value)}
-            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-full border px-3 text-xs font-bold shadow-sm transition active:scale-[0.98] ${
+            className={`flex h-9 shrink-0 items-center gap-1.5 rounded-m3-full border px-3 text-m3-label-md shadow-m3-1 transition active:scale-[0.98] ${
               active
-                ? "border-[#f6b800] bg-[#fff1bf] text-[#2b210f]"
-                : "border-white/80 bg-white/95 text-gray-600"
+                ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface-variant hover:border-m3-primary"
             }`}
           >
             <span
               aria-hidden="true"
-              className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-full bg-[#fff7d7] text-base shadow-inner"
+              className="flex h-[22px] w-[22px] shrink-0 items-center justify-center rounded-m3-full bg-m3-surface-container-high text-base"
             >
               {category.emoji}
             </span>

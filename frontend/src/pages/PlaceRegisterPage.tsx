@@ -34,11 +34,15 @@ const PRICE_OPTIONS = [
   { value: "OVER_30000", label: "3만원 이상" },
 ];
 
-const GEOLOCATION_UNAVAILABLE = "현재 위치를 확인할 수 없습니다.";
-const LOGIN_REQUIRED_CREATE = "로그인 후 장소를 등록할 수 있습니다.";
-const LOGIN_REQUIRED_EDIT = "로그인 후 장소를 수정할 수 있습니다.";
+const GEOLOCATION_UNAVAILABLE = "현재 위치를 확인할 수 없어요.";
+const LOGIN_REQUIRED_CREATE = "로그인하면 장소를 등록할 수 있어요.";
+const LOGIN_REQUIRED_EDIT = "로그인하면 장소를 수정할 수 있어요.";
 const INPUT_CLASS =
-  "w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 py-2 text-sm outline-none focus:border-yellow-400";
+  "w-full rounded-m3-md border border-m3-outline bg-m3-surface-container-lowest px-3 py-2.5 text-m3-body-md text-m3-on-surface outline-none transition placeholder:text-m3-on-surface-variant focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20";
+const BUTTON_CLASS =
+  "h-11 rounded-m3-full bg-m3-primary px-4 text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
+const OUTLINED_BUTTON_CLASS =
+  "h-11 rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest px-4 text-m3-label-lg text-m3-on-surface transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50";
 
 export default function PlaceRegisterPage({
   mode = "create",
@@ -163,7 +167,7 @@ export default function PlaceRegisterPage({
       const position = await getCurrentPosition();
       setLatitude(position.coords.latitude.toFixed(7));
       setLongitude(position.coords.longitude.toFixed(7));
-      setMessage("현재 위치를 입력했습니다.");
+      setMessage("현재 위치를 입력했어요.");
     } catch (error) {
       setMessage(getApiErrorMessage(error, GEOLOCATION_UNAVAILABLE));
     }
@@ -176,11 +180,11 @@ export default function PlaceRegisterPage({
       return;
     }
     if (!editing && !region) {
-      setMessage("동네 인증 후 장소를 등록할 수 있습니다.");
+      setMessage("동네 인증 후 장소를 등록할 수 있어요.");
       return;
     }
     if (editing && (!editPlace || invalidEditId)) {
-      setMessage("수정할 장소를 찾을 수 없습니다.");
+      setMessage("수정할 장소를 찾을 수 없어요.");
       return;
     }
 
@@ -241,60 +245,61 @@ export default function PlaceRegisterPage({
 
   if (invalidEditId) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#FFFBEB] px-6 text-center">
-        수정할 장소를 찾을 수 없습니다.
+      <div className="flex min-h-screen items-center justify-center bg-m3-surface px-6 text-center text-m3-on-surface">
+        <StateCard title="수정할 장소를 찾을 수 없어요." />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-[100px]">
-      <main className="px-6 pt-8">
+    <div className="min-h-screen bg-m3-surface pb-[100px] text-m3-on-surface">
+      <main className="mx-auto max-w-[430px] px-4 pt-6">
         <div className="flex items-center justify-between gap-4">
           <div>
-            <p className="text-sm font-semibold text-[#2f6f5f]">
-              {editing ? "내 장소 관리" : "새 장소"}
+            <p className="text-m3-label-md text-m3-primary">
+              {editing ? "장소 관리" : "장소 등록"}
             </p>
-            <h1 className="text-2xl font-bold">
+            <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">
               {editing ? "꿀스팟 수정" : "꿀스팟 등록"}
             </h1>
           </div>
           <Link
             to={editing ? "/my" : "/"}
-            className="rounded-lg border border-yellow-300 px-3 py-2 text-sm font-bold"
+            className="rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest px-4 py-2 text-m3-label-lg text-m3-on-surface shadow-m3-1"
           >
             닫기
           </Link>
         </div>
 
         {!authenticated && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-left shadow-sm">
-            <p className="text-sm text-gray-600">
+          <section className="mt-6 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-left shadow-m3-1">
+            <p className="text-m3-body-md text-m3-on-surface-variant">
               {editing ? LOGIN_REQUIRED_EDIT : LOGIN_REQUIRED_CREATE}
             </p>
-            <Link
-              to="/my"
-              className="mt-4 block h-11 rounded-lg bg-yellow-400 pt-3 text-center text-sm font-bold text-black"
-            >
+            <Link to="/my" className={`${BUTTON_CLASS} mt-4 flex items-center justify-center`}>
               로그인하러 가기
             </Link>
           </section>
         )}
 
         {authenticated && loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
-            {editing
-              ? "수정할 장소 정보를 불러오는 중입니다."
-              : "등록 준비 정보를 불러오는 중입니다."}
-          </section>
+          <StateCard
+            title={
+              editing
+                ? "수정할 장소 정보를 불러오는 중입니다."
+                : "등록 준비 정보를 불러오는 중입니다."
+            }
+          />
         )}
 
         {authenticated && !loading && (
           <>
             {!editing && (
-              <section className="mt-6 rounded-xl bg-white p-5 text-left shadow-sm">
-                <h2 className="text-lg font-bold">등록 기준</h2>
-                <div className="mt-4 grid grid-cols-2 gap-3 text-sm">
+              <section className="mt-6 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-left shadow-m3-1">
+                <h2 className="text-m3-title-md text-m3-on-surface">
+                  등록 기준
+                </h2>
+                <div className="mt-4 grid grid-cols-2 gap-3">
                   <InfoCell
                     label="인증 동네"
                     value={region ? formatRegionName(region) : "미인증"}
@@ -308,16 +313,13 @@ export default function PlaceRegisterPage({
                     }
                   />
                 </div>
-                <p className="mt-3 text-xs text-gray-500">
+                <p className="mt-3 text-m3-body-sm text-m3-on-surface-variant">
                   {policy
                     ? `등록 범위: ${formatRegistrationScope(policy.registrationScope)}`
                     : "등록 정책 정보를 불러오지 못했습니다."}
                 </p>
                 {!region && (
-                  <Link
-                    to="/my"
-                    className="mt-4 block h-11 rounded-lg bg-yellow-400 pt-3 text-center text-sm font-bold text-black"
-                  >
+                  <Link to="/my" className={`${BUTTON_CLASS} mt-4 flex items-center justify-center`}>
                     동네 인증하러 가기
                   </Link>
                 )}
@@ -325,16 +327,18 @@ export default function PlaceRegisterPage({
             )}
 
             {editing && editPlace && (
-              <section className="mt-6 rounded-xl bg-white p-5 text-left shadow-sm">
-                <h2 className="text-lg font-bold">수정 대상</h2>
-                <p className="mt-2 text-sm text-gray-500">
-                  현재 등록된 장소 정보를 불러왔습니다. 소유자 여부와 수정 가능 여부는 저장 시 서버가 다시 확인합니다.
+              <section className="mt-6 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-left shadow-m3-1">
+                <h2 className="text-m3-title-md text-m3-on-surface">
+                  수정 대상
+                </h2>
+                <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
+                  현재 등록된 장소 정보를 불러왔습니다. 소유 여부와 수정 가능 여부는 저장 시 다시 확인됩니다.
                 </p>
               </section>
             )}
 
             <form
-              className="mt-5 flex flex-col gap-5 rounded-xl bg-white p-5 text-left shadow-sm"
+              className="mt-5 flex flex-col gap-5 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-left shadow-m3-1"
               onSubmit={handleSubmit}
             >
               <FieldLabel label="장소 이름">
@@ -386,7 +390,7 @@ export default function PlaceRegisterPage({
                 type="button"
                 onClick={handleUseCurrentLocation}
                 disabled={submitting}
-                className="h-11 rounded-lg border border-yellow-300 text-sm font-bold disabled:opacity-50"
+                className={OUTLINED_BUTTON_CLASS}
               >
                 현재 위치 입력
               </button>
@@ -460,12 +464,12 @@ export default function PlaceRegisterPage({
                 />
               </FieldLabel>
 
-              <label className="flex items-center gap-2 text-sm font-semibold">
+              <label className="flex items-center gap-2 text-m3-body-md text-m3-on-surface">
                 <input
                   type="checkbox"
                   checked={franchise}
                   onChange={(event) => setFranchise(event.target.checked)}
-                  className="h-4 w-4"
+                  className="h-4 w-4 accent-[var(--m3-sys-primary)]"
                 />
                 프랜차이즈 또는 체인점입니다.
               </label>
@@ -473,7 +477,7 @@ export default function PlaceRegisterPage({
               <button
                 type="submit"
                 disabled={submitting || (!editing && !region)}
-                className="h-12 rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+                className={BUTTON_CLASS}
               >
                 {submitting
                   ? "저장 중"
@@ -486,7 +490,7 @@ export default function PlaceRegisterPage({
         )}
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-4 rounded-m3-xl bg-m3-secondary-container px-4 py-3 text-m3-body-md text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
@@ -505,7 +509,7 @@ function FieldLabel({
   children: ReactNode;
 }) {
   return (
-    <label className="flex flex-col gap-2 text-sm font-semibold">
+    <label className="flex flex-col gap-2 text-m3-label-lg text-m3-on-surface">
       {label}
       {children}
     </label>
@@ -514,10 +518,19 @@ function FieldLabel({
 
 function InfoCell({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
-      <p className="text-xs text-gray-500">{label}</p>
-      <p className="mt-1 font-bold">{value}</p>
+    <div className="rounded-m3-lg bg-m3-surface-container-low p-3">
+      <p className="text-m3-label-md text-m3-on-surface-variant">{label}</p>
+      <p className="mt-1 truncate text-m3-title-sm text-m3-on-surface">{value}</p>
     </div>
+  );
+}
+
+function StateCard({ title, desc }: { title: string; desc?: string }) {
+  return (
+    <section className="mt-6 rounded-m3-xl bg-m3-surface-container-lowest p-5 text-center text-m3-on-surface shadow-m3-1">
+      <p className="text-m3-title-sm">{title}</p>
+      {desc && <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">{desc}</p>}
+    </section>
   );
 }
 
