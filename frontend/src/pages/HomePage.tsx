@@ -503,23 +503,40 @@ function DesktopSideNav({
       </Link>
 
       <div className="mt-8 flex w-full flex-1 flex-col items-center gap-2">
-        {navItems.map((item) => (
-          <button
-            key={item.mode}
-            type="button"
-            onClick={() => onSelectMode(item.mode)}
-            className={`flex w-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-bold transition ${
-              activeMode === item.mode
-                ? "bg-[#fff3c4] text-[#8a6315]"
-                : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
-            }`}
-          >
-            <span className="flex h-6 w-6 items-center justify-center" aria-hidden="true">
-              {item.icon}
-            </span>
-            <span>{item.label}</span>
-          </button>
-        ))}
+        {navItems.map((item) => {
+          const className = `flex w-[68px] flex-col items-center justify-center gap-1 rounded-2xl px-2 py-3 text-[11px] font-bold transition ${
+            activeMode === item.mode
+              ? "bg-[#fff3c4] text-[#8a6315]"
+              : "text-gray-500 hover:bg-gray-50 hover:text-[#2b210f]"
+          }`;
+          const content = (
+            <>
+              <span className="flex h-6 w-6 items-center justify-center" aria-hidden="true">
+                {item.icon}
+              </span>
+              <span>{item.label}</span>
+            </>
+          );
+
+          if (item.mode === "community") {
+            return (
+              <Link key={item.mode} to="/community" className={className}>
+                {content}
+              </Link>
+            );
+          }
+
+          return (
+            <button
+              key={item.mode}
+              type="button"
+              onClick={() => onSelectMode(item.mode)}
+              className={className}
+            >
+              {content}
+            </button>
+          );
+        })}
       </div>
 
       <div className="h-10" aria-hidden="true" />
