@@ -18,6 +18,7 @@ import com.honeytong.admin.service.AdminUserService;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.service.PlaceService;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.report.dto.AdminReportFollowUpActionRequest;
 import com.honeytong.report.dto.AdminReportFollowUpActionType;
 import com.honeytong.report.dto.AdminReportProcessRequest;
@@ -68,6 +69,9 @@ class AdminReportServiceTest {
     @Mock
     private PlaceService placeService;
 
+    @Mock
+    private PolicyService policyService;
+
     private AdminReportService adminReportService;
     private User admin;
     private User reporter;
@@ -83,7 +87,8 @@ class AdminReportServiceTest {
                 adminPlaceService,
                 adminCommentService,
                 adminUserService,
-                placeService
+                placeService,
+                policyService
         );
 
         admin = new User("admin", "admin@example.com");
@@ -135,6 +140,7 @@ class AdminReportServiceTest {
     void processReport_updatesStatusAndLogsAction() {
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        stubReviewNoteMaxLength(255);
 
         var response = adminReportService.processReport(
                 ADMIN_ID,
@@ -147,6 +153,21 @@ class AdminReportServiceTest {
         assertThat(response.reviewNote()).isEqualTo("Confirmed.");
         assertThat(report.getReviewedBy()).isEqualTo(admin);
         verify(adminActionLogRepository).save(any(AdminActionLog.class));
+    }
+
+    @Test
+    void processReport_rejectsReviewNoteLongerThanPolicyLimit() {
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        stubReviewNoteMaxLength(5);
+
+        assertThatThrownBy(() -> adminReportService.processReport(
+                ADMIN_ID,
+                REPORT_ID,
+                new AdminReportProcessRequest(ReportStatus.APPROVED, "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        assertThat(report.getStatus()).isEqualTo(ReportStatus.PENDING);
     }
 
     @Test
@@ -192,6 +213,7 @@ class AdminReportServiceTest {
         report.process(admin, ReportStatus.APPROVED, "Confirmed.");
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        stubFollowUpMemoMaxLength(255);
 
         var response = adminReportService.applyFollowUpAction(
                 ADMIN_ID,
@@ -222,6 +244,7 @@ class AdminReportServiceTest {
         report.process(admin, ReportStatus.APPROVED, "Confirmed.");
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        stubFollowUpMemoMaxLength(255);
 
         var response = adminReportService.applyFollowUpAction(
                 ADMIN_ID,
@@ -248,6 +271,7 @@ class AdminReportServiceTest {
         commentReport.process(admin, ReportStatus.APPROVED, "Confirmed.");
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(commentReport));
+        stubFollowUpMemoMaxLength(255);
 
         var response = adminReportService.applyFollowUpAction(
                 ADMIN_ID,
@@ -279,6 +303,8 @@ class AdminReportServiceTest {
         LocalDateTime endAt = LocalDateTime.now().plusDays(7);
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(userReport));
+        stubFollowUpReasonMaxLength(255);
+        stubFollowUpMemoMaxLength(255);
 
         var response = adminReportService.applyFollowUpAction(
                 ADMIN_ID,
@@ -300,6 +326,52 @@ class AdminReportServiceTest {
                 any(AdminUserSanctionRequest.class)
         );
         verify(adminActionLogRepository).save(any(AdminActionLog.class));
+    }
+
+    @Test
+    void applyFollowUpAction_rejectsReasonLongerThanPolicyLimit() {
+        Report userReport = new Report(reporter, ReportTargetType.USER, TARGET_ID, "ABUSE", "Repeated abuse.");
+        ReflectionTestUtils.setField(userReport, "id", REPORT_ID);
+        userReport.process(admin, ReportStatus.APPROVED, "Confirmed.");
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(userReport));
+        stubFollowUpReasonMaxLength(5);
+
+        assertThatThrownBy(() -> adminReportService.applyFollowUpAction(
+                ADMIN_ID,
+                REPORT_ID,
+                new AdminReportFollowUpActionRequest(
+                        AdminReportFollowUpActionType.SANCTION_USER,
+                        UserSanctionType.TEMPORARY_RESTRICTION,
+                        "123456",
+                        null,
+                        LocalDateTime.now().plusDays(7),
+                        null
+                )
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
+    void applyFollowUpAction_rejectsContextMemoLongerThanPolicyLimit() {
+        report.process(admin, ReportStatus.APPROVED, "Confirmed.");
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(reportRepository.findById(REPORT_ID)).thenReturn(Optional.of(report));
+        stubFollowUpMemoMaxLength(15);
+
+        assertThatThrownBy(() -> adminReportService.applyFollowUpAction(
+                ADMIN_ID,
+                REPORT_ID,
+                new AdminReportFollowUpActionRequest(
+                        AdminReportFollowUpActionType.HIDE_PLACE,
+                        null,
+                        null,
+                        null,
+                        null,
+                        "123456"
+                )
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
     }
 
     @Test
@@ -364,5 +436,17 @@ class AdminReportServiceTest {
                 )
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    private void stubReviewNoteMaxLength(int maxLength) {
+        when(policyService.getRequiredInteger("report", "review_note_max_length")).thenReturn(maxLength);
+    }
+
+    private void stubFollowUpReasonMaxLength(int maxLength) {
+        when(policyService.getRequiredInteger("report", "follow_up_reason_max_length")).thenReturn(maxLength);
+    }
+
+    private void stubFollowUpMemoMaxLength(int maxLength) {
+        when(policyService.getRequiredInteger("report", "follow_up_memo_max_length")).thenReturn(maxLength);
     }
 }

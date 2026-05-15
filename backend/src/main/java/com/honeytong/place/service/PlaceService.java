@@ -53,6 +53,12 @@ public class PlaceService {
     );
     private static final String PLACE_POLICY_GROUP = "place";
     private static final String REGISTRATION_LIMIT_KEY = "registration_limit";
+    private static final String RECOMMENDED_MENU_MAX_LENGTH_KEY = "recommended_menu_max_length";
+    private static final String SHORT_RECOMMENDATION_MAX_LENGTH_KEY = "short_recommendation_max_length";
+    private static final String FEATURE_TEXT_MAX_LENGTH_KEY = "feature_text_max_length";
+    private static final int RECOMMENDED_MENU_COLUMN_LIMIT = 255;
+    private static final int SHORT_RECOMMENDATION_COLUMN_LIMIT = 255;
+    private static final int FEATURE_TEXT_COLUMN_LIMIT = 500;
     private static final String REGION_POLICY_GROUP = "region";
     private static final String REGISTRATION_SCOPE_KEY = "registration_scope";
     private static final String PLACE_TARGET_TYPE = "PLACE";
@@ -107,6 +113,26 @@ public class PlaceService {
         validateRegistrationLimit(userId);
         validateRegistrationScope(userRegion, placeDong);
 
+        String recommendedMenu = optionalTextWithinPolicy(
+                request.recommendedMenu(),
+                RECOMMENDED_MENU_MAX_LENGTH_KEY,
+                RECOMMENDED_MENU_COLUMN_LIMIT,
+                "추천 메뉴 허용 길이를 초과했습니다."
+        );
+        String shortRecommendation = requiredTextWithinPolicy(
+                request.shortRecommendation(),
+                SHORT_RECOMMENDATION_MAX_LENGTH_KEY,
+                SHORT_RECOMMENDATION_COLUMN_LIMIT,
+                "지역 추천 문구를 입력해 주세요.",
+                "지역 추천 문구 허용 길이를 초과했습니다."
+        );
+        String featureText = optionalTextWithinPolicy(
+                request.featureText(),
+                FEATURE_TEXT_MAX_LENGTH_KEY,
+                FEATURE_TEXT_COLUMN_LIMIT,
+                "특징 문구 허용 길이를 초과했습니다."
+        );
+
         Place place = placeRepository.save(new Place(
                 user,
                 placeDong,
@@ -117,9 +143,9 @@ public class PlaceService {
                 request.latitude(),
                 request.longitude(),
                 request.priceRangeCode(),
-                request.recommendedMenu(),
-                request.shortRecommendation(),
-                request.featureText(),
+                recommendedMenu,
+                shortRecommendation,
+                featureText,
                 request.franchise()
         ));
         saveImages(place, request.imageUrls(), user);
@@ -249,6 +275,18 @@ public class PlaceService {
 
         String beforeValue = adminActor ? serializePlaceMutationState(place, currentImageUrls(place.getId())) : null;
         RegionDong nextDong = resolveDongForUpdate(actor, place, request.dongId(), adminActor);
+        if (request.shortRecommendation() != null) {
+            validatePolicyTextLength(
+                    requiredTextOrCurrent(
+                            request.shortRecommendation(),
+                            place.getShortRecommendation(),
+                            "지역 추천 문구를 입력해 주세요."
+                    ),
+                    SHORT_RECOMMENDATION_MAX_LENGTH_KEY,
+                    SHORT_RECOMMENDATION_COLUMN_LIMIT,
+                    "지역 추천 문구 허용 길이를 초과했습니다."
+            );
+        }
         place.updateDetails(
                 nextDong,
                 requiredTextOrCurrent(request.name(), place.getName(), "장소 이름을 입력해 주세요."),
@@ -258,13 +296,25 @@ public class PlaceService {
                 coordinateOrCurrent(request.latitude(), request.longitude(), place.getLatitude(), true),
                 coordinateOrCurrent(request.latitude(), request.longitude(), place.getLongitude(), false),
                 optionalTextOrCurrent(request.priceRangeCode(), place.getPriceRangeCode()),
-                optionalTextOrCurrent(request.recommendedMenu(), place.getRecommendedMenu()),
+                optionalTextWithinPolicyOrCurrent(
+                        request.recommendedMenu(),
+                        place.getRecommendedMenu(),
+                        RECOMMENDED_MENU_MAX_LENGTH_KEY,
+                        RECOMMENDED_MENU_COLUMN_LIMIT,
+                        "추천 메뉴 허용 길이를 초과했습니다."
+                ),
                 requiredTextOrCurrent(
                         request.shortRecommendation(),
                         place.getShortRecommendation(),
                         "짧은 추천 문구를 입력해 주세요."
                 ),
-                optionalTextOrCurrent(request.featureText(), place.getFeatureText()),
+                optionalTextWithinPolicyOrCurrent(
+                        request.featureText(),
+                        place.getFeatureText(),
+                        FEATURE_TEXT_MAX_LENGTH_KEY,
+                        FEATURE_TEXT_COLUMN_LIMIT,
+                        "특징 문구 허용 길이를 초과했습니다."
+                ),
                 request.franchise() == null ? place.isFranchise() : request.franchise()
         );
         if (request.imageUrls() != null) {
@@ -523,6 +573,74 @@ public class PlaceService {
             return null;
         }
         return value.trim();
+    }
+
+    private String optionalTextWithinPolicy(
+            String value,
+            String policyKey,
+            int columnLimit,
+            String tooLongMessage
+    ) {
+        if (value == null) {
+            return null;
+        }
+        String normalized = value.trim();
+        if (normalized.isBlank()) {
+            return null;
+        }
+        validatePolicyTextLength(normalized, policyKey, columnLimit, tooLongMessage);
+        return normalized;
+    }
+
+    private String requiredTextWithinPolicy(
+            String value,
+            String policyKey,
+            int columnLimit,
+            String blankMessage,
+            String tooLongMessage
+    ) {
+        String normalized = value == null ? "" : value.trim();
+        if (normalized.isBlank()) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, blankMessage);
+        }
+        validatePolicyTextLength(normalized, policyKey, columnLimit, tooLongMessage);
+        return normalized;
+    }
+
+    private String optionalTextWithinPolicyOrCurrent(
+            String value,
+            String currentValue,
+            String policyKey,
+            int columnLimit,
+            String tooLongMessage
+    ) {
+        if (value == null) {
+            return currentValue;
+        }
+        return optionalTextWithinPolicy(value, policyKey, columnLimit, tooLongMessage);
+    }
+
+    private void validatePolicyTextLength(
+            String value,
+            String policyKey,
+            int columnLimit,
+            String tooLongMessage
+    ) {
+        int maxLength = getBoundedPlaceTextMaxLength(policyKey, columnLimit);
+        if (value.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, tooLongMessage);
+        }
+    }
+
+    private int getBoundedPlaceTextMaxLength(String policyKey, int columnLimit) {
+        int maxLength = policyService.getRequiredInteger(PLACE_POLICY_GROUP, policyKey);
+        if (maxLength <= 0 || maxLength > columnLimit) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "장소 텍스트 길이 정책은 1-" + columnLimit + " 사이여야 합니다."
+            );
+        }
+        return maxLength;
     }
 
     private BigDecimal coordinateOrCurrent(

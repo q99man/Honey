@@ -13,6 +13,7 @@ import com.honeytong.report.dto.ReportCreateResponse;
 import com.honeytong.report.entity.Report;
 import com.honeytong.report.entity.ReportTargetType;
 import com.honeytong.report.repository.ReportRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.service.UserActionLogService;
@@ -24,24 +25,31 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class ReportService {
 
+    private static final String REPORT_POLICY_GROUP = "report";
+    private static final String REASON_TEXT_MAX_LENGTH_KEY = "reason_text_max_length";
+    private static final int REASON_TEXT_COLUMN_LIMIT = 255;
+
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
     private final PlaceRepository placeRepository;
     private final CommentRepository commentRepository;
     private final UserActionLogService userActionLogService;
+    private final PolicyService policyService;
 
     public ReportService(
             ReportRepository reportRepository,
             UserRepository userRepository,
             PlaceRepository placeRepository,
             CommentRepository commentRepository,
-            UserActionLogService userActionLogService
+            UserActionLogService userActionLogService,
+            PolicyService policyService
     ) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
         this.placeRepository = placeRepository;
         this.commentRepository = commentRepository;
         this.userActionLogService = userActionLogService;
+        this.policyService = policyService;
     }
 
     @Transactional
@@ -143,7 +151,32 @@ public class ReportService {
         if (reasonText == null || reasonText.isBlank()) {
             return null;
         }
-        return reasonText.trim();
+        String normalized = reasonText.trim();
+        validatePolicyTextLength(
+                normalized,
+                REASON_TEXT_MAX_LENGTH_KEY,
+                REASON_TEXT_COLUMN_LIMIT,
+                "신고 상세 사유 허용 길이를 초과했습니다."
+        );
+        return normalized;
+    }
+
+    private void validatePolicyTextLength(
+            String value,
+            String policyKey,
+            int columnLimit,
+            String tooLongMessage
+    ) {
+        int maxLength = policyService.getRequiredInteger(REPORT_POLICY_GROUP, policyKey);
+        if (maxLength <= 0 || maxLength > columnLimit) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "신고 텍스트 길이 정책은 1-" + columnLimit + " 사이여야 합니다."
+            );
+        }
+        if (value.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, tooLongMessage);
+        }
     }
 
     private MyReportResponse toMyReportResponse(Report report) {

@@ -33,6 +33,7 @@ import {
   type MyStatus,
 } from "../api/userApi";
 import AuthCard, { type AuthMode } from "../components/AuthCard";
+import { CloseIcon, RatingStars, SaveStarIcon } from "../components/ActionIcons";
 import BottomNav from "../components/BottomNav";
 import CategoryTabs from "../components/CategoryTabs";
 import {
@@ -158,39 +159,6 @@ const SearchIcon = () => (
   >
     <circle cx="10.8" cy="10.8" r="6.2"></circle>
     <path d="M15.4 15.4 20 20"></path>
-  </svg>
-);
-
-const CloseIcon = () => (
-  <svg
-    width="21"
-    height="21"
-    viewBox="0 0 24 24"
-    fill="none"
-    stroke="currentColor"
-    strokeWidth="2.4"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <path d="M18 6 6 18"></path>
-    <path d="m6 6 12 12"></path>
-  </svg>
-);
-
-const SaveStarIcon = ({ active = false }: { active?: boolean }) => (
-  <svg
-    width="22"
-    height="22"
-    viewBox="0 0 24 24"
-    fill={active ? "currentColor" : "none"}
-    stroke="currentColor"
-    strokeWidth="2.2"
-    strokeLinecap="round"
-    strokeLinejoin="round"
-    aria-hidden="true"
-  >
-    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
   </svg>
 );
 
@@ -742,9 +710,9 @@ function DesktopMapRegionChip({
             type="button"
             onClick={onClearSelection}
             aria-label="지역 선택 초기화"
-            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest text-base font-black text-m3-on-surface-variant transition active:scale-95"
+            className="flex h-8 w-8 shrink-0 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface-variant shadow-m3-1 transition active:scale-95"
           >
-            ×
+            <CloseIcon size={18} />
           </button>
         )}
       </div>
@@ -1883,7 +1851,7 @@ function DesktopCategoryPlaceList({
                     </span>
                   </div>
                   <p className="mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-1 text-m3-body-sm text-m3-on-surface-variant">
-                    <span className="text-m3-tertiary">★★★★★</span>
+                    <RatingStars size={13} />
                     <span className="text-m3-on-surface">{scoreText}</span>
                     <span>추천 {place.recommendCount}</span>
                     <span>방문 {place.visitCount}</span>
@@ -1949,7 +1917,7 @@ function DesktopPlaceDetailCard({
               <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">{category.label}</span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-m3-body-md text-m3-on-surface-variant">
-              <span className="text-m3-tertiary">★★★★★</span>
+              <RatingStars />
               <span className="text-m3-on-surface">{scoreText}</span>
               <span>({reviewCount})</span>
               <span className="text-m3-tertiary">영업정보 확인 중</span>
@@ -2285,7 +2253,7 @@ function SelectedPlaceCard({
           type="button"
           aria-label="맛집 상세 닫기"
           onClick={onClose}
-          className="absolute right-4 top-3 flex h-9 w-9 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest/95 text-m3-on-surface shadow-m3-1 backdrop-blur-md transition active:scale-95"
+          className="absolute right-4 top-3 flex h-9 w-9 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-2 ring-1 ring-black/20 transition active:scale-95"
         >
           <CloseIcon />
         </button>
@@ -2299,7 +2267,7 @@ function SelectedPlaceCard({
               <span className="shrink-0 text-m3-body-sm text-m3-on-surface-variant">{category.label}</span>
             </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-m3-body-md text-m3-on-surface-variant">
-              <span className="text-m3-tertiary">★★★★★</span>
+              <RatingStars />
               <span className="text-m3-on-surface">{scoreText}</span>
               <span>({reviewCount})</span>
               <span className="text-m3-tertiary">영업정보 확인 중</span>

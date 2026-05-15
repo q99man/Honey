@@ -39,14 +39,11 @@ public record PlaceCreateRequest(
         @Size(max = 30)
         String priceRangeCode,
 
-        @Size(max = 255)
         String recommendedMenu,
 
         @NotBlank
-        @Size(max = 255)
         String shortRecommendation,
 
-        @Size(max = 500)
         String featureText,
 
         boolean franchise,

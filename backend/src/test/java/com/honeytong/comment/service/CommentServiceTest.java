@@ -116,6 +116,7 @@ class CommentServiceTest {
             ReflectionTestUtils.setField(comment, "id", COMMENT_ID);
             return comment;
         });
+        stubCommentMaxLength(300);
         when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
@@ -141,6 +142,7 @@ class CommentServiceTest {
     void createComment_rejectsDuplicateVisibleComment() {
         Comment existing = newComment("이미 작성한 댓글");
         stubActiveUserAndVisiblePlace();
+        stubCommentMaxLength(300);
         when(commentRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID)).thenReturn(Optional.of(existing));
 
         assertThatThrownBy(() -> commentService.createComment(
@@ -153,10 +155,27 @@ class CommentServiceTest {
     }
 
     @Test
+    void createComment_rejectsContentLongerThanPolicyLimit() {
+        stubActiveUserAndVisiblePlace();
+        when(policyService.getRequiredInteger("comment", "max_length")).thenReturn(5);
+
+        assertThatThrownBy(() -> commentService.createComment(
+                USER_ID,
+                PLACE_ID,
+                new CommentRequest("123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(commentRepository, never()).findByUserIdAndPlaceId(any(), any());
+        verify(commentRepository, never()).save(any());
+        verify(placeStatsRepository, never()).findById(any());
+    }
+
+    @Test
     void createComment_restoresDeletedComment() {
         Comment deleted = newComment("삭제된 댓글");
         deleted.delete();
         stubActiveUserAndVisiblePlace();
+        stubCommentMaxLength(300);
         when(commentRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID)).thenReturn(Optional.of(deleted));
         when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
@@ -175,11 +194,28 @@ class CommentServiceTest {
         Comment comment = newComment("기존 댓글");
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
+        stubCommentMaxLength(300);
 
         var response = commentService.updateComment(USER_ID, COMMENT_ID, new CommentRequest("수정한 댓글"));
 
         assertThat(response.content()).isEqualTo("수정한 댓글");
         assertThat(comment.getContent()).isEqualTo("수정한 댓글");
+    }
+
+    @Test
+    void updateComment_rejectsContentLongerThanPolicyLimit() {
+        Comment comment = newComment("기존 댓글");
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
+        when(policyService.getRequiredInteger("comment", "max_length")).thenReturn(5);
+
+        assertThatThrownBy(() -> commentService.updateComment(
+                USER_ID,
+                COMMENT_ID,
+                new CommentRequest("123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        assertThat(comment.getContent()).isEqualTo("기존 댓글");
     }
 
     @Test
@@ -248,5 +284,9 @@ class CommentServiceTest {
         Comment comment = new Comment(user, place, content);
         ReflectionTestUtils.setField(comment, "id", COMMENT_ID);
         return comment;
+    }
+
+    private void stubCommentMaxLength(int maxLength) {
+        when(policyService.getRequiredInteger("comment", "max_length")).thenReturn(maxLength);
     }
 }

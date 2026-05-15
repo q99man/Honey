@@ -32,13 +32,10 @@ public record PlaceUpdateRequest(
         @Size(max = 30)
         String priceRangeCode,
 
-        @Size(max = 255)
         String recommendedMenu,
 
-        @Size(max = 255)
         String shortRecommendation,
 
-        @Size(max = 500)
         String featureText,
 
         Boolean franchise,

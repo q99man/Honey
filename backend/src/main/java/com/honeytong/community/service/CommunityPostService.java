@@ -9,6 +9,7 @@ import com.honeytong.community.dto.CommunityPostResponse;
 import com.honeytong.community.entity.CommunityPost;
 import com.honeytong.community.entity.CommunityPostStatus;
 import com.honeytong.community.repository.CommunityPostRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.service.UserActionLogService;
@@ -20,18 +21,27 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class CommunityPostService {
 
+    private static final String COMMUNITY_POLICY_GROUP = "community";
+    private static final String POST_TITLE_MAX_LENGTH_KEY = "post_title_max_length";
+    private static final String POST_CONTENT_MAX_LENGTH_KEY = "post_content_max_length";
+    private static final int POST_TITLE_COLUMN_LIMIT = 120;
+    private static final int POST_CONTENT_COLUMN_LIMIT = 2000;
+
     private final CommunityPostRepository communityPostRepository;
     private final UserRepository userRepository;
     private final UserActionLogService userActionLogService;
+    private final PolicyService policyService;
 
     public CommunityPostService(
             CommunityPostRepository communityPostRepository,
             UserRepository userRepository,
-            UserActionLogService userActionLogService
+            UserActionLogService userActionLogService,
+            PolicyService policyService
     ) {
         this.communityPostRepository = communityPostRepository;
         this.userRepository = userRepository;
         this.userActionLogService = userActionLogService;
+        this.policyService = policyService;
     }
 
     @Transactional
@@ -137,6 +147,10 @@ public class CommunityPostService {
         if (normalized.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "게시글 제목을 입력해 주세요.");
         }
+        int maxLength = getBoundedMaxLength(POST_TITLE_MAX_LENGTH_KEY, POST_TITLE_COLUMN_LIMIT);
+        if (normalized.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "게시글 제목 허용 길이를 초과했습니다.");
+        }
         return normalized;
     }
 
@@ -145,7 +159,22 @@ public class CommunityPostService {
         if (normalized.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "게시글 내용을 입력해 주세요.");
         }
+        int maxLength = getBoundedMaxLength(POST_CONTENT_MAX_LENGTH_KEY, POST_CONTENT_COLUMN_LIMIT);
+        if (normalized.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "게시글 내용 허용 길이를 초과했습니다.");
+        }
         return normalized;
+    }
+
+    private int getBoundedMaxLength(String policyKey, int columnLimit) {
+        int maxLength = policyService.getRequiredInteger(COMMUNITY_POLICY_GROUP, policyKey);
+        if (maxLength <= 0 || maxLength > columnLimit) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "게시글 길이 정책은 1-" + columnLimit + " 사이여야 합니다."
+            );
+        }
+        return maxLength;
     }
 
     private CommunityPostResponse toResponse(CommunityPost post, Long viewerUserId) {

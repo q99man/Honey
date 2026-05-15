@@ -126,6 +126,7 @@ class PlaceServiceTest {
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
         when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
         when(placeRepository.save(any(Place.class))).thenAnswer(invocation -> {
             Place place = invocation.getArgument(0);
@@ -145,6 +146,28 @@ class PlaceServiceTest {
                 eq(100L),
                 any()
         );
+    }
+
+    @Test
+    void createPlace_rejectsShortRecommendationLongerThanPolicyLimit() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        when(policyService.getRequiredInteger("place", "recommended_menu_max_length")).thenReturn(255);
+        when(policyService.getRequiredInteger("place", "short_recommendation_max_length")).thenReturn(5);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+
+        assertThatThrownBy(() -> placeService.createPlace(
+                USER_ID,
+                createRequestWithText("Test Menu", "123456", "Fast service")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(placeRepository, never()).save(any());
+        verify(placeStatsRepository, never()).save(any());
     }
 
     @Test
@@ -266,6 +289,23 @@ class PlaceServiceTest {
     }
 
     @Test
+    void updatePlace_rejectsFeatureTextLongerThanPolicyLimit() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(policyService.getRequiredInteger("place", "feature_text_max_length")).thenReturn(5);
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateTextRequest(null, null, "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        assertThat(place.getFeatureText()).isEqualTo("Fast service and rich taste");
+    }
+
+    @Test
     void updatePlace_rejectsNonOwnerUser() {
         User otherUser = new User("other", "other@example.com");
         ReflectionTestUtils.setField(otherUser, "id", 2L);
@@ -379,6 +419,18 @@ class PlaceServiceTest {
     }
 
     private PlaceCreateRequest createRequest() {
+        return createRequestWithText(
+                "Test Menu",
+                "Local favorite worth revisiting",
+                "Fast service and rich taste"
+        );
+    }
+
+    private PlaceCreateRequest createRequestWithText(
+            String recommendedMenu,
+            String shortRecommendation,
+            String featureText
+    ) {
         return new PlaceCreateRequest(
                 "Test Place",
                 "KOREAN",
@@ -388,9 +440,9 @@ class PlaceServiceTest {
                 BigDecimal.valueOf(37.5500000),
                 BigDecimal.valueOf(126.9100000),
                 "10000_20000",
-                "Test Menu",
-                "Local favorite worth revisiting",
-                "Fast service and rich taste",
+                recommendedMenu,
+                shortRecommendation,
+                featureText,
                 false,
                 List.of("https://image.example.com/place.jpg")
         );
@@ -448,5 +500,40 @@ class PlaceServiceTest {
                 null,
                 null
         );
+    }
+
+    private PlaceUpdateRequest updateTextRequest(
+            String recommendedMenu,
+            String shortRecommendation,
+            String featureText
+    ) {
+        return new PlaceUpdateRequest(
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                recommendedMenu,
+                shortRecommendation,
+                featureText,
+                null,
+                null
+        );
+    }
+
+    private void stubPlaceTextPolicies(
+            int recommendedMenuMaxLength,
+            int shortRecommendationMaxLength,
+            int featureTextMaxLength
+    ) {
+        when(policyService.getRequiredInteger("place", "recommended_menu_max_length"))
+                .thenReturn(recommendedMenuMaxLength);
+        when(policyService.getRequiredInteger("place", "short_recommendation_max_length"))
+                .thenReturn(shortRecommendationMaxLength);
+        when(policyService.getRequiredInteger("place", "feature_text_max_length"))
+                .thenReturn(featureTextMaxLength);
     }
 }

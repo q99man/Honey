@@ -21,6 +21,7 @@ import com.honeytong.report.entity.Report;
 import com.honeytong.report.entity.ReportStatus;
 import com.honeytong.report.entity.ReportTargetType;
 import com.honeytong.report.repository.ReportRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.service.UserActionLogService;
@@ -58,6 +59,9 @@ class ReportServiceTest {
     @Mock
     private UserActionLogService userActionLogService;
 
+    @Mock
+    private PolicyService policyService;
+
     private ReportService reportService;
     private User reporter;
     private User targetUser;
@@ -71,7 +75,8 @@ class ReportServiceTest {
                 userRepository,
                 placeRepository,
                 commentRepository,
-                userActionLogService
+                userActionLogService,
+                policyService
         );
 
         reporter = new User("신고자", "reporter@example.com");
@@ -116,6 +121,7 @@ class ReportServiceTest {
             ReflectionTestUtils.setField(report, "id", REPORT_ID);
             return report;
         });
+        stubReasonTextMaxLength(255);
 
         var response = reportService.createReport(
                 REPORTER_ID,
@@ -131,6 +137,20 @@ class ReportServiceTest {
                 eq(REPORT_ID),
                 any()
         );
+    }
+
+    @Test
+    void createReport_rejectsReasonTextLongerThanPolicyLimit() {
+        when(userRepository.findById(REPORTER_ID)).thenReturn(Optional.of(reporter));
+        when(placeRepository.findById(PLACE_ID)).thenReturn(Optional.of(place));
+        stubReasonTextMaxLength(5);
+
+        assertThatThrownBy(() -> reportService.createReport(
+                REPORTER_ID,
+                new ReportCreateRequest(ReportTargetType.PLACE, PLACE_ID, "FAKE_INFO", "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(reportRepository, org.mockito.Mockito.never()).save(any());
     }
 
     @Test
@@ -172,6 +192,10 @@ class ReportServiceTest {
                 new ReportCreateRequest(ReportTargetType.PLACE, PLACE_ID, "FAKE_INFO", null)
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    private void stubReasonTextMaxLength(int maxLength) {
+        when(policyService.getRequiredInteger("report", "reason_text_max_length")).thenReturn(maxLength);
     }
 
     @Test

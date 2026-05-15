@@ -1,4 +1,5 @@
 import type { MouseEvent } from "react";
+import { SaveStarIcon } from "./ActionIcons";
 
 type Props = {
   title: string;
@@ -53,9 +54,14 @@ export default function SpaceCard({
               event.stopPropagation();
               onToggleWish(event);
             }}
-            className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-lg font-bold text-m3-on-secondary-container shadow-m3-1 transition active:scale-95"
+            className={
+              "absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-m3-full border shadow-m3-1 transition active:scale-95 " +
+              (isWished
+                ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface-variant")
+            }
           >
-            {isWished ? "★" : "☆"}
+            <SaveStarIcon active={isWished} size={20} />
           </button>
         )}
       </div>

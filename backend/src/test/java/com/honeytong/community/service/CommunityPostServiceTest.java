@@ -13,6 +13,7 @@ import com.honeytong.community.dto.CommunityPostRequest;
 import com.honeytong.community.entity.CommunityPost;
 import com.honeytong.community.entity.CommunityPostStatus;
 import com.honeytong.community.repository.CommunityPostRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserStatus;
 import com.honeytong.user.repository.UserRepository;
@@ -42,6 +43,9 @@ class CommunityPostServiceTest {
     @Mock
     private UserActionLogService userActionLogService;
 
+    @Mock
+    private PolicyService policyService;
+
     private CommunityPostService communityPostService;
     private User user;
     private User otherUser;
@@ -51,7 +55,8 @@ class CommunityPostServiceTest {
         communityPostService = new CommunityPostService(
                 communityPostRepository,
                 userRepository,
-                userActionLogService
+                userActionLogService,
+                policyService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -68,6 +73,7 @@ class CommunityPostServiceTest {
             ReflectionTestUtils.setField(post, "id", POST_ID);
             return post;
         });
+        stubPostLengthPolicies(120, 2000);
 
         var response = communityPostService.createPost(
                 USER_ID,
@@ -83,6 +89,32 @@ class CommunityPostServiceTest {
                 org.mockito.Mockito.eq(POST_ID),
                 org.mockito.Mockito.any()
         );
+    }
+
+    @Test
+    void createPost_rejectsTitleLongerThanPolicyLimit() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(policyService.getRequiredInteger("community", "post_title_max_length")).thenReturn(5);
+
+        assertThatThrownBy(() -> communityPostService.createPost(
+                USER_ID,
+                new CommunityPostRequest("123456", "content")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(communityPostRepository, never()).save(any());
+    }
+
+    @Test
+    void createPost_rejectsContentLongerThanPolicyLimit() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        stubPostLengthPolicies(120, 5);
+
+        assertThatThrownBy(() -> communityPostService.createPost(
+                USER_ID,
+                new CommunityPostRequest("title", "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(communityPostRepository, never()).save(any());
     }
 
     @Test
@@ -117,6 +149,7 @@ class CommunityPostServiceTest {
         CommunityPost post = newPost(user, "기존 제목", "기존 내용");
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(communityPostRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        stubPostLengthPolicies(120, 2000);
 
         var response = communityPostService.updatePost(
                 USER_ID,
@@ -127,6 +160,22 @@ class CommunityPostServiceTest {
         assertThat(response.title()).isEqualTo("수정 제목");
         assertThat(response.content()).isEqualTo("수정 내용");
         assertThat(post.getTitle()).isEqualTo("수정 제목");
+    }
+
+    @Test
+    void updatePost_rejectsContentLongerThanPolicyLimit() {
+        CommunityPost post = newPost(user, "original", "original content");
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(communityPostRepository.findById(POST_ID)).thenReturn(Optional.of(post));
+        stubPostLengthPolicies(120, 5);
+
+        assertThatThrownBy(() -> communityPostService.updatePost(
+                USER_ID,
+                POST_ID,
+                new CommunityPostRequest("title", "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        assertThat(post.getContent()).isEqualTo("original content");
     }
 
     @Test
@@ -170,5 +219,10 @@ class CommunityPostServiceTest {
         CommunityPost post = new CommunityPost(author, title, content);
         ReflectionTestUtils.setField(post, "id", POST_ID);
         return post;
+    }
+
+    private void stubPostLengthPolicies(int titleMaxLength, int contentMaxLength) {
+        when(policyService.getRequiredInteger("community", "post_title_max_length")).thenReturn(titleMaxLength);
+        when(policyService.getRequiredInteger("community", "post_content_max_length")).thenReturn(contentMaxLength);
     }
 }

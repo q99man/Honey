@@ -28,7 +28,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class CommentService {
 
     private static final String RANKING_POLICY_GROUP = "ranking";
+    private static final String COMMENT_POLICY_GROUP = "comment";
     private static final String COMMENT_WEIGHT_KEY = "comment_weight";
+    private static final String MAX_LENGTH_KEY = "max_length";
+    private static final int COMMENT_CONTENT_COLUMN_LIMIT = 300;
 
     private final CommentRepository commentRepository;
     private final PlaceRepository placeRepository;
@@ -192,7 +195,22 @@ public class CommentService {
         if (normalized.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "댓글 내용을 입력해 주세요.");
         }
+        int maxLength = getMaxContentLength();
+        if (normalized.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "댓글 내용 허용 길이를 초과했습니다.");
+        }
         return normalized;
+    }
+
+    private int getMaxContentLength() {
+        int maxLength = policyService.getRequiredInteger(COMMENT_POLICY_GROUP, MAX_LENGTH_KEY);
+        if (maxLength <= 0 || maxLength > COMMENT_CONTENT_COLUMN_LIMIT) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "댓글 길이 정책은 1-" + COMMENT_CONTENT_COLUMN_LIMIT + " 사이여야 합니다."
+            );
+        }
+        return maxLength;
     }
 
     private CommentResponse toCommentResponse(Comment comment) {

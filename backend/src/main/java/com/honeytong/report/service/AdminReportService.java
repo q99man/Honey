@@ -14,6 +14,7 @@ import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.service.PlaceService;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.report.dto.AdminReportFollowUpActionRequest;
 import com.honeytong.report.dto.AdminReportFollowUpActionResponse;
 import com.honeytong.report.dto.AdminReportFollowUpActionType;
@@ -38,6 +39,13 @@ public class AdminReportService {
     private static final String REPORT_TARGET_TYPE = "REPORT";
     private static final String REPORT_PROCESS_ACTION = "REPORT_PROCESS";
     private static final String REPORT_FOLLOW_UP_ACTION = "REPORT_FOLLOW_UP";
+    private static final String REPORT_POLICY_GROUP = "report";
+    private static final String REVIEW_NOTE_MAX_LENGTH_KEY = "review_note_max_length";
+    private static final String FOLLOW_UP_REASON_MAX_LENGTH_KEY = "follow_up_reason_max_length";
+    private static final String FOLLOW_UP_MEMO_MAX_LENGTH_KEY = "follow_up_memo_max_length";
+    private static final int REVIEW_NOTE_COLUMN_LIMIT = 255;
+    private static final int FOLLOW_UP_REASON_COLUMN_LIMIT = 255;
+    private static final int FOLLOW_UP_MEMO_COLUMN_LIMIT = 255;
 
     private final ReportRepository reportRepository;
     private final UserRepository userRepository;
@@ -47,6 +55,7 @@ public class AdminReportService {
     private final AdminCommentService adminCommentService;
     private final AdminUserService adminUserService;
     private final PlaceService placeService;
+    private final PolicyService policyService;
 
     public AdminReportService(
             ReportRepository reportRepository,
@@ -56,7 +65,8 @@ public class AdminReportService {
             AdminPlaceService adminPlaceService,
             AdminCommentService adminCommentService,
             AdminUserService adminUserService,
-            PlaceService placeService
+            PlaceService placeService,
+            PolicyService policyService
     ) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
@@ -66,6 +76,7 @@ public class AdminReportService {
         this.adminCommentService = adminCommentService;
         this.adminUserService = adminUserService;
         this.placeService = placeService;
+        this.policyService = policyService;
     }
 
     @Transactional(readOnly = true)
@@ -117,7 +128,10 @@ public class AdminReportService {
         Report report = getReportOrThrow(reportId);
         validateFollowUpAction(report, request);
 
-        String actionMemo = memoWithReportContext(report, normalize(request.memo()));
+        String followUpReason = normalizeFollowUpReason(request.reason());
+        String followUpMemo = normalize(request.memo());
+        String actionMemo = memoWithReportContext(report, followUpMemo);
+        validateFollowUpActionMemo(actionMemo);
         String resultTargetType;
         Long resultTargetId = report.getTargetId();
         switch (request.actionType()) {
@@ -155,7 +169,7 @@ public class AdminReportService {
                         report.getTargetId(),
                         new AdminUserSanctionRequest(
                                 request.sanctionType(),
-                                request.reason(),
+                                followUpReason,
                                 request.startAt(),
                                 request.endAt(),
                                 actionMemo
@@ -166,7 +180,7 @@ public class AdminReportService {
             default -> throw new ApiException(ErrorCode.INVALID_REQUEST, "Unsupported follow-up action.");
         }
 
-        saveFollowUpLog(admin, report, request, resultTargetType, resultTargetId);
+        saveFollowUpLog(admin, report, request, followUpReason, followUpMemo, resultTargetType, resultTargetId);
         return new AdminReportFollowUpActionResponse(
                 report.getId(),
                 request.actionType(),
@@ -208,7 +222,54 @@ public class AdminReportService {
         if (reviewNote == null || reviewNote.isBlank()) {
             return null;
         }
-        return reviewNote.trim();
+        String normalized = reviewNote.trim();
+        validatePolicyTextLength(
+                normalized,
+                REVIEW_NOTE_MAX_LENGTH_KEY,
+                REVIEW_NOTE_COLUMN_LIMIT,
+                "신고 검토 메모 허용 길이를 초과했습니다."
+        );
+        return normalized;
+    }
+
+    private String normalizeFollowUpReason(String reason) {
+        String normalized = normalize(reason);
+        if (normalized != null) {
+            validatePolicyTextLength(
+                    normalized,
+                    FOLLOW_UP_REASON_MAX_LENGTH_KEY,
+                    FOLLOW_UP_REASON_COLUMN_LIMIT,
+                    "신고 후속 조치 사유 허용 길이를 초과했습니다."
+            );
+        }
+        return normalized;
+    }
+
+    private void validateFollowUpActionMemo(String actionMemo) {
+        validatePolicyTextLength(
+                actionMemo,
+                FOLLOW_UP_MEMO_MAX_LENGTH_KEY,
+                FOLLOW_UP_MEMO_COLUMN_LIMIT,
+                "신고 후속 조치 메모 허용 길이를 초과했습니다."
+        );
+    }
+
+    private void validatePolicyTextLength(
+            String value,
+            String policyKey,
+            int columnLimit,
+            String tooLongMessage
+    ) {
+        int maxLength = policyService.getRequiredInteger(REPORT_POLICY_GROUP, policyKey);
+        if (maxLength <= 0 || maxLength > columnLimit) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "신고 텍스트 길이 정책은 1-" + columnLimit + " 사이여야 합니다."
+            );
+        }
+        if (value.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, tooLongMessage);
+        }
     }
 
     private String normalize(String value) {
@@ -251,6 +312,8 @@ public class AdminReportService {
             User admin,
             Report report,
             AdminReportFollowUpActionRequest request,
+            String followUpReason,
+            String followUpMemo,
             String resultTargetType,
             Long resultTargetId
     ) {
@@ -260,14 +323,15 @@ public class AdminReportService {
                 REPORT_TARGET_TYPE,
                 report.getId(),
                 serializeReport(report),
-                serializeFollowUp(report, request, resultTargetType, resultTargetId),
-                normalize(request.memo())
+                serializeFollowUp(report, request, followUpReason, resultTargetType, resultTargetId),
+                followUpMemo
         ));
     }
 
     private String serializeFollowUp(
             Report report,
             AdminReportFollowUpActionRequest request,
+            String followUpReason,
             String resultTargetType,
             Long resultTargetId
     ) {
@@ -279,7 +343,7 @@ public class AdminReportService {
         value.put("resultTargetType", resultTargetType);
         value.put("resultTargetId", resultTargetId);
         value.put("sanctionType", request.sanctionType() == null ? null : request.sanctionType().name());
-        value.put("reason", request.reason());
+        value.put("reason", followUpReason);
         return serialize(value);
     }
 
