@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import { getApiErrorMessage } from "../api/http";
 import {
   applyAdminReportFollowUpAction,
@@ -12,6 +11,7 @@ import {
   type ReportTargetType,
   type UserSanctionType,
 } from "../api/reportApi";
+import { AdminPageShell } from "../components/AdminShell";
 
 type StatusFilter = ReportStatus | "ALL";
 
@@ -202,60 +202,22 @@ export default function AdminReportsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[920px] px-5 py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
-            <h1 className="mt-1 text-2xl font-bold">신고 관리</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              접수된 신고를 검토하고 승인된 신고에 필요한 후속 조치를 적용합니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin/activities"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              활동 관리
-            </Link>
-            <Link
-              to="/admin/places"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              장소 관리
-            </Link>
-            <Link
-              to="/admin/users"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              사용자 관리
-            </Link>
-            <Link
-              to="/admin/audit-logs"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              감사 로그
-            </Link>
-            <Link
-              to="/admin"
-              className="h-10 rounded-lg border border-yellow-300 px-4 pt-2 text-center text-sm font-bold"
-            >
-              대시보드
-            </Link>
-          </div>
-        </header>
+    <AdminPageShell
+      title="신고 관리"
+      description="접수된 신고를 검토하고 승인된 신고에 필요한 후속 조치를 적용합니다."
+      maxWidth="max-w-[920px]"
+    >
 
-        <section className="mt-6 grid grid-cols-4 gap-2">
+        <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
           {STATUS_FILTERS.map((filter) => (
             <button
               key={filter.value}
               type="button"
               onClick={() => handleSelectFilter(filter.value)}
-              className={`h-10 rounded-lg text-sm font-bold ${
+              className={`admin-segment ${
                 statusFilter === filter.value
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-gray-500"
+                  ? "admin-segment-selected"
+                  : "admin-segment-idle"
               }`}
             >
               {filter.label}
@@ -264,13 +226,13 @@ export default function AdminReportsPage() {
         </section>
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-4 rounded-m3-lg bg-m3-secondary-container px-4 py-3 text-m3-label-lg text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
 
         <div className="mt-5 grid gap-5 lg:grid-cols-[340px_1fr]">
-          <section className="rounded-xl bg-white p-4 shadow-sm">
+          <section className="admin-panel">
             <div className="flex items-center justify-between gap-3">
               <h2 className="text-lg font-bold">신고 목록</h2>
               <span className="text-xs font-semibold text-gray-400">
@@ -285,7 +247,7 @@ export default function AdminReportsPage() {
             </div>
 
             {!loading && reports.length === 0 && (
-              <p className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm text-gray-500">
+              <p className="admin-muted-panel mt-5">
                 표시할 신고가 없습니다.
               </p>
             )}
@@ -296,10 +258,10 @@ export default function AdminReportsPage() {
                   key={report.reportId}
                   type="button"
                   onClick={() => setSelectedReportId(report.reportId)}
-                  className={`rounded-lg border p-3 text-left text-sm ${
+                  className={`admin-list-item ${
                     selectedReportId === report.reportId
-                      ? "border-yellow-400 bg-yellow-50"
-                      : "border-yellow-100 bg-[#FFFBEB]"
+                      ? "admin-list-item-selected"
+                      : "admin-list-item-idle"
                   }`}
                 >
                   <div className="flex items-start justify-between gap-3">
@@ -307,11 +269,11 @@ export default function AdminReportsPage() {
                       <p className="font-bold">
                         {targetTypeLabel(report.targetType)} #{report.targetId}
                       </p>
-                      <p className="mt-1 text-gray-500">
+                      <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
                         {reasonLabel(report.reasonCode)}
                       </p>
                     </div>
-                    <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[#2f6f5f]">
+                    <span className="rounded-m3-full bg-m3-surface-container-lowest px-2 py-1 text-m3-label-md text-m3-primary">
                       {statusLabel(report.status)}
                     </span>
                   </div>
@@ -323,9 +285,9 @@ export default function AdminReportsPage() {
             </div>
           </section>
 
-          <section className="rounded-xl bg-white p-5 shadow-sm">
+          <section className="admin-panel admin-panel-spacious">
             {!selectedReport && (
-              <p className="text-sm text-gray-500">
+              <p className="text-m3-body-md text-m3-on-surface-variant">
                 검토할 신고를 목록에서 선택해 주세요.
               </p>
             )}
@@ -337,13 +299,13 @@ export default function AdminReportsPage() {
                     <h2 className="text-xl font-bold">
                       신고 #{selectedReport.reportId}
                     </h2>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                       {targetTypeLabel(selectedReport.targetType)} #
                       {selectedReport.targetId} ·{" "}
                       {reasonLabel(selectedReport.reasonCode)}
                     </p>
                   </div>
-                  <span className="w-fit rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+                  <span className="w-fit rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
                     {statusLabel(selectedReport.status)}
                   </span>
                 </div>
@@ -364,15 +326,15 @@ export default function AdminReportsPage() {
                   />
                 </dl>
 
-                <div className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm">
+                <div className="admin-muted-panel mt-5">
                   <p className="font-bold">신고 내용</p>
-                  <p className="mt-2 text-gray-600">
+                  <p className="mt-2 text-m3-on-surface-variant">
                     {selectedReport.reasonText || "별도 설명이 없습니다."}
                   </p>
                 </div>
 
                 {selectedReport.status === "PENDING" && (
-                  <section className="mt-5 border-t border-yellow-100 pt-5">
+                  <section className="mt-5 border-t border-m3-outline-variant pt-5">
                     <h3 className="text-base font-bold">검토 처리</h3>
                     <div className="mt-3 grid grid-cols-2 gap-2">
                       {(["APPROVED", "REJECTED"] as const).map((status) => (
@@ -380,10 +342,10 @@ export default function AdminReportsPage() {
                           key={status}
                           type="button"
                           onClick={() => setReviewStatus(status)}
-                          className={`h-10 rounded-lg text-sm font-bold ${
+                          className={`admin-segment ${
                             reviewStatus === status
-                              ? "bg-yellow-400 text-black"
-                              : "bg-yellow-50 text-gray-500"
+                              ? "admin-segment-selected"
+                              : "admin-segment-idle"
                           }`}
                         >
                           {statusLabel(status)}
@@ -395,13 +357,13 @@ export default function AdminReportsPage() {
                       onChange={(event) => setReviewNote(event.target.value)}
                       maxLength={255}
                       placeholder="검토 메모를 입력해 주세요."
-                      className="mt-3 min-h-24 w-full resize-none rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm outline-none focus:border-yellow-400"
+                      className="admin-field mt-3 min-h-24 resize-none p-3"
                     />
                     <button
                       type="button"
                       onClick={handleProcessReport}
                       disabled={busy}
-                      className="mt-3 h-11 w-full rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+                      className="admin-action-warning mt-3 h-11 w-full"
                     >
                       {busy ? "처리 중" : "검토 저장"}
                     </button>
@@ -409,16 +371,16 @@ export default function AdminReportsPage() {
                 )}
 
                 {selectedReport.status !== "PENDING" && (
-                  <section className="mt-5 border-t border-yellow-100 pt-5">
+                  <section className="mt-5 border-t border-m3-outline-variant pt-5">
                     <h3 className="text-base font-bold">검토 결과</h3>
-                    <p className="mt-2 text-sm text-gray-500">
+                    <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                       {selectedReport.reviewNote || "검토 메모가 없습니다."}
                     </p>
                   </section>
                 )}
 
                 {selectedReport.status === "APPROVED" && (
-                  <section className="mt-5 border-t border-yellow-100 pt-5">
+                  <section className="mt-5 border-t border-m3-outline-variant pt-5">
                     <h3 className="text-base font-bold">후속 조치</h3>
                     <div className="mt-3 grid gap-2 sm:grid-cols-2">
                       {followUpActions.map((action) => (
@@ -426,10 +388,10 @@ export default function AdminReportsPage() {
                           key={action.value}
                           type="button"
                           onClick={() => setFollowUpAction(action.value)}
-                          className={`h-10 rounded-lg text-sm font-bold ${
+                          className={`admin-segment ${
                             followUpAction === action.value
-                              ? "bg-red-500 text-white"
-                              : "bg-red-50 text-red-500"
+                              ? "bg-m3-error text-m3-on-error shadow-m3-1"
+                              : "bg-red-50 text-m3-error"
                           }`}
                         >
                           {action.label}
@@ -446,7 +408,7 @@ export default function AdminReportsPage() {
                             onChange={(event) =>
                               setSanctionType(event.target.value as UserSanctionType)
                             }
-                            className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                            className="admin-field mt-2 h-11"
                           >
                             {SANCTION_TYPES.map((type) => (
                               <option key={type.value} value={type.value}>
@@ -462,7 +424,7 @@ export default function AdminReportsPage() {
                             onChange={(event) =>
                               setSanctionReason(event.target.value)
                             }
-                            className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                            className="admin-field mt-2 h-11"
                           />
                         </label>
                         <label className="text-sm font-semibold">
@@ -471,7 +433,7 @@ export default function AdminReportsPage() {
                             value={startAt}
                             onChange={(event) => setStartAt(event.target.value)}
                             type="datetime-local"
-                            className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                            className="admin-field mt-2 h-11"
                           />
                         </label>
                         <label className="text-sm font-semibold">
@@ -480,7 +442,7 @@ export default function AdminReportsPage() {
                             value={endAt}
                             onChange={(event) => setEndAt(event.target.value)}
                             type="datetime-local"
-                            className="mt-2 h-11 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                            className="admin-field mt-2 h-11"
                           />
                         </label>
                       </div>
@@ -491,13 +453,13 @@ export default function AdminReportsPage() {
                       onChange={(event) => setMemo(event.target.value)}
                       maxLength={255}
                       placeholder="후속 조치 메모를 입력해 주세요."
-                      className="mt-3 min-h-20 w-full resize-none rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm outline-none focus:border-yellow-400"
+                      className="admin-field mt-3 min-h-20 resize-none p-3"
                     />
                     <button
                       type="button"
                       onClick={handleApplyFollowUp}
                       disabled={busy || !followUpAction}
-                      className="mt-3 h-11 w-full rounded-lg bg-red-500 text-sm font-bold text-white disabled:opacity-50"
+                      className="admin-action-danger mt-3 h-11 w-full"
                     >
                       {busy ? "적용 중" : "후속 조치 적용"}
                     </button>
@@ -507,24 +469,23 @@ export default function AdminReportsPage() {
             )}
           </section>
         </div>
-      </main>
-    </div>
+    </AdminPageShell>
   );
 }
 
 function SummaryCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
+    <div className="admin-info-cell">
       <p className="text-base font-bold">{value}</p>
-      <p className="mt-1 text-gray-500">{label}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
-      <dt className="text-xs text-gray-500">{label}</dt>
+    <div className="admin-info-cell">
+      <dt className="text-m3-label-md text-m3-on-surface-variant">{label}</dt>
       <dd className="mt-1 font-semibold">{value}</dd>
     </div>
   );

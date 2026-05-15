@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { Link } from "react-router-dom";
 import {
   adjustAdminPlaceScore,
   changeAdminPlaceApproval,
@@ -15,6 +14,7 @@ import {
   type AdminPlaceListItem,
 } from "../api/adminApi";
 import { getApiErrorMessage } from "../api/http";
+import { AdminPageShell } from "../components/AdminShell";
 
 const LOAD_ERROR = "장소 목록을 불러오지 못했습니다.";
 const FILTER_ALL = "ALL";
@@ -337,71 +337,26 @@ export default function AdminPlacesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[1120px] px-5 py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
-            <h1 className="mt-1 text-2xl font-bold">장소 관리</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              등록된 장소의 운영 상태와 랭킹 참여 상태를 확인합니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin"
-              className="h-10 rounded-lg border border-yellow-300 px-4 pt-2 text-center text-sm font-bold"
-            >
-              대시보드
-            </Link>
-            <Link
-              to="/admin/activities"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              활동 관리
-            </Link>
-            <Link
-              to="/admin/users"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              사용자 관리
-            </Link>
-            <Link
-              to="/admin/audit-logs"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              감사 로그
-            </Link>
-            <Link
-              to="/admin/reports"
-              className="h-10 rounded-lg border border-red-100 px-4 pt-2 text-center text-sm font-bold text-red-500"
-            >
-              신고 관리
-            </Link>
-            <Link
-              to="/admin/policies"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              정책 관리
-            </Link>
-          </div>
-        </header>
+    <AdminPageShell
+      title="장소 관리"
+      description="등록된 장소의 운영 상태와 랭킹 참여 상태를 확인합니다."
+    >
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-4 rounded-m3-lg bg-m3-secondary-container px-4 py-3 text-m3-label-lg text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
 
         {loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
+          <section className="admin-panel admin-panel-spacious mt-6 text-m3-body-md text-m3-on-surface-variant">
             장소 목록을 불러오는 중입니다.
           </section>
         )}
 
         {!loading && (
           <div className="mt-6 grid gap-5 xl:grid-cols-[380px_1fr]">
-            <section className="rounded-xl bg-white p-4 shadow-sm">
+            <section className="admin-panel">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">장소 목록</h2>
                 <span className="text-xs font-semibold text-gray-400">
@@ -409,7 +364,7 @@ export default function AdminPlacesPage() {
                 </span>
               </div>
 
-              <div className="mt-3 grid grid-cols-4 gap-2 text-center text-xs">
+              <div className="mt-3 grid grid-cols-2 gap-2 text-center text-xs sm:grid-cols-4">
                 <SummaryCell label="전체" value={summary.total} />
                 <SummaryCell label="숨김" value={summary.hidden} />
                 <SummaryCell label="반려" value={summary.rejected} />
@@ -422,7 +377,7 @@ export default function AdminPlacesPage() {
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                   placeholder="장소명, 등록자, 지역"
-                  className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                  className="admin-field mt-2 h-10"
                 />
               </label>
 
@@ -470,7 +425,7 @@ export default function AdminPlacesPage() {
               </div>
 
               {!loading && filteredPlaces.length === 0 && (
-                <p className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm text-gray-500">
+                <p className="admin-muted-panel mt-5">
                   조건에 맞는 장소가 없습니다.
                 </p>
               )}
@@ -481,16 +436,16 @@ export default function AdminPlacesPage() {
                     key={place.placeId}
                     type="button"
                     onClick={() => handleSelectPlace(place.placeId)}
-                    className={`rounded-lg border p-3 text-left text-sm ${
+                    className={`admin-list-item ${
                       selectedPlaceId === place.placeId
-                        ? "border-yellow-400 bg-yellow-50"
-                        : "border-yellow-100 bg-[#FFFBEB]"
+                        ? "admin-list-item-selected"
+                        : "admin-list-item-idle"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-bold">{place.name}</p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
                           {place.districtName} {place.dongName} ·{" "}
                           {place.categoryCode}
                         </p>
@@ -498,8 +453,8 @@ export default function AdminPlacesPage() {
                       <span
                         className={`rounded-full px-2 py-1 text-xs font-bold ${
                           place.exposureStatus === "VISIBLE"
-                            ? "bg-white text-[#2f6f5f]"
-                            : "bg-red-50 text-red-500"
+                            ? "bg-m3-surface-container-lowest text-m3-primary"
+                            : "bg-red-50 text-m3-error"
                         }`}
                       >
                         {exposureStatusLabel(place.exposureStatus)}
@@ -515,9 +470,9 @@ export default function AdminPlacesPage() {
               </div>
             </section>
 
-            <section className="rounded-xl bg-white p-5 shadow-sm">
+            <section className="admin-panel admin-panel-spacious">
               {!selectedPlace && (
-                <p className="text-sm text-gray-500">
+                <p className="text-m3-body-md text-m3-on-surface-variant">
                   확인할 장소를 목록에서 선택해 주세요.
                 </p>
               )}
@@ -527,7 +482,7 @@ export default function AdminPlacesPage() {
                   <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
                     <div>
                       <h2 className="text-xl font-bold">{selectedPlace.name}</h2>
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                         장소 #{selectedPlace.placeId} · 등록자{" "}
                         {selectedPlace.createdByNickname} ·{" "}
                         {selectedPlace.categoryCode}
@@ -586,17 +541,17 @@ export default function AdminPlacesPage() {
                     />
                   </dl>
 
-                  <section className="mt-5 rounded-lg bg-[#FFFBEB] p-4">
+                  <section className="admin-muted-panel mt-5">
                     <h3 className="text-base font-bold">장소 소개</h3>
                     <p className="mt-2 text-sm font-semibold">
                       {selectedPlace.shortRecommendation}
                     </p>
-                    <p className="mt-2 text-sm text-gray-600">
+                    <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                       {selectedPlace.featureText || "특징 설명이 없습니다."}
                     </p>
                   </section>
 
-                  <section className="mt-5 rounded-lg bg-[#FFFBEB] p-4">
+                  <section className="admin-muted-panel mt-5">
                     <h3 className="text-base font-bold">활동과 점수</h3>
                     <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
                       <InfoItem
@@ -632,7 +587,7 @@ export default function AdminPlacesPage() {
                         value={formatDecimal(selectedPlace.trustWeightedScore)}
                       />
                     </dl>
-                    <p className="mt-3 text-xs text-gray-500">
+                    <p className="mt-3 text-m3-label-md text-m3-on-surface-variant">
                       마지막 활동:{" "}
                       {selectedPlace.lastActivityAt
                         ? formatDate(selectedPlace.lastActivityAt)
@@ -641,7 +596,7 @@ export default function AdminPlacesPage() {
                   </section>
 
                   {selectedPlace.imageUrls.length > 0 && (
-                    <section className="mt-5 rounded-lg bg-[#FFFBEB] p-4">
+                    <section className="admin-muted-panel mt-5">
                       <h3 className="text-base font-bold">이미지 URL</h3>
                       <div className="mt-3 flex flex-col gap-2 text-sm">
                         {selectedPlace.imageUrls.map((imageUrl) => (
@@ -650,7 +605,7 @@ export default function AdminPlacesPage() {
                             href={imageUrl}
                             target="_blank"
                             rel="noreferrer"
-                            className="break-all text-[#2f6f5f] underline"
+                            className="break-all text-m3-primary underline"
                           >
                             {imageUrl}
                           </a>
@@ -659,14 +614,14 @@ export default function AdminPlacesPage() {
                     </section>
                   )}
 
-                  <section className="mt-5 border-t border-yellow-100 pt-5">
+                  <section className="mt-5 border-t border-m3-outline-variant pt-5">
                     <h3 className="text-base font-bold">운영 메모</h3>
                     <textarea
                       value={memo}
                       onChange={(event) => setMemo(event.target.value)}
                       maxLength={255}
                       placeholder="이번 조치의 운영 메모를 입력해 주세요."
-                      className="mt-3 min-h-20 w-full resize-none rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm outline-none focus:border-yellow-400"
+                      className="admin-field mt-3 min-h-20 resize-none p-3"
                     />
                   </section>
 
@@ -679,7 +634,7 @@ export default function AdminPlacesPage() {
                             event.target.value as AdminPlaceExposureStatus,
                           )
                         }
-                        className="mt-3 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                        className="admin-field mt-3 h-10"
                       >
                         <option value="VISIBLE">노출</option>
                         <option value="HIDDEN">숨김</option>
@@ -700,7 +655,7 @@ export default function AdminPlacesPage() {
                             event.target.value as AdminPlaceApprovalStatus,
                           )
                         }
-                        className="mt-3 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                        className="admin-field mt-3 h-10"
                       >
                         <option value="APPROVED">승인</option>
                         <option value="PENDING">대기</option>
@@ -723,7 +678,7 @@ export default function AdminPlacesPage() {
                               .value as AdminPlaceFranchiseReviewStatus,
                           )
                         }
-                        className="mt-3 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                        className="admin-field mt-3 h-10"
                       >
                         <option value="PENDING">대기</option>
                         <option value="APPROVED">통과</option>
@@ -743,7 +698,7 @@ export default function AdminPlacesPage() {
                         onChange={(event) =>
                           setRankingExcluded(event.target.value === "true")
                         }
-                        className="mt-3 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                        className="admin-field mt-3 h-10"
                       >
                         <option value="false">랭킹 포함</option>
                         <option value="true">랭킹 제외</option>
@@ -763,7 +718,7 @@ export default function AdminPlacesPage() {
                         type="number"
                         step="0.01"
                         placeholder="예: 1.25 또는 -0.50"
-                        className="mt-3 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                        className="admin-field mt-3 h-10"
                       />
                       <ActionButton
                         busy={busy}
@@ -778,8 +733,7 @@ export default function AdminPlacesPage() {
             </section>
           </div>
         )}
-      </main>
-    </div>
+    </AdminPageShell>
   );
 }
 
@@ -800,7 +754,7 @@ function FilterSelect({
       <select
         value={value}
         onChange={(event) => onChange(event.target.value)}
-        className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+        className="admin-field mt-2 h-10"
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -814,17 +768,17 @@ function FilterSelect({
 
 function SummaryCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
+    <div className="admin-info-cell">
       <p className="text-base font-bold">{value}</p>
-      <p className="mt-1 text-gray-500">{label}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white p-3">
-      <dt className="text-xs text-gray-500">{label}</dt>
+    <div className="admin-info-cell">
+      <dt className="text-m3-label-md text-m3-on-surface-variant">{label}</dt>
       <dd className="mt-1 break-words font-semibold">{value}</dd>
     </div>
   );
@@ -832,7 +786,7 @@ function InfoItem({ label, value }: { label: string; value: string }) {
 
 function StatusPill({ label }: { label: string }) {
   return (
-    <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+    <span className="rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
       {label}
     </span>
   );
@@ -846,7 +800,7 @@ function ActionPanel({
   children: ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-yellow-100 p-4">
+    <div className="rounded-m3-lg border border-m3-outline-variant p-4">
       <h3 className="text-base font-bold">{title}</h3>
       {children}
     </div>
@@ -869,7 +823,7 @@ function ActionButton({
       type="button"
       onClick={onClick}
       disabled={busy}
-      className="mt-4 h-10 w-full rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+      className="admin-action-warning mt-4 h-10 w-full"
     >
       {busy ? busyLabel : label}
     </button>

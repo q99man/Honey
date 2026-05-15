@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   blindAdminComment,
   deleteAdminComment,
@@ -15,6 +14,7 @@ import {
   type AdminVisit,
 } from "../api/adminApi";
 import { getApiErrorMessage } from "../api/http";
+import { AdminPageShell } from "../components/AdminShell";
 
 type ActivityTab = "recommendations" | "visits" | "comments";
 type ActivityStatusFilter = "ALL" | "ACTIVE_ONLY" | "INACTIVE_ONLY";
@@ -279,25 +279,10 @@ export default function AdminActivitiesPage() {
   }[tab];
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[1120px] px-5 py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
-            <h1 className="mt-1 text-2xl font-bold">활동 관리</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              추천, 방문 인증, 댓글 기록을 확인하고 필요한 운영 조치를 적용합니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <AdminLink to="/admin" label="대시보드" />
-            <AdminLink to="/admin/places" label="장소 관리" />
-            <AdminLink to="/admin/users" label="사용자 관리" />
-            <AdminLink to="/admin/audit-logs" label="감사 로그" />
-            <AdminLink to="/admin/reports" label="신고 관리" danger />
-            <AdminLink to="/admin/policies" label="정책 관리" />
-          </div>
-        </header>
+    <AdminPageShell
+      title="활동 관리"
+      description="추천, 방문 인증, 댓글 기록을 확인하고 필요한 운영 조치를 적용합니다."
+    >
 
         <section className="mt-6 grid grid-cols-2 gap-2 sm:grid-cols-4">
           <SummaryCell label="활성 추천" value={summary.activeRecommendations} />
@@ -306,7 +291,7 @@ export default function AdminActivitiesPage() {
           <SummaryCell label="조치 댓글" value={summary.moderatedComments} />
         </section>
 
-        <section className="mt-5 grid grid-cols-3 gap-2">
+        <section className="mt-5 grid gap-2 sm:grid-cols-3">
           {TABS.map((item) => (
             <button
               key={item.value}
@@ -315,10 +300,10 @@ export default function AdminActivitiesPage() {
                 setTab(item.value);
                 setMemo("");
               }}
-              className={`h-10 rounded-lg text-sm font-bold ${
+              className={`admin-segment ${
                 tab === item.value
-                  ? "bg-yellow-400 text-black"
-                  : "bg-white text-gray-500"
+                  ? "admin-segment-selected"
+                  : "admin-segment-idle"
               }`}
             >
               {item.label}
@@ -327,20 +312,20 @@ export default function AdminActivitiesPage() {
         </section>
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-4 rounded-m3-lg bg-m3-secondary-container px-4 py-3 text-m3-label-lg text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
 
         {loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
+          <section className="admin-panel admin-panel-spacious mt-6 text-m3-body-md text-m3-on-surface-variant">
             활동 기록을 불러오는 중입니다.
           </section>
         )}
 
         {!loading && (
           <div className="mt-5 grid gap-5 lg:grid-cols-[360px_1fr]">
-            <section className="rounded-xl bg-white p-4 shadow-sm">
+            <section className="admin-panel">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">{tabLabel(tab)} 목록</h2>
                 <span className="text-xs font-semibold text-gray-400">
@@ -354,20 +339,20 @@ export default function AdminActivitiesPage() {
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                   placeholder="사용자, 장소, 내용, ID"
-                  className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                  className="admin-field mt-2 h-10"
                 />
               </label>
 
-              <div className="mt-3 grid grid-cols-3 gap-2">
+              <div className="mt-3 grid gap-2 sm:grid-cols-3">
                 {STATUS_FILTERS.map((filter) => (
                   <button
                     key={filter.value}
                     type="button"
                     onClick={() => setStatusFilter(filter.value)}
-                    className={`h-9 rounded-lg text-sm font-bold ${
+                    className={`admin-segment h-9 ${
                       statusFilter === filter.value
-                        ? "bg-yellow-400 text-black"
-                        : "bg-[#FFFBEB] text-gray-500"
+                        ? "admin-segment-selected"
+                        : "admin-segment-idle"
                     }`}
                   >
                     {filter.label}
@@ -376,7 +361,7 @@ export default function AdminActivitiesPage() {
               </div>
 
               {activeItems.length === 0 && (
-                <p className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm text-gray-500">
+                <p className="admin-muted-panel mt-5">
                   조건에 맞는 활동 기록이 없습니다.
                 </p>
               )}
@@ -425,7 +410,7 @@ export default function AdminActivitiesPage() {
               </div>
             </section>
 
-            <section className="rounded-xl bg-white p-5 shadow-sm">
+            <section className="admin-panel admin-panel-spacious">
               {tab === "recommendations" && (
                 <RecommendationDetail
                   item={selectedRecommendation}
@@ -459,8 +444,7 @@ export default function AdminActivitiesPage() {
             </section>
           </div>
         )}
-      </main>
-    </div>
+    </AdminPageShell>
   );
 }
 
@@ -477,8 +461,8 @@ function RecommendationListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-lg border p-3 text-left text-sm ${
-        selected ? "border-yellow-400 bg-yellow-50" : "border-yellow-100 bg-[#FFFBEB]"
+      className={`admin-list-item ${
+        selected ? "admin-list-item-selected" : "admin-list-item-idle"
       }`}
     >
       <ListHeader
@@ -486,7 +470,7 @@ function RecommendationListItem({
         badge={recommendationStatusLabel(item.status)}
         active={item.status === "ACTIVE"}
       />
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
         {item.nickname} · {item.categoryCode} · 가중치{" "}
         {formatDecimal(item.recommendWeight)}
       </p>
@@ -508,8 +492,8 @@ function VisitListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-lg border p-3 text-left text-sm ${
-        selected ? "border-yellow-400 bg-yellow-50" : "border-yellow-100 bg-[#FFFBEB]"
+      className={`admin-list-item ${
+        selected ? "admin-list-item-selected" : "admin-list-item-idle"
       }`}
     >
       <ListHeader
@@ -517,7 +501,7 @@ function VisitListItem({
         badge={item.valid ? "유효" : "무효"}
         active={item.valid}
       />
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
         {item.nickname} · {item.categoryCode} · 거리{" "}
         {item.distanceMeter === null ? "기록 없음" : `${item.distanceMeter}m`}
       </p>
@@ -539,8 +523,8 @@ function CommentListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-lg border p-3 text-left text-sm ${
-        selected ? "border-yellow-400 bg-yellow-50" : "border-yellow-100 bg-[#FFFBEB]"
+      className={`admin-list-item ${
+        selected ? "admin-list-item-selected" : "admin-list-item-idle"
       }`}
     >
       <ListHeader
@@ -548,7 +532,9 @@ function CommentListItem({
         badge={commentStatusLabel(item.status)}
         active={item.status === "VISIBLE"}
       />
-      <p className="mt-1 line-clamp-2 text-xs text-gray-500">{item.content}</p>
+      <p className="mt-1 line-clamp-2 text-m3-body-sm text-m3-on-surface-variant">
+        {item.content}
+      </p>
       <p className="mt-2 text-xs text-gray-400">
         {item.nickname} · 신고 {item.reportCount}건 · {formatDate(item.createdAt)}
       </p>
@@ -570,7 +556,9 @@ function ListHeader({
       <p className="font-bold">{title}</p>
       <span
         className={`rounded-full px-2 py-1 text-xs font-bold ${
-          active ? "bg-white text-[#2f6f5f]" : "bg-red-50 text-red-500"
+          active
+            ? "bg-m3-surface-container-lowest text-m3-primary"
+            : "bg-red-50 text-m3-error"
         }`}
       >
         {badge}
@@ -616,7 +604,7 @@ function RecommendationDetail({
         type="button"
         onClick={onInvalidate}
         disabled={busy || item.status !== "ACTIVE"}
-        className="mt-4 h-11 w-full rounded-lg bg-red-500 text-sm font-bold text-white disabled:opacity-50"
+        className="admin-action-danger mt-4 h-11 w-full"
       >
         {busy ? "처리 중" : "추천 무효화"}
       </button>
@@ -663,7 +651,7 @@ function VisitDetail({
           href={item.imageUrl}
           target="_blank"
           rel="noreferrer"
-          className="mt-4 block break-all rounded-lg bg-[#FFFBEB] p-3 text-sm font-semibold text-[#2f6f5f] underline"
+          className="admin-muted-panel mt-4 block break-all text-m3-label-lg text-m3-primary underline"
         >
           방문 이미지 열기
         </a>
@@ -673,7 +661,7 @@ function VisitDetail({
         type="button"
         onClick={onInvalidate}
         disabled={busy || !item.valid}
-        className="mt-4 h-11 w-full rounded-lg bg-red-500 text-sm font-bold text-white disabled:opacity-50"
+        className="admin-action-danger mt-4 h-11 w-full"
       >
         {busy ? "처리 중" : "방문 무효화"}
       </button>
@@ -707,7 +695,7 @@ function CommentDetail({
         subtitle={`${item.placeName} · ${item.nickname}`}
         badge={commentStatusLabel(item.status)}
       />
-      <div className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm">
+      <div className="admin-muted-panel mt-5 text-m3-body-md">
         <p className="font-bold">댓글 내용</p>
         <p className="mt-2 whitespace-pre-wrap text-gray-600">{item.content}</p>
       </div>
@@ -729,7 +717,7 @@ function CommentDetail({
           type="button"
           onClick={onBlind}
           disabled={busy || item.status !== "VISIBLE"}
-          className="h-11 rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+          className="admin-action-warning h-11"
         >
           {busy ? "처리 중" : "댓글 블라인드"}
         </button>
@@ -737,7 +725,7 @@ function CommentDetail({
           type="button"
           onClick={onDelete}
           disabled={busy || item.status === "DELETED"}
-          className="h-11 rounded-lg bg-red-500 text-sm font-bold text-white disabled:opacity-50"
+          className="admin-action-danger h-11"
         >
           {busy ? "처리 중" : "댓글 삭제"}
         </button>
@@ -759,9 +747,11 @@ function DetailHeader({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h2 className="text-xl font-bold">{title}</h2>
-        <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
+        <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
+          {subtitle}
+        </p>
       </div>
-      <span className="w-fit rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+      <span className="w-fit rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
         {badge}
       </span>
     </div>
@@ -776,61 +766,38 @@ function MemoBox({
   onChange: (value: string) => void;
 }) {
   return (
-    <label className="mt-5 block border-t border-yellow-100 pt-5 text-sm font-semibold">
+    <label className="mt-5 block border-t border-m3-outline-variant pt-5 text-m3-label-lg">
       운영 메모
       <textarea
         value={value}
         onChange={(event) => onChange(event.target.value)}
         maxLength={255}
         placeholder="이번 조치의 운영 메모를 입력해 주세요."
-        className="mt-3 min-h-20 w-full resize-none rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm outline-none focus:border-yellow-400"
+        className="admin-field mt-3 min-h-20 resize-none p-3"
       />
     </label>
   );
 }
 
 function EmptyDetail({ label }: { label: string }) {
-  return <p className="text-sm text-gray-500">{label}</p>;
+  return <p className="text-m3-body-md text-m3-on-surface-variant">{label}</p>;
 }
 
 function SummaryCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-xl bg-white p-4 text-center shadow-sm">
+    <div className="admin-panel text-center">
       <p className="text-2xl font-bold">{value.toLocaleString("ko-KR")}</p>
-      <p className="mt-1 text-xs font-semibold text-gray-500">{label}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
-      <dt className="text-xs text-gray-500">{label}</dt>
+    <div className="admin-info-cell">
+      <dt className="text-m3-label-md text-m3-on-surface-variant">{label}</dt>
       <dd className="mt-1 break-words font-semibold">{value}</dd>
     </div>
-  );
-}
-
-function AdminLink({
-  to,
-  label,
-  danger = false,
-}: {
-  to: string;
-  label: string;
-  danger?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      className={`h-10 rounded-lg border px-4 pt-2 text-center text-sm font-bold ${
-        danger
-          ? "border-red-100 text-red-500"
-          : "border-emerald-100 text-[#2f6f5f]"
-      }`}
-    >
-      {label}
-    </Link>
   );
 }
 

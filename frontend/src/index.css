@@ -2,6 +2,64 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .admin-panel {
+    @apply rounded-m3-xl bg-m3-surface-container-lowest p-4 text-m3-on-surface shadow-m3-1;
+  }
+
+  .admin-panel-spacious {
+    @apply p-5;
+  }
+
+  .admin-muted-panel {
+    @apply rounded-m3-lg bg-m3-surface-container-low p-4 text-m3-body-md text-m3-on-surface-variant;
+  }
+
+  .admin-info-cell {
+    @apply rounded-m3-lg bg-m3-surface-container-low p-3;
+  }
+
+  .admin-field {
+    @apply w-full rounded-m3-sm border border-m3-outline bg-m3-surface-container-lowest px-3 text-m3-body-md text-m3-on-surface outline-none transition placeholder:text-m3-on-surface-variant focus:border-m3-primary focus:ring-2 focus:ring-m3-primary focus:ring-opacity-20;
+  }
+
+  .admin-action-primary {
+    @apply rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .admin-action-warning {
+    @apply rounded-m3-full bg-[#f6b800] text-m3-label-lg text-[#2b210f] shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .admin-action-danger {
+    @apply rounded-m3-full bg-m3-error text-m3-label-lg text-m3-on-error shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .admin-segment {
+    @apply h-10 rounded-m3-full text-m3-label-lg transition active:scale-[0.98];
+  }
+
+  .admin-segment-selected {
+    @apply bg-m3-secondary-container text-m3-on-secondary-container shadow-m3-1;
+  }
+
+  .admin-segment-idle {
+    @apply bg-m3-surface-container-lowest text-m3-on-surface-variant hover:bg-m3-surface-container-high;
+  }
+
+  .admin-list-item {
+    @apply rounded-m3-lg border p-3 text-left text-m3-body-md transition active:scale-[0.99];
+  }
+
+  .admin-list-item-selected {
+    @apply border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container;
+  }
+
+  .admin-list-item-idle {
+    @apply border-m3-outline-variant bg-m3-surface-container-low text-m3-on-surface;
+  }
+}
+
 :root {
   font-family: Pretendard, "Noto Sans KR", system-ui, sans-serif;
   color: var(--m3-sys-on-surface);

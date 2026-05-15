@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   adjustAdminUserRecommendWeight,
   adjustAdminUserTrust,
@@ -14,6 +13,7 @@ import {
   type AdminUserStatus,
 } from "../api/adminApi";
 import { getApiErrorMessage } from "../api/http";
+import { AdminPageShell } from "../components/AdminShell";
 
 const LOAD_ERROR = "사용자 목록을 불러오지 못했습니다.";
 const FILTER_ALL = "ALL";
@@ -260,71 +260,27 @@ export default function AdminUsersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[1040px] px-5 py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
-            <h1 className="mt-1 text-2xl font-bold">사용자 관리</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              사용자 상태와 신뢰 정보를 확인하고 필요한 운영 조치를 기록합니다.
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            <Link
-              to="/admin"
-              className="h-10 rounded-lg border border-yellow-300 px-4 pt-2 text-center text-sm font-bold"
-            >
-              대시보드
-            </Link>
-            <Link
-              to="/admin/activities"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              활동 관리
-            </Link>
-            <Link
-              to="/admin/places"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              장소 관리
-            </Link>
-            <Link
-              to="/admin/audit-logs"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              감사 로그
-            </Link>
-            <Link
-              to="/admin/reports"
-              className="h-10 rounded-lg border border-red-100 px-4 pt-2 text-center text-sm font-bold text-red-500"
-            >
-              신고 관리
-            </Link>
-            <Link
-              to="/admin/policies"
-              className="h-10 rounded-lg border border-emerald-100 px-4 pt-2 text-center text-sm font-bold text-[#2f6f5f]"
-            >
-              정책 관리
-            </Link>
-          </div>
-        </header>
+    <AdminPageShell
+      title="사용자 관리"
+      description="사용자 상태와 신뢰 정보를 확인하고 필요한 운영 조치를 기록합니다."
+      maxWidth="max-w-[1040px]"
+    >
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-[#2f6f5f] shadow-sm">
+          <p className="mt-4 rounded-m3-lg bg-m3-secondary-container px-4 py-3 text-m3-label-lg text-m3-on-secondary-container shadow-m3-1">
             {message}
           </p>
         )}
 
         {loading && (
-          <section className="mt-6 rounded-xl bg-white p-5 text-sm text-gray-500 shadow-sm">
+          <section className="admin-panel admin-panel-spacious mt-6 text-m3-body-md text-m3-on-surface-variant">
             사용자 목록을 불러오는 중입니다.
           </section>
         )}
 
         {!loading && (
           <div className="mt-6 grid gap-5 lg:grid-cols-[360px_1fr]">
-            <section className="rounded-xl bg-white p-4 shadow-sm">
+            <section className="admin-panel">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">사용자 목록</h2>
                 <span className="text-xs font-semibold text-gray-400">
@@ -348,7 +304,7 @@ export default function AdminUsersPage() {
                         event.target.value as AdminUserRole | typeof FILTER_ALL,
                       )
                     }
-                    className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                    className="admin-field mt-2 h-10"
                   >
                     {ROLE_FILTERS.map((filter) => (
                       <option key={filter.value} value={filter.value}>
@@ -366,7 +322,7 @@ export default function AdminUsersPage() {
                         event.target.value as AdminUserStatus | typeof FILTER_ALL,
                       )
                     }
-                    className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                    className="admin-field mt-2 h-10"
                   >
                     {STATUS_FILTERS.map((filter) => (
                       <option key={filter.value} value={filter.value}>
@@ -383,20 +339,20 @@ export default function AdminUsersPage() {
                     key={user.userId}
                     type="button"
                     onClick={() => handleSelectUser(user.userId)}
-                    className={`rounded-lg border p-3 text-left text-sm ${
+                    className={`admin-list-item ${
                       selectedUserId === user.userId
-                        ? "border-yellow-400 bg-yellow-50"
-                        : "border-yellow-100 bg-[#FFFBEB]"
+                        ? "admin-list-item-selected"
+                        : "admin-list-item-idle"
                     }`}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div>
                         <p className="font-bold">{user.nickname}</p>
-                        <p className="mt-1 text-xs text-gray-500">
+                        <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
                           {user.email ?? "이메일 없음"}
                         </p>
                       </div>
-                      <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[#2f6f5f]">
+                      <span className="rounded-m3-full bg-m3-surface-container-lowest px-2 py-1 text-m3-label-md text-m3-primary">
                         {roleLabel(user.role)}
                       </span>
                     </div>
@@ -410,9 +366,9 @@ export default function AdminUsersPage() {
               </div>
             </section>
 
-            <section className="rounded-xl bg-white p-5 shadow-sm">
+            <section className="admin-panel admin-panel-spacious">
               {!selectedUser && (
-                <p className="text-sm text-gray-500">
+                <p className="text-m3-body-md text-m3-on-surface-variant">
                   확인할 사용자를 목록에서 선택해 주세요.
                 </p>
               )}
@@ -424,16 +380,16 @@ export default function AdminUsersPage() {
                       <h2 className="text-xl font-bold">
                         {selectedUser.nickname}
                       </h2>
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                         사용자 #{selectedUser.userId} ·{" "}
                         {selectedUser.email ?? "이메일 없음"}
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
-                      <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+                      <span className="rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
                         {roleLabel(selectedUser.role)}
                       </span>
-                      <span className="rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+                      <span className="rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
                         {statusLabel(selectedUser.status)}
                       </span>
                     </div>
@@ -463,7 +419,7 @@ export default function AdminUsersPage() {
                     />
                   </dl>
 
-                  <section className="mt-5 rounded-lg bg-[#FFFBEB] p-4">
+                  <section className="admin-muted-panel mt-5">
                     <h3 className="text-base font-bold">신뢰 정보</h3>
                     {selectedUser.trust ? (
                       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -505,13 +461,13 @@ export default function AdminUsersPage() {
                         />
                       </dl>
                     ) : (
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                         신뢰 정보가 없습니다.
                       </p>
                     )}
                   </section>
 
-                  <section className="mt-5 rounded-lg bg-[#FFFBEB] p-4">
+                  <section className="admin-muted-panel mt-5">
                     <h3 className="text-base font-bold">성장 정보</h3>
                     {selectedUser.level ? (
                       <dl className="mt-3 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
@@ -530,31 +486,31 @@ export default function AdminUsersPage() {
                         />
                       </dl>
                     ) : (
-                      <p className="mt-2 text-sm text-gray-500">
+                      <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
                         성장 정보가 없습니다.
                       </p>
                     )}
                   </section>
 
                   {!canMutateUser && (
-                    <p className="mt-5 rounded-lg bg-red-50 px-4 py-3 text-sm font-semibold text-red-500">
+                    <p className="mt-5 rounded-m3-lg bg-red-50 px-4 py-3 text-m3-label-lg text-m3-error">
                       제재와 신뢰도 조정은 활성 일반 사용자에게만 적용할 수 있습니다.
                     </p>
                   )}
 
-                  <section className="mt-5 border-t border-yellow-100 pt-5">
+                  <section className="mt-5 border-t border-m3-outline-variant pt-5">
                     <h3 className="text-base font-bold">운영 메모</h3>
                     <textarea
                       value={memo}
                       onChange={(event) => setMemo(event.target.value)}
                       maxLength={255}
                       placeholder="이번 조치의 운영 메모를 입력해 주세요."
-                      className="mt-3 min-h-20 w-full resize-none rounded-lg border border-yellow-100 bg-[#FFFBEB] p-3 text-sm outline-none focus:border-yellow-400"
+                      className="admin-field mt-3 min-h-20 resize-none p-3"
                     />
                   </section>
 
                   <section className="mt-5 grid gap-4 xl:grid-cols-3">
-                    <div className="rounded-lg border border-yellow-100 p-4">
+                    <div className="rounded-m3-lg border border-m3-outline-variant p-4">
                       <h3 className="text-base font-bold">사용자 제재</h3>
                       <label className="mt-3 block text-sm font-semibold">
                         제재 유형
@@ -565,7 +521,7 @@ export default function AdminUsersPage() {
                               event.target.value as AdminUserSanctionType,
                             )
                           }
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         >
                           {SANCTION_TYPES.map((type) => (
                             <option key={type.value} value={type.value}>
@@ -581,7 +537,7 @@ export default function AdminUsersPage() {
                           onChange={(event) =>
                             setSanctionReason(event.target.value)
                           }
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         />
                       </label>
                       <label className="mt-3 block text-sm font-semibold">
@@ -592,7 +548,7 @@ export default function AdminUsersPage() {
                             setSanctionStartAt(event.target.value)
                           }
                           type="datetime-local"
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         />
                       </label>
                       <label className="mt-3 block text-sm font-semibold">
@@ -603,20 +559,20 @@ export default function AdminUsersPage() {
                             setSanctionEndAt(event.target.value)
                           }
                           type="datetime-local"
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         />
                       </label>
                       <button
                         type="button"
                         onClick={handleCreateSanction}
                         disabled={busy || !canMutateUser}
-                        className="mt-4 h-10 w-full rounded-lg bg-red-500 text-sm font-bold text-white disabled:opacity-50"
+                        className="admin-action-danger mt-4 h-10 w-full"
                       >
                         {busy ? "등록 중" : "제재 등록"}
                       </button>
                     </div>
 
-                    <div className="rounded-lg border border-yellow-100 p-4">
+                    <div className="rounded-m3-lg border border-m3-outline-variant p-4">
                       <h3 className="text-base font-bold">신뢰도 조정</h3>
                       <label className="mt-3 block text-sm font-semibold">
                         신뢰 점수
@@ -625,7 +581,7 @@ export default function AdminUsersPage() {
                           onChange={(event) => setTrustScore(event.target.value)}
                           type="number"
                           min={0}
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         />
                       </label>
                       <label className="mt-3 block text-sm font-semibold">
@@ -635,7 +591,7 @@ export default function AdminUsersPage() {
                           onChange={(event) =>
                             setTrustGrade(event.target.value as AdminTrustGrade)
                           }
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         >
                           {TRUST_GRADES.map((grade) => (
                             <option key={grade.value} value={grade.value}>
@@ -648,13 +604,13 @@ export default function AdminUsersPage() {
                         type="button"
                         onClick={handleAdjustTrust}
                         disabled={busy || !canMutateUser}
-                        className="mt-4 h-10 w-full rounded-lg bg-yellow-400 text-sm font-bold text-black disabled:opacity-50"
+                        className="admin-action-warning mt-4 h-10 w-full"
                       >
                         {busy ? "저장 중" : "신뢰도 저장"}
                       </button>
                     </div>
 
-                    <div className="rounded-lg border border-yellow-100 p-4">
+                    <div className="rounded-m3-lg border border-m3-outline-variant p-4">
                       <h3 className="text-base font-bold">추천 가중치</h3>
                       <label className="mt-3 block text-sm font-semibold">
                         가중치
@@ -666,17 +622,17 @@ export default function AdminUsersPage() {
                           type="number"
                           min={0}
                           step="0.01"
-                          className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                          className="admin-field mt-2 h-10"
                         />
                       </label>
-                      <p className="mt-3 text-xs text-gray-500">
+                      <p className="mt-3 text-m3-label-md text-m3-on-surface-variant">
                         추천 영향력 값은 서버의 스키마와 검증 규칙을 따릅니다.
                       </p>
                       <button
                         type="button"
                         onClick={handleAdjustRecommendWeight}
                         disabled={busy || !canMutateUser}
-                        className="mt-4 h-10 w-full rounded-lg bg-[#2f6f5f] text-sm font-bold text-white disabled:opacity-50"
+                        className="admin-action-primary mt-4 h-10 w-full"
                       >
                         {busy ? "저장 중" : "가중치 저장"}
                       </button>
@@ -687,24 +643,23 @@ export default function AdminUsersPage() {
             </section>
           </div>
         )}
-      </main>
-    </div>
+    </AdminPageShell>
   );
 }
 
 function SummaryCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-3">
+    <div className="admin-info-cell">
       <p className="text-base font-bold">{value}</p>
-      <p className="mt-1 text-gray-500">{label}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
 
 function InfoItem({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white p-3">
-      <dt className="text-xs text-gray-500">{label}</dt>
+    <div className="admin-info-cell">
+      <dt className="text-m3-label-md text-m3-on-surface-variant">{label}</dt>
       <dd className="mt-1 break-words font-semibold">{value}</dd>
     </div>
   );

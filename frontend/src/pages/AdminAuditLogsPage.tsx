@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import {
   getAdminActionLogs,
   getAdminUserActionLogs,
@@ -7,6 +6,7 @@ import {
   type AdminUserActionLog,
 } from "../api/adminApi";
 import { getApiErrorMessage } from "../api/http";
+import { AdminPageShell } from "../components/AdminShell";
 
 type AuditTab = "admin" | "user";
 const FILTER_ALL = "ALL";
@@ -117,25 +117,10 @@ export default function AdminAuditLogsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#FFFBEB] pb-10">
-      <main className="mx-auto max-w-[1120px] px-5 py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-          <div>
-            <p className="text-sm font-bold text-[#2f6f5f]">관리자</p>
-            <h1 className="mt-1 text-2xl font-bold">감사 로그</h1>
-            <p className="mt-2 text-sm text-gray-500">
-              관리자 조치와 사용자 참여 기록을 읽기 전용으로 확인합니다.
-            </p>
-          </div>
-          <nav className="flex flex-wrap gap-2">
-            <AdminLink to="/admin" label="대시보드" />
-            <AdminLink to="/admin/activities" label="활동 관리" />
-            <AdminLink to="/admin/places" label="장소 관리" />
-            <AdminLink to="/admin/users" label="사용자 관리" />
-            <AdminLink to="/admin/reports" label="신고 관리" danger />
-            <AdminLink to="/admin/policies" label="정책 관리" />
-          </nav>
-        </header>
+    <AdminPageShell
+      title="감사 로그"
+      description="관리자 조치와 사용자 참여 기록을 읽기 전용으로 확인합니다."
+    >
 
         <section className="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <SummaryCell label="관리자 조치" value={adminLogs.length} />
@@ -154,10 +139,10 @@ export default function AdminAuditLogsPage() {
           <button
             type="button"
             onClick={() => handleTabChange("admin")}
-            className={`h-10 rounded-lg text-sm font-bold ${
+            className={`admin-segment ${
               tab === "admin"
-                ? "bg-yellow-400 text-black"
-                : "bg-white text-gray-500"
+                ? "admin-segment-selected"
+                : "admin-segment-idle"
             }`}
           >
             관리자 조치 로그
@@ -165,10 +150,10 @@ export default function AdminAuditLogsPage() {
           <button
             type="button"
             onClick={() => handleTabChange("user")}
-            className={`h-10 rounded-lg text-sm font-bold ${
+            className={`admin-segment ${
               tab === "user"
-                ? "bg-yellow-400 text-black"
-                : "bg-white text-gray-500"
+                ? "admin-segment-selected"
+                : "admin-segment-idle"
             }`}
           >
             사용자 활동 로그
@@ -176,20 +161,20 @@ export default function AdminAuditLogsPage() {
         </section>
 
         {message && (
-          <p className="mt-4 rounded-lg bg-white px-4 py-3 text-sm font-semibold text-red-500 shadow-sm">
+          <p className="mt-4 rounded-m3-lg bg-m3-surface-container-lowest px-4 py-3 text-m3-label-lg text-m3-error shadow-m3-1">
             {message}
           </p>
         )}
 
         {loading && (
-          <section className="mt-6 rounded-lg bg-white p-5 text-sm text-gray-500 shadow-sm">
+          <section className="admin-panel admin-panel-spacious mt-6 text-m3-body-md text-m3-on-surface-variant">
             감사 로그를 불러오는 중입니다.
           </section>
         )}
 
         {!loading && (
           <div className="mt-5 grid gap-5 lg:grid-cols-[380px_1fr]">
-            <section className="rounded-lg bg-white p-4 shadow-sm">
+            <section className="admin-panel">
               <div className="flex items-center justify-between gap-3">
                 <h2 className="text-lg font-bold">
                   {tab === "admin" ? "조치 로그" : "활동 로그"}
@@ -205,7 +190,7 @@ export default function AdminAuditLogsPage() {
                   value={keyword}
                   onChange={(event) => setKeyword(event.target.value)}
                   placeholder="닉네임, 조치, 대상, 메모, ID"
-                  className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                  className="admin-field mt-2 h-10"
                 />
               </label>
 
@@ -215,7 +200,7 @@ export default function AdminAuditLogsPage() {
                   <select
                     value={actionFilter}
                     onChange={(event) => setActionFilter(event.target.value)}
-                    className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                    className="admin-field mt-2 h-10"
                   >
                     <option value={FILTER_ALL}>전체</option>
                     {actionOptions.map((value) => (
@@ -230,7 +215,7 @@ export default function AdminAuditLogsPage() {
                   <select
                     value={targetFilter}
                     onChange={(event) => setTargetFilter(event.target.value)}
-                    className="mt-2 h-10 w-full rounded-lg border border-yellow-100 bg-[#FFFBEB] px-3 text-sm outline-none focus:border-yellow-400"
+                    className="admin-field mt-2 h-10"
                   >
                     <option value={FILTER_ALL}>전체</option>
                     {targetOptions.map((value) => (
@@ -243,7 +228,7 @@ export default function AdminAuditLogsPage() {
               </div>
 
               {activeCount === 0 && (
-                <p className="mt-5 rounded-lg bg-[#FFFBEB] p-4 text-sm text-gray-500">
+                <p className="admin-muted-panel mt-5">
                   조건에 맞는 감사 로그가 없습니다.
                 </p>
               )}
@@ -271,14 +256,13 @@ export default function AdminAuditLogsPage() {
               </div>
             </section>
 
-            <section className="rounded-lg bg-white p-5 shadow-sm">
+            <section className="admin-panel admin-panel-spacious">
               {tab === "admin" && <AdminLogDetail item={selectedAdminLog} />}
               {tab === "user" && <UserLogDetail item={selectedUserLog} />}
             </section>
           </div>
         )}
-      </main>
-    </div>
+    </AdminPageShell>
   );
 }
 
@@ -295,15 +279,15 @@ function AdminLogListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-lg border p-3 text-left text-sm ${
-        selected ? "border-yellow-400 bg-yellow-50" : "border-yellow-100 bg-[#FFFBEB]"
+      className={`admin-list-item ${
+        selected ? "admin-list-item-selected" : "admin-list-item-idle"
       }`}
     >
       <ListHeader
         title={actionTypeLabel(item.actionType)}
         badge={targetTypeLabel(item.targetType)}
       />
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
         {item.adminNickname} · 대상 #{item.targetId}
       </p>
       <p className="mt-2 text-xs text-gray-400">{formatDate(item.createdAt)}</p>
@@ -324,15 +308,15 @@ function UserLogListItem({
     <button
       type="button"
       onClick={onSelect}
-      className={`rounded-lg border p-3 text-left text-sm ${
-        selected ? "border-yellow-400 bg-yellow-50" : "border-yellow-100 bg-[#FFFBEB]"
+      className={`admin-list-item ${
+        selected ? "admin-list-item-selected" : "admin-list-item-idle"
       }`}
     >
       <ListHeader
         title={actionTypeLabel(item.actionType)}
         badge={targetTypeLabel(item.targetType)}
       />
-      <p className="mt-1 text-xs text-gray-500">
+      <p className="mt-1 text-m3-body-sm text-m3-on-surface-variant">
         {item.nickname} · 대상 {item.targetId === null ? "없음" : `#${item.targetId}`}
       </p>
       <p className="mt-2 text-xs text-gray-400">{formatDate(item.createdAt)}</p>
@@ -344,7 +328,7 @@ function ListHeader({ title, badge }: { title: string; badge: string }) {
   return (
     <div className="flex items-start justify-between gap-2">
       <p className="font-bold">{title}</p>
-      <span className="rounded-full bg-white px-2 py-1 text-xs font-bold text-[#2f6f5f]">
+      <span className="rounded-m3-full bg-m3-surface-container-lowest px-2 py-1 text-m3-label-md text-m3-primary">
         {badge}
       </span>
     </div>
@@ -425,9 +409,11 @@ function DetailHeader({
     <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
       <div>
         <h2 className="text-xl font-bold">{title}</h2>
-        <p className="mt-2 text-sm text-gray-500">{subtitle}</p>
+        <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
+          {subtitle}
+        </p>
       </div>
-      <span className="w-fit rounded-full bg-yellow-50 px-3 py-1 text-xs font-bold text-[#2f6f5f]">
+      <span className="w-fit rounded-m3-full bg-m3-secondary-container px-3 py-1 text-m3-label-md text-m3-on-secondary-container">
         {badge}
       </span>
     </div>
@@ -436,9 +422,9 @@ function DetailHeader({
 
 function JsonBlock({ title, value }: { title: string; value: string | null }) {
   return (
-    <div className="rounded-lg bg-[#FFFBEB] p-4">
+    <div className="admin-muted-panel">
       <p className="text-sm font-bold">{title}</p>
-      <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-gray-600">
+      <pre className="mt-3 max-h-72 overflow-auto whitespace-pre-wrap break-words text-xs leading-5 text-m3-on-surface-variant">
         {formatMaybeJson(value)}
       </pre>
     </div>
@@ -446,14 +432,14 @@ function JsonBlock({ title, value }: { title: string; value: string | null }) {
 }
 
 function EmptyDetail({ label }: { label: string }) {
-  return <p className="text-sm text-gray-500">{label}</p>;
+  return <p className="text-m3-body-md text-m3-on-surface-variant">{label}</p>;
 }
 
 function SummaryCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="rounded-lg bg-white p-4 text-center shadow-sm">
+    <div className="admin-panel text-center">
       <p className="text-2xl font-bold">{value.toLocaleString("ko-KR")}</p>
-      <p className="mt-1 text-xs font-semibold text-gray-500">{label}</p>
+      <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">{label}</p>
     </div>
   );
 }
@@ -468,33 +454,10 @@ function InfoItem({
   wide?: boolean;
 }) {
   return (
-    <div className={`rounded-lg bg-[#FFFBEB] p-3 ${wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
-      <dt className="text-xs text-gray-500">{label}</dt>
+    <div className={`admin-info-cell ${wide ? "sm:col-span-2 lg:col-span-3" : ""}`}>
+      <dt className="text-m3-label-md text-m3-on-surface-variant">{label}</dt>
       <dd className="mt-1 break-words font-semibold">{value}</dd>
     </div>
-  );
-}
-
-function AdminLink({
-  to,
-  label,
-  danger = false,
-}: {
-  to: string;
-  label: string;
-  danger?: boolean;
-}) {
-  return (
-    <Link
-      to={to}
-      className={`h-10 rounded-lg border px-4 pt-2 text-center text-sm font-bold ${
-        danger
-          ? "border-red-100 text-red-500"
-          : "border-emerald-100 text-[#2f6f5f]"
-      }`}
-    >
-      {label}
-    </Link>
   );
 }
 

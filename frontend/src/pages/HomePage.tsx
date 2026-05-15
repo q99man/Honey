@@ -4,7 +4,6 @@ import type {
   FormEvent as ReactFormEvent,
   MouseEvent as ReactMouseEvent,
   PointerEvent as ReactPointerEvent,
-  TouchEvent as ReactTouchEvent,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -159,6 +158,39 @@ const SearchIcon = () => (
   >
     <circle cx="10.8" cy="10.8" r="6.2"></circle>
     <path d="M15.4 15.4 20 20"></path>
+  </svg>
+);
+
+const CloseIcon = () => (
+  <svg
+    width="21"
+    height="21"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2.4"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <path d="M18 6 6 18"></path>
+    <path d="m6 6 12 12"></path>
+  </svg>
+);
+
+const SaveStarIcon = ({ active = false }: { active?: boolean }) => (
+  <svg
+    width="22"
+    height="22"
+    viewBox="0 0 24 24"
+    fill={active ? "currentColor" : "none"}
+    stroke="currentColor"
+    strokeWidth="2.2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    aria-hidden="true"
+  >
+    <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
   </svg>
 );
 
@@ -1458,15 +1490,20 @@ function MobileSelectedPlaceSheet({
   onStageChange: (stage: MobileSheetStage) => void;
   onClose: () => void;
 }) {
+  const sheetRef = useRef<HTMLElement | null>(null);
   const startYRef = useRef<number | null>(null);
   const draggedRef = useRef(false);
   const suppressClickRef = useRef(false);
+  const [dragOffset, setDragOffset] = useState(0);
   const open = stage !== "closed";
   const full = stage === "full";
 
-  const resetDrag = () => {
+  const resetDrag = (clearOffset = true) => {
     startYRef.current = null;
     draggedRef.current = false;
+    if (clearOffset) {
+      setDragOffset(0);
+    }
   };
 
   const finishDrag = (clientY: number) => {
@@ -1487,7 +1524,7 @@ function MobileSelectedPlaceSheet({
       suppressClickRef.current = false;
     }, 180);
 
-    if (deltaY > 48) {
+    if (deltaY > 72) {
       if (full) {
         onStageChange("half");
       } else {
@@ -1496,7 +1533,7 @@ function MobileSelectedPlaceSheet({
       return;
     }
 
-    if (deltaY < -32) {
+    if (deltaY < -48) {
       onStageChange("full");
     }
   };
@@ -1519,8 +1556,16 @@ function MobileSelectedPlaceSheet({
     if (startY == null) {
       return;
     }
-    if (Math.abs(clientY - startY) > 8) {
+    const deltaY = clientY - startY;
+    if (full && deltaY < -8) {
+      resetDrag();
+      return;
+    }
+    if (Math.abs(deltaY) > 8) {
       draggedRef.current = true;
+    }
+    if (draggedRef.current) {
+      setDragOffset(Math.max(-88, Math.min(260, deltaY)));
     }
   };
 
@@ -1531,6 +1576,7 @@ function MobileSelectedPlaceSheet({
     }
     startYRef.current = event.clientY;
     draggedRef.current = false;
+    setDragOffset(0);
     event.currentTarget.setPointerCapture?.(event.pointerId);
   };
 
@@ -1553,6 +1599,7 @@ function MobileSelectedPlaceSheet({
     }
     startYRef.current = event.clientY;
     draggedRef.current = false;
+    setDragOffset(0);
   };
 
   const handleMouseMove = (event: ReactMouseEvent<HTMLElement>) => {
@@ -1563,24 +1610,14 @@ function MobileSelectedPlaceSheet({
     finishDrag(event.clientY);
   };
 
-  const handleTouchStart = (event: ReactTouchEvent<HTMLElement>) => {
-    if (!shouldStartSheetDrag(event.target)) {
+  const beginTouchDrag = (target: EventTarget | null, clientY: number | null) => {
+    if (clientY == null || !shouldStartSheetDrag(target)) {
       resetDrag();
       return;
     }
-    startYRef.current = event.touches[0]?.clientY ?? null;
+    startYRef.current = clientY;
     draggedRef.current = false;
-  };
-
-  const handleTouchMove = (event: ReactTouchEvent<HTMLElement>) => {
-    const clientY = event.touches[0]?.clientY;
-    if (clientY != null) {
-      markDragProgress(clientY);
-    }
-  };
-
-  const handleTouchEnd = (event: ReactTouchEvent<HTMLElement>) => {
-    finishDrag(event.changedTouches[0]?.clientY ?? startYRef.current ?? 0);
+    setDragOffset(0);
   };
 
   const handleClickCapture = (event: ReactMouseEvent<HTMLElement>) => {
@@ -1592,9 +1629,67 @@ function MobileSelectedPlaceSheet({
     suppressClickRef.current = false;
   };
 
+  useEffect(() => {
+    const sheet = sheetRef.current;
+    if (!sheet) {
+      return;
+    }
+
+    const handleNativeTouchStart = (event: TouchEvent) => {
+      beginTouchDrag(event.target, event.touches[0]?.clientY ?? null);
+    };
+
+    const handleNativeTouchMove = (event: TouchEvent) => {
+      const clientY = event.touches[0]?.clientY;
+      if (clientY == null) {
+        return;
+      }
+      markDragProgress(clientY);
+      if (draggedRef.current) {
+        event.preventDefault();
+      }
+    };
+
+    const handleNativeTouchEnd = (event: TouchEvent) => {
+      finishDrag(event.changedTouches[0]?.clientY ?? startYRef.current ?? 0);
+    };
+
+    const handleNativeTouchCancel = () => {
+      resetDrag();
+    };
+
+    sheet.addEventListener("touchstart", handleNativeTouchStart, {
+      passive: true,
+    });
+    sheet.addEventListener("touchmove", handleNativeTouchMove, {
+      passive: false,
+    });
+    sheet.addEventListener("touchend", handleNativeTouchEnd);
+    sheet.addEventListener("touchcancel", handleNativeTouchCancel);
+
+    return () => {
+      sheet.removeEventListener("touchstart", handleNativeTouchStart);
+      sheet.removeEventListener("touchmove", handleNativeTouchMove);
+      sheet.removeEventListener("touchend", handleNativeTouchEnd);
+      sheet.removeEventListener("touchcancel", handleNativeTouchCancel);
+    };
+  });
+
+  const sheetStyle: CSSProperties = {
+    touchAction: full ? "pan-y" : "none",
+    ...(dragOffset !== 0
+      ? {
+          transform: `translate3d(0, ${dragOffset}px, 0)`,
+          transitionDuration: "0ms",
+        }
+      : {}),
+  };
+
   return (
     <section
+      ref={sheetRef}
       data-selected-place-sheet="mobile-sheet"
+      style={sheetStyle}
       onClickCapture={handleClickCapture}
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
@@ -1603,9 +1698,6 @@ function MobileSelectedPlaceSheet({
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
-      onTouchStart={handleTouchStart}
-      onTouchMove={handleTouchMove}
-      onTouchEnd={handleTouchEnd}
       className={`pointer-events-auto relative z-30 flex flex-col overflow-hidden rounded-t-m3-xl bg-m3-surface-container-lowest text-m3-on-surface shadow-m3-3 transition-all duration-300 ease-out md:mx-auto md:w-full md:max-w-[680px] ${
         open ? "translate-y-0" : "translate-y-[calc(100%+24px)]"
       } ${
@@ -1863,9 +1955,18 @@ function DesktopPlaceDetailCard({
               <span className="text-m3-tertiary">영업정보 확인 중</span>
             </div>
           </div>
-          <button type="button" aria-label={place.isWished ? "저장 취소" : "저장"} onClick={onToggleWish} className="flex h-10 w-10 shrink-0 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-[20px] font-black text-m3-on-secondary-container shadow-m3-1 transition active:scale-95">
-            {place.isWished ? "★" : "☆"}
-
+          <button
+            type="button"
+            aria-label={place.isWished ? "저장 취소" : "저장"}
+            onClick={onToggleWish}
+            className={
+              "flex h-10 w-10 shrink-0 items-center justify-center rounded-m3-full border shadow-m3-1 transition active:scale-95 " +
+              (place.isWished
+                ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface-variant")
+            }
+          >
+            <SaveStarIcon active={place.isWished} />
           </button>
         </div>
         <p className="mt-3 line-clamp-2 text-m3-body-md text-m3-on-surface-variant">{place.desc || "동네 사람들이 추천한 꿀맛집이에요."}</p>
@@ -2184,9 +2285,9 @@ function SelectedPlaceCard({
           type="button"
           aria-label="맛집 상세 닫기"
           onClick={onClose}
-          className="absolute right-4 top-3 flex h-8 w-8 items-center justify-center rounded-m3-full bg-m3-surface-container-lowest/90 text-lg font-black text-m3-on-surface shadow-m3-1 backdrop-blur-md transition active:scale-95"
+          className="absolute right-4 top-3 flex h-9 w-9 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest/95 text-m3-on-surface shadow-m3-1 backdrop-blur-md transition active:scale-95"
         >
-          ×
+          <CloseIcon />
         </button>
       </div>
 
@@ -2209,9 +2310,14 @@ function SelectedPlaceCard({
               type="button"
               aria-label={place.isWished ? "저장 취소" : "저장"}
               onClick={onToggleWish}
-              className="flex h-10 w-10 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-secondary-container text-[20px] font-black text-m3-on-secondary-container shadow-m3-1 active:scale-95"
+              className={
+                "flex h-11 w-11 items-center justify-center rounded-m3-full border shadow-m3-1 transition active:scale-95 " +
+                (place.isWished
+                  ? "border-m3-primary bg-m3-secondary-container text-m3-on-secondary-container"
+                  : "border-m3-outline-variant bg-m3-surface-container-lowest text-m3-on-surface-variant")
+              }
             >
-              {place.isWished ? "★" : "☆"}
+              <SaveStarIcon active={place.isWished} />
             </button>
 
 

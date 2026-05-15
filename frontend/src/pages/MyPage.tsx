@@ -251,14 +251,14 @@ export default function MyPage({ onPlaceDeleted }: Props) {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-100">
-      <main className="mx-auto min-h-screen max-w-[430px] bg-[#fffaf0] px-4 pb-24 pt-6">
+    <div className="min-h-screen bg-m3-surface">
+      <main className="mx-auto min-h-screen max-w-[430px] bg-m3-surface px-4 pb-24 pt-6 text-m3-on-surface">
         <header>
-          <p className="text-xs font-semibold text-[#d99a00]">Honeytong</p>
-          <h1 className="mt-1 text-2xl font-bold text-[#2b210f]">
+          <p className="text-m3-label-md text-m3-primary">Honeytong</p>
+          <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">
             마이페이지
           </h1>
-          <p className="mt-2 text-sm leading-6 text-gray-600">
+          <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
             내 활동과 동네 인증 상태를 확인해보세요.
           </p>
         </header>
@@ -289,7 +289,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
             />
             <ActivitySummaryCard summary={summary} />
 
-            <section className="rounded-3xl bg-white p-4 shadow-sm">
+            <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
               <SectionHeader
                 title="전화번호 인증"
                 desc={
@@ -304,7 +304,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                   onChange={(event) => setPhone(event.target.value)}
                   inputMode="numeric"
                   placeholder="01012345678"
-                  className="h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
+                  className="h-12 w-full rounded-m3-sm border border-m3-outline bg-m3-surface-container-lowest px-4 text-m3-body-md outline-none transition focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20"
                 />
                 <div className="grid grid-cols-[1fr_auto] gap-2">
                   <input
@@ -312,13 +312,13 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                     onChange={(event) => setCode(event.target.value)}
                     inputMode="numeric"
                     placeholder="인증번호"
-                    className="h-11 w-full rounded-2xl border border-gray-200 bg-[#fffaf0] px-3 text-sm outline-none focus:border-[#f6b800]"
+                    className="h-12 w-full rounded-m3-sm border border-m3-outline bg-m3-surface-container-lowest px-4 text-m3-body-md outline-none transition focus:border-m3-primary focus:ring-2 focus:ring-m3-primary/20"
                   />
                   <button
                     type="button"
                     onClick={handleSendPhoneCode}
                     disabled={busyAction !== null || profile.phoneVerified}
-                    className="h-11 rounded-full border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 disabled:cursor-not-allowed disabled:opacity-50"
+                    className="h-12 rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest px-4 text-m3-label-lg text-m3-on-surface-variant disabled:cursor-not-allowed disabled:opacity-50"
                   >
                     발송
                   </button>
@@ -327,14 +327,14 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                   type="button"
                   onClick={handleVerifyPhoneCode}
                   disabled={busyAction !== null || profile.phoneVerified}
-                  className="h-11 rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-12 rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {busyAction === "phone-verify" ? "확인 중..." : "인증 완료"}
                 </button>
               </div>
             </section>
 
-            <section className="rounded-3xl bg-white p-4 shadow-sm">
+            <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
               <div className="flex items-start justify-between gap-3">
                 <SectionHeader
                   title="동네 인증"
@@ -349,14 +349,14 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                 </Badge>
               </div>
 
-              <div className="mt-4 rounded-2xl bg-[#fffaf0] p-4">
-                <p className="text-xs font-semibold text-gray-500">
+              <div className="mt-4 rounded-m3-lg bg-m3-surface-container-low p-4">
+                <p className="text-m3-label-md text-m3-on-surface-variant">
                   현재 인증 동네
                 </p>
-                <p className="mt-1 text-base font-bold text-[#2b210f]">
+                <p className="mt-1 text-m3-title-md text-m3-on-surface">
                   {region ? formatRegionName(region) : "아직 인증한 동네가 없어요."}
                 </p>
-                <p className="mt-2 text-xs leading-5 text-gray-500">
+                <p className="mt-2 text-m3-body-sm text-m3-on-surface-variant">
                   {formatRegionPolicy(regionPolicy)}
                 </p>
               </div>
@@ -365,7 +365,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                 type="button"
                 onClick={handleVerifyRegion}
                 disabled={busyAction !== null}
-                className="mt-4 h-11 w-full rounded-full bg-[#f6b800] text-sm font-semibold text-[#2b210f] transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 h-12 w-full rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {busyAction === "region" ? "위치 확인 중..." : "현재 위치로 인증"}
               </button>
@@ -378,7 +378,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
             />
             <ReportsSection reports={myReports} />
 
-            <section className="rounded-3xl bg-white p-4 shadow-sm">
+            <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
               <SectionHeader
                 title="설정"
                 desc="계정 이용 상태를 관리할 수 있어요."
@@ -387,7 +387,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
                 type="button"
                 onClick={handleLogout}
                 disabled={busyAction !== null}
-                className="mt-4 flex h-11 w-full items-center justify-between rounded-2xl border border-red-100 bg-white px-4 text-left text-sm font-semibold text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                className="mt-4 flex h-12 w-full items-center justify-between rounded-m3-full border border-red-100 bg-red-50 px-4 text-left text-m3-label-lg text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <span>
                   {busyAction === "logout" ? "로그아웃 중..." : "로그아웃"}
@@ -399,7 +399,7 @@ export default function MyPage({ onPlaceDeleted }: Props) {
         )}
 
         {message && (
-          <p className="mt-5 rounded-3xl bg-white px-4 py-3 text-sm font-semibold leading-6 text-[#5c3b13] shadow-sm">
+          <p className="mt-5 rounded-m3-lg bg-m3-primary-container px-4 py-3 text-m3-label-lg text-m3-on-primary-container shadow-m3-1">
             {message}
           </p>
         )}
@@ -411,14 +411,14 @@ export default function MyPage({ onPlaceDeleted }: Props) {
 
 function LoadingCard() {
   return (
-    <section className="mt-6 rounded-3xl bg-white p-4 shadow-sm">
-      <p className="text-sm font-semibold text-[#2b210f]">
+    <section className="mt-6 rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
+      <p className="text-m3-label-lg text-m3-on-surface">
         내 정보를 불러오는 중이에요.
       </p>
       <div className="mt-4 space-y-3">
-        <div className="h-4 w-3/4 animate-pulse rounded-full bg-[#fff8df]" />
-        <div className="h-4 w-1/2 animate-pulse rounded-full bg-[#fff8df]" />
-        <div className="h-16 animate-pulse rounded-2xl bg-[#fffaf0]" />
+        <div className="h-4 w-3/4 animate-pulse rounded-m3-full bg-m3-surface-container-high" />
+        <div className="h-4 w-1/2 animate-pulse rounded-m3-full bg-m3-surface-container-high" />
+        <div className="h-16 animate-pulse rounded-m3-lg bg-m3-surface-container-low" />
       </div>
     </section>
   );
@@ -436,21 +436,21 @@ function ProfileSummaryCard({
   const displayName = profile.nickname?.trim() || "꿀벌님";
 
   return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm">
+    <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
       <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-full bg-[#f6b800] text-sm font-bold text-[#2b210f]">
+        <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-m3-full bg-m3-primary text-m3-label-lg text-m3-on-primary shadow-m3-1">
           꿀벌
         </div>
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
-            <h2 className="truncate text-xl font-bold text-[#2b210f]">
+            <h2 className="truncate text-m3-title-lg text-m3-on-surface">
               {displayName}
             </h2>
             <Badge tone={profile.phoneVerified ? "green" : "gray"}>
               {profile.phoneVerified ? "전화 인증 완료" : "전화 인증 필요"}
             </Badge>
           </div>
-          <p className="mt-2 text-sm leading-6 text-gray-600">
+          <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
             우리 동네 꿀맛집을 찾는 중이에요.
           </p>
         </div>
@@ -480,16 +480,16 @@ function ActivitySummaryCard({ summary }: { summary: MyActivitySummary }) {
   ];
 
   return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm">
+    <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
       <SectionHeader
         title="내 활동 요약"
         desc="Honeytong에서 남긴 활동을 모아봤어요."
       />
       <div className="mt-4 grid grid-cols-2 gap-3">
         {items.map((item) => (
-          <div key={item.label} className="rounded-2xl bg-[#fffaf0] p-3">
-            <p className="text-2xl font-bold text-[#2b210f]">{item.value}</p>
-            <p className="mt-1 text-xs font-semibold text-gray-500">
+          <div key={item.label} className="rounded-m3-lg bg-m3-surface-container-low p-3">
+            <p className="text-2xl font-bold text-m3-on-surface">{item.value}</p>
+            <p className="mt-1 text-m3-label-md text-m3-on-surface-variant">
               {item.label}
             </p>
           </div>
@@ -509,7 +509,7 @@ function MyPlacesSection({
   onDelete: (place: Place) => void;
 }) {
   return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm">
+    <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
       <div className="flex items-center justify-between gap-3">
         <SectionHeader
           title="내가 등록한 맛집"
@@ -517,7 +517,7 @@ function MyPlacesSection({
         />
         <Link
           to="/places/new"
-          className="rounded-full bg-[#f6b800] px-4 py-2 text-sm font-semibold text-[#2b210f]"
+          className="rounded-m3-full bg-m3-primary px-4 py-2 text-m3-label-lg text-m3-on-primary shadow-m3-1"
         >
           등록
         </Link>
@@ -530,7 +530,7 @@ function MyPlacesSection({
           {places.slice(0, 5).map((place) => (
             <article
               key={place.id}
-              className="rounded-3xl border border-gray-100 bg-[#fffaf0] p-3"
+              className="rounded-m3-xl border border-m3-outline-variant bg-m3-surface-container-low p-3"
             >
               <Link to={`/places/${place.id}`} className="block">
                 <SpaceCard
@@ -545,7 +545,7 @@ function MyPlacesSection({
               <div className="mt-3 grid grid-cols-2 gap-2">
                 <Link
                   to={`/places/${place.id}/edit`}
-                  className="flex h-10 items-center justify-center rounded-full border border-gray-200 bg-white text-sm font-semibold text-gray-700"
+                  className="flex h-10 items-center justify-center rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest text-m3-label-lg text-m3-on-surface-variant"
                 >
                   수정
                 </Link>
@@ -553,7 +553,7 @@ function MyPlacesSection({
                   type="button"
                   onClick={() => onDelete(place)}
                   disabled={deletingPlaceId !== null}
-                  className="h-10 rounded-full border border-red-100 bg-white text-sm font-semibold text-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="h-10 rounded-m3-full border border-red-100 bg-red-50 text-m3-label-lg text-red-600 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {deletingPlaceId === place.id ? "삭제 중..." : "삭제"}
                 </button>
@@ -568,7 +568,7 @@ function MyPlacesSection({
 
 function ReportsSection({ reports }: { reports: MyReport[] }) {
   return (
-    <section className="rounded-3xl bg-white p-4 shadow-sm">
+    <section className="rounded-m3-xl bg-m3-surface-container-lowest p-4 shadow-m3-1">
       <SectionHeader
         title="내 신고 내역"
         desc="접수한 신고 처리 상태를 확인할 수 있어요."
@@ -581,14 +581,14 @@ function ReportsSection({ reports }: { reports: MyReport[] }) {
           {reports.slice(0, 5).map((report) => (
             <article
               key={report.reportId}
-              className="rounded-2xl border border-gray-100 bg-[#fffaf0] p-3 text-sm"
+              className="rounded-m3-lg border border-m3-outline-variant bg-m3-surface-container-low p-3 text-m3-body-md"
             >
               <div className="flex items-start justify-between gap-3">
                 <div>
-                  <p className="font-bold text-[#2b210f]">
+                  <p className="font-bold text-m3-on-surface">
                     {reportTargetLabel(report.targetType)} #{report.targetId}
                   </p>
-                  <p className="mt-1 text-gray-500">
+                  <p className="mt-1 text-m3-on-surface-variant">
                     {reportReasonLabel(report.reasonCode)}
                   </p>
                 </div>
@@ -597,13 +597,13 @@ function ReportsSection({ reports }: { reports: MyReport[] }) {
                 </Badge>
               </div>
               {report.reasonText && (
-                <p className="mt-2 text-gray-600">{report.reasonText}</p>
+                <p className="mt-2 text-m3-on-surface-variant">{report.reasonText}</p>
               )}
-              <p className="mt-2 text-xs text-gray-400">
+              <p className="mt-2 text-m3-body-sm text-m3-on-surface-variant">
                 {formatDateTime(report.createdAt)}
               </p>
               {report.reviewNote && (
-                <p className="mt-2 text-xs text-gray-500">
+                <p className="mt-2 text-m3-body-sm text-m3-on-surface-variant">
                   검토 메모: {report.reviewNote}
                 </p>
               )}
@@ -618,19 +618,19 @@ function ReportsSection({ reports }: { reports: MyReport[] }) {
 function SectionHeader({ title, desc }: { title: string; desc: string }) {
   return (
     <div>
-      <h2 className="text-lg font-bold text-[#2b210f]">{title}</h2>
-      <p className="mt-1 text-sm leading-5 text-gray-500">{desc}</p>
+      <h2 className="text-m3-title-md text-m3-on-surface">{title}</h2>
+      <p className="mt-1 text-m3-body-md text-m3-on-surface-variant">{desc}</p>
     </div>
   );
 }
 
 function ProfileInfoRow({ label, value }: { label: string; value: string }) {
   return (
-    <div className="flex items-start justify-between gap-3 rounded-2xl bg-[#fffaf0] px-3 py-2">
-      <span className="shrink-0 text-xs font-semibold text-gray-500">
+    <div className="flex items-start justify-between gap-3 rounded-m3-lg bg-m3-surface-container-low px-3 py-2">
+      <span className="shrink-0 text-m3-label-md text-m3-on-surface-variant">
         {label}
       </span>
-      <span className="text-right text-xs font-semibold leading-5 text-[#2b210f]">
+      <span className="text-right text-m3-label-md text-m3-on-surface">
         {value}
       </span>
     </div>
@@ -638,7 +638,7 @@ function ProfileInfoRow({ label, value }: { label: string; value: string }) {
 }
 
 function EmptyText({ text }: { text: string }) {
-  return <p className="mt-4 text-sm leading-6 text-gray-500">{text}</p>;
+  return <p className="mt-4 text-m3-body-md text-m3-on-surface-variant">{text}</p>;
 }
 
 function Badge({
@@ -650,12 +650,12 @@ function Badge({
 }) {
   const toneClass =
     tone === "green"
-      ? "bg-[#f6b800] text-[#2b210f]"
-      : "bg-[#fff8df] text-[#8a6315]";
+      ? "bg-m3-primary text-m3-on-primary"
+      : "bg-m3-secondary-container text-m3-on-secondary-container";
 
   return (
     <span
-      className={`inline-flex shrink-0 items-center rounded-full px-3 py-1 text-xs font-semibold ${toneClass}`}
+      className={`inline-flex shrink-0 items-center rounded-m3-full px-3 py-1 text-m3-label-md ${toneClass}`}
     >
       {children}
     </span>
