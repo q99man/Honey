@@ -74,7 +74,7 @@ public class AdminCommentService {
     ) {
         User admin = ensureAdmin(adminUserId);
         Comment comment = getComment(commentId);
-        PlaceStats stats = getStats(comment.getPlace().getId());
+        PlaceStats stats = getStatsForUpdate(comment.getPlace().getId());
         if (comment.isVisible()) {
             String beforeValue = serializeCommentState(comment, stats);
             comment.blind();
@@ -99,7 +99,7 @@ public class AdminCommentService {
     ) {
         User admin = ensureAdmin(adminUserId);
         Comment comment = getComment(commentId);
-        PlaceStats stats = getStats(comment.getPlace().getId());
+        PlaceStats stats = getStatsForUpdate(comment.getPlace().getId());
         if (comment.getStatus() != CommentStatus.DELETED) {
             String beforeValue = serializeCommentState(comment, stats);
             boolean wasVisible = comment.isVisible();
@@ -133,8 +133,8 @@ public class AdminCommentService {
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Comment not found."));
     }
 
-    private PlaceStats getStats(Long placeId) {
-        return placeStatsRepository.findById(placeId)
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Place stats not found."));
     }
 

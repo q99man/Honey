@@ -117,7 +117,7 @@ class CommentServiceTest {
             return comment;
         });
         stubCommentMaxLength(300);
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
         var response = commentService.createComment(
@@ -177,7 +177,7 @@ class CommentServiceTest {
         stubActiveUserAndVisiblePlace();
         stubCommentMaxLength(300);
         when(commentRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID)).thenReturn(Optional.of(deleted));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
         var response = commentService.createComment(USER_ID, PLACE_ID, new CommentRequest("다시 작성한 댓글"));
@@ -238,7 +238,7 @@ class CommentServiceTest {
         stats.addComment(BigDecimal.valueOf(0.5));
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
         var response = commentService.deleteComment(USER_ID, COMMENT_ID);

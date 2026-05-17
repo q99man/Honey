@@ -101,7 +101,7 @@ public class AdminActivityService {
         Recommendation recommendation = recommendationRepository.findById(recommendationId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Recommendation not found."));
         Place place = recommendation.getPlace();
-        PlaceStats stats = getStats(place.getId());
+        PlaceStats stats = getStatsForUpdate(place.getId());
         if (recommendation.isActive()) {
             String beforeValue = serializeRecommendationState(recommendation, stats);
             recommendation.invalidate();
@@ -130,7 +130,7 @@ public class AdminActivityService {
         Visit visit = visitRepository.findById(visitId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Visit not found."));
         Place place = visit.getPlace();
-        PlaceStats stats = getStats(place.getId());
+        PlaceStats stats = getStatsForUpdate(place.getId());
         if (visit.isValid()) {
             String beforeValue = serializeVisitState(visit, stats);
             visit.invalidate(ADMIN_INVALIDATED_VISIT_REASON);
@@ -158,8 +158,8 @@ public class AdminActivityService {
         return user;
     }
 
-    private PlaceStats getStats(Long placeId) {
-        return placeStatsRepository.findById(placeId)
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Place stats not found."));
     }
 

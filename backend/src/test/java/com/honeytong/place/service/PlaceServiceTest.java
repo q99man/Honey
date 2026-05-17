@@ -61,6 +61,9 @@ class PlaceServiceTest {
     private PlaceStatsRepository placeStatsRepository;
 
     @Mock
+    private PlaceSearchDocumentService placeSearchDocumentService;
+
+    @Mock
     private RegionDongRepository regionDongRepository;
 
     @Mock
@@ -94,6 +97,7 @@ class PlaceServiceTest {
                 placeRepository,
                 placeImageRepository,
                 placeStatsRepository,
+                placeSearchDocumentService,
                 regionDongRepository,
                 userRegionRepository,
                 userRepository,
@@ -139,6 +143,7 @@ class PlaceServiceTest {
         assertThat(response.placeId()).isEqualTo(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
         verify(placeStatsRepository).save(any(PlaceStats.class));
+        verify(placeSearchDocumentService).syncPlace(any(Place.class));
         verify(userActionLogService).record(
                 eq(USER_ID),
                 eq(UserActionLogService.ACTION_PLACE_CREATE),
@@ -246,11 +251,7 @@ class PlaceServiceTest {
         Place place = createPlaceEntity(targetDong);
         ReflectionTestUtils.setField(place, "id", 100L);
         PlaceStats stats = new PlaceStats(place);
-        when(placeRepository.searchVisiblePlaces(
-                eq("Place"),
-                eq(PlaceExposureStatus.VISIBLE),
-                any()
-        )).thenReturn(List.of(place));
+        when(placeSearchDocumentService.searchVisiblePlaces("Place")).thenReturn(List.of(place));
         when(placeStatsRepository.findById(100L)).thenReturn(Optional.of(stats));
         when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
 
@@ -258,6 +259,7 @@ class PlaceServiceTest {
 
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().name()).isEqualTo("Test Place");
+        verify(placeSearchDocumentService).searchVisiblePlaces("Place");
     }
 
     @Test
@@ -286,6 +288,7 @@ class PlaceServiceTest {
         assertThat(response.imageUrls()).containsExactly("https://image.example.com/new-place.jpg");
         verify(placeImageRepository).deleteByPlaceId(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
+        verify(placeSearchDocumentService).syncPlace(place);
     }
 
     @Test
@@ -400,6 +403,7 @@ class PlaceServiceTest {
         assertThat(response.deleted()).isTrue();
         assertThat(place.isDeleted()).isTrue();
         assertThat(place.getCurrentStarLevel()).isZero();
+        verify(placeSearchDocumentService).deletePlace(100L);
     }
 
     @Test

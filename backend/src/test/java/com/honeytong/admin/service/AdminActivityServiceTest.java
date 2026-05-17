@@ -191,7 +191,7 @@ class AdminActivityServiceTest {
         stats.addRecommendation(BigDecimal.valueOf(1.25));
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(recommendationRepository.findById(501L)).thenReturn(Optional.of(recommendation));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminActivityService.invalidateRecommendation(
                 ADMIN_ID,
@@ -215,7 +215,7 @@ class AdminActivityServiceTest {
         recommendation.cancel();
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(recommendationRepository.findById(501L)).thenReturn(Optional.of(recommendation));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminActivityService.invalidateRecommendation(
                 ADMIN_ID,
@@ -243,7 +243,7 @@ class AdminActivityServiceTest {
         stats.addVisit(BigDecimal.valueOf(2));
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(visitRepository.findById(701L)).thenReturn(Optional.of(visit));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "visit_weight")).thenReturn(BigDecimal.valueOf(2));
 
         var response = adminActivityService.invalidateVisit(
@@ -277,7 +277,7 @@ class AdminActivityServiceTest {
         ReflectionTestUtils.setField(visit, "id", 701L);
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(visitRepository.findById(701L)).thenReturn(Optional.of(visit));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminActivityService.invalidateVisit(
                 ADMIN_ID,

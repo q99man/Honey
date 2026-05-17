@@ -40,7 +40,6 @@ import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -68,6 +67,7 @@ public class PlaceService {
     private final PlaceRepository placeRepository;
     private final PlaceImageRepository placeImageRepository;
     private final PlaceStatsRepository placeStatsRepository;
+    private final PlaceSearchDocumentService placeSearchDocumentService;
     private final RegionDongRepository regionDongRepository;
     private final UserRegionRepository userRegionRepository;
     private final UserRepository userRepository;
@@ -81,6 +81,7 @@ public class PlaceService {
             PlaceRepository placeRepository,
             PlaceImageRepository placeImageRepository,
             PlaceStatsRepository placeStatsRepository,
+            PlaceSearchDocumentService placeSearchDocumentService,
             RegionDongRepository regionDongRepository,
             UserRegionRepository userRegionRepository,
             UserRepository userRepository,
@@ -93,6 +94,7 @@ public class PlaceService {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
         this.placeStatsRepository = placeStatsRepository;
+        this.placeSearchDocumentService = placeSearchDocumentService;
         this.regionDongRepository = regionDongRepository;
         this.userRegionRepository = userRegionRepository;
         this.userRepository = userRepository;
@@ -150,6 +152,7 @@ public class PlaceService {
         ));
         saveImages(place, request.imageUrls(), user);
         placeStatsRepository.save(new PlaceStats(place));
+        placeSearchDocumentService.syncPlace(place);
         userActionLogService.record(
                 user.getId(),
                 UserActionLogService.ACTION_PLACE_CREATE,
@@ -228,12 +231,8 @@ public class PlaceService {
         if (keyword == null || keyword.isBlank()) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "검색어를 입력해 주세요.");
         }
-        return placeRepository
-                .searchVisiblePlaces(
-                        keyword.trim(),
-                        PlaceExposureStatus.VISIBLE,
-                        PageRequest.of(0, 50)
-                )
+        return placeSearchDocumentService
+                .searchVisiblePlaces(keyword.trim())
                 .stream()
                 .map(place -> toListItemResponse(place, getStats(place.getId()), null))
                 .toList();
@@ -320,6 +319,7 @@ public class PlaceService {
         if (request.imageUrls() != null) {
             replaceImages(place, request.imageUrls(), actor);
         }
+        placeSearchDocumentService.syncPlace(place);
 
         List<String> imageUrls = currentImageUrls(place.getId());
         if (adminActor) {
@@ -341,6 +341,7 @@ public class PlaceService {
         boolean adminActor = isAdmin(actor);
         String beforeValue = adminActor ? serializePlaceDeletionState(place, false) : null;
         place.delete();
+        placeSearchDocumentService.deletePlace(place.getId());
         if (adminActor) {
             saveActionLog(
                     actor,

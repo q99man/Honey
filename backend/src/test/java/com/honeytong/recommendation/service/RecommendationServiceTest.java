@@ -126,7 +126,7 @@ class RecommendationServiceTest {
         when(userTrustRepository.findById(USER_ID)).thenReturn(Optional.of(trust));
         when(recommendationRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID)).thenReturn(Optional.empty());
         when(recommendationRepository.save(any(Recommendation.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = recommendationService.recommend(USER_ID, PLACE_ID);
 
@@ -187,7 +187,7 @@ class RecommendationServiceTest {
         when(placeRepository.findById(PLACE_ID)).thenReturn(Optional.of(place));
         when(recommendationRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID))
                 .thenReturn(Optional.of(recommendation));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = recommendationService.cancelRecommendation(USER_ID, PLACE_ID);
 

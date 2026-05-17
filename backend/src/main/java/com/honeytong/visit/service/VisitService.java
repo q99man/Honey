@@ -97,7 +97,7 @@ public class VisitService {
                 VALID_REASON
         ));
 
-        PlaceStats stats = getStats(placeId);
+        PlaceStats stats = getStatsForUpdate(placeId);
         stats.addVisit(getVisitWeight());
         visitCooldownCache.evict(userId, placeId);
         VisitGrowthResult growthResult = userGrowthService.applyValidVisit(userId);
@@ -199,6 +199,11 @@ public class VisitService {
 
     private PlaceStats getStats(Long placeId) {
         return placeStatsRepository.findById(placeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소 통계를 찾을 수 없습니다."));
+    }
+
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소 통계를 찾을 수 없습니다."));
     }
 

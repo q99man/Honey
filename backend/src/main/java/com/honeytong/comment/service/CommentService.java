@@ -66,7 +66,7 @@ public class CommentService {
                 .map(existing -> restoreDeletedComment(existing, content))
                 .orElseGet(() -> commentRepository.save(new Comment(user, place, content)));
 
-        PlaceStats stats = getStats(placeId);
+        PlaceStats stats = getStatsForUpdate(placeId);
         stats.addComment(getCommentWeight());
         userActionLogService.record(
                 user.getId(),
@@ -101,7 +101,7 @@ public class CommentService {
         validateOwner(userId, comment);
         comment.delete();
 
-        PlaceStats stats = getStats(comment.getPlace().getId());
+        PlaceStats stats = getStatsForUpdate(comment.getPlace().getId());
         stats.removeComment(getCommentWeight());
         userActionLogService.record(
                 user.getId(),
@@ -176,8 +176,8 @@ public class CommentService {
         return comment;
     }
 
-    private PlaceStats getStats(Long placeId) {
-        return placeStatsRepository.findById(placeId)
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소 통계를 찾을 수 없습니다."));
     }
 

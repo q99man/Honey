@@ -79,7 +79,7 @@ public class RecommendationService {
                 })
                 .orElseGet(() -> recommendationRepository.save(new Recommendation(user, place, recommendWeight)));
 
-        PlaceStats stats = getStats(placeId);
+        PlaceStats stats = getStatsForUpdate(placeId);
         stats.addRecommendation(recommendation.getRecommendWeight());
         recommendationDailyCounter.evict(userId, LocalDate.now());
         userActionLogService.record(
@@ -106,7 +106,7 @@ public class RecommendationService {
         }
 
         recommendation.cancel();
-        PlaceStats stats = getStats(placeId);
+        PlaceStats stats = getStatsForUpdate(placeId);
         stats.removeRecommendation(recommendation.getRecommendWeight());
         recommendationDailyCounter.evict(userId, LocalDate.now());
         userActionLogService.record(
@@ -196,8 +196,8 @@ public class RecommendationService {
         return place;
     }
 
-    private PlaceStats getStats(Long placeId) {
-        return placeStatsRepository.findById(placeId)
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "장소 통계를 찾을 수 없습니다."));
     }
 

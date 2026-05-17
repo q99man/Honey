@@ -236,7 +236,7 @@ class AdminPlaceServiceTest {
     void adjustScore_updatesManualAdjustmentAndLogsAction() {
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(placeRepository.findByIdAndDeletedAtIsNull(PLACE_ID)).thenReturn(Optional.of(place));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminPlaceService.adjustScore(
                 ADMIN_ID,
@@ -254,7 +254,7 @@ class AdminPlaceServiceTest {
     void adjustScore_rejectsZeroDelta() {
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(placeRepository.findByIdAndDeletedAtIsNull(PLACE_ID)).thenReturn(Optional.of(place));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         assertThatThrownBy(() -> adminPlaceService.adjustScore(
                 ADMIN_ID,

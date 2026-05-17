@@ -144,7 +144,7 @@ public class AdminPlaceService {
     ) {
         User admin = ensureAdmin(adminUserId);
         Place place = getPlaceOrThrow(placeId);
-        PlaceStats stats = getStats(placeId);
+        PlaceStats stats = getStatsForUpdate(placeId);
         BigDecimal scoreDelta = normalizeScoreDelta(request.scoreDelta());
         if (scoreDelta.compareTo(BigDecimal.ZERO) == 0) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "Score delta must not be zero.");
@@ -184,6 +184,11 @@ public class AdminPlaceService {
 
     private PlaceStats getStats(Long placeId) {
         return placeStatsRepository.findById(placeId)
+                .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Place stats not found."));
+    }
+
+    private PlaceStats getStatsForUpdate(Long placeId) {
+        return placeStatsRepository.findByIdForUpdate(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "Place stats not found."));
     }
 

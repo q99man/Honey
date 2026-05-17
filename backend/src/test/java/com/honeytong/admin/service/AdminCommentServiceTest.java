@@ -133,7 +133,7 @@ class AdminCommentServiceTest {
         stats.addComment(BigDecimal.valueOf(0.5));
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
         var response = adminCommentService.blindComment(
@@ -154,7 +154,7 @@ class AdminCommentServiceTest {
         comment.blind();
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminCommentService.blindComment(
                 ADMIN_ID,
@@ -172,7 +172,7 @@ class AdminCommentServiceTest {
         stats.addComment(BigDecimal.valueOf(0.5));
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
         var response = adminCommentService.deleteComment(
@@ -193,7 +193,7 @@ class AdminCommentServiceTest {
         comment.blind();
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminCommentService.deleteComment(
                 ADMIN_ID,
@@ -213,7 +213,7 @@ class AdminCommentServiceTest {
         comment.delete();
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
         when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
         var response = adminCommentService.deleteComment(
                 ADMIN_ID,

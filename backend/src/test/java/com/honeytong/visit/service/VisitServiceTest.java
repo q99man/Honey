@@ -123,7 +123,7 @@ class VisitServiceTest {
         when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
                 .thenReturn(Optional.empty());
         when(visitRepository.save(any(Visit.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(placeStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(stats));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "visit_weight")).thenReturn(BigDecimal.valueOf(2.0));
         when(userGrowthService.applyValidVisit(USER_ID)).thenReturn(new VisitGrowthResult(2, 1));
 
