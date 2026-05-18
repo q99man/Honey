@@ -15,6 +15,7 @@ import com.honeytong.admin.entity.AdminActionLog;
 import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.place.entity.FranchiseReviewStatus;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceApprovalStatus;
@@ -61,6 +62,9 @@ class AdminPlaceServiceTest {
     @Mock
     private AdminActionLogRepository adminActionLogRepository;
 
+    @Mock
+    private PolicyService policyService;
+
     private AdminPlaceService adminPlaceService;
     private User admin;
     private User creator;
@@ -76,7 +80,8 @@ class AdminPlaceServiceTest {
                 placeImageRepository,
                 userRepository,
                 adminActionLogRepository,
-                new ObjectMapper()
+                new ObjectMapper(),
+                new AdminTextPolicyService(policyService)
         );
 
         admin = new User("admin", "admin@example.com");
@@ -110,6 +115,10 @@ class AdminPlaceServiceTest {
         );
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
         stats = new PlaceStats(place);
+
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("admin", "action_memo_max_length"))
+                .thenReturn(255);
     }
 
     @Test
@@ -260,6 +269,22 @@ class AdminPlaceServiceTest {
                 ADMIN_ID,
                 PLACE_ID,
                 new AdminPlaceScoreAdjustmentRequest(BigDecimal.ZERO, "No score change.")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(adminActionLogRepository, never()).save(org.mockito.Mockito.any(AdminActionLog.class));
+    }
+
+    @Test
+    void adjustScore_rejectsMemoLongerThanPolicy() {
+        when(policyService.getRequiredInteger("admin", "action_memo_max_length")).thenReturn(5);
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(placeRepository.findByIdAndDeletedAtIsNull(PLACE_ID)).thenReturn(Optional.of(place));
+        when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
+
+        assertThatThrownBy(() -> adminPlaceService.adjustScore(
+                ADMIN_ID,
+                PLACE_ID,
+                new AdminPlaceScoreAdjustmentRequest(BigDecimal.ONE, "123456")
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(adminActionLogRepository, never()).save(org.mockito.Mockito.any(AdminActionLog.class));

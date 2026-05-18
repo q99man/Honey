@@ -55,9 +55,13 @@ public class PlaceService {
     private static final String RECOMMENDED_MENU_MAX_LENGTH_KEY = "recommended_menu_max_length";
     private static final String SHORT_RECOMMENDATION_MAX_LENGTH_KEY = "short_recommendation_max_length";
     private static final String FEATURE_TEXT_MAX_LENGTH_KEY = "feature_text_max_length";
+    private static final String IMAGE_URL_MAX_LENGTH_KEY = "image_url_max_length";
+    private static final String ADDRESS_MAX_LENGTH_KEY = "address_max_length";
     private static final int RECOMMENDED_MENU_COLUMN_LIMIT = 255;
     private static final int SHORT_RECOMMENDATION_COLUMN_LIMIT = 255;
     private static final int FEATURE_TEXT_COLUMN_LIMIT = 500;
+    private static final int IMAGE_URL_COLUMN_LIMIT = 255;
+    private static final int ADDRESS_COLUMN_LIMIT = 255;
     private static final String REGION_POLICY_GROUP = "region";
     private static final String REGISTRATION_SCOPE_KEY = "registration_scope";
     private static final String PLACE_TARGET_TYPE = "PLACE";
@@ -135,13 +139,25 @@ public class PlaceService {
                 "특징 문구 허용 길이를 초과했습니다."
         );
 
+        validateImageUrls(request.imageUrls());
+
         Place place = placeRepository.save(new Place(
                 user,
                 placeDong,
                 request.name(),
                 request.categoryCode(),
-                request.addressRoad(),
-                request.addressJibun(),
+                optionalTextWithinPolicy(
+                        request.addressRoad(),
+                        ADDRESS_MAX_LENGTH_KEY,
+                        ADDRESS_COLUMN_LIMIT,
+                        "장소 주소 길이가 정책 허용치를 초과했습니다."
+                ),
+                optionalTextWithinPolicy(
+                        request.addressJibun(),
+                        ADDRESS_MAX_LENGTH_KEY,
+                        ADDRESS_COLUMN_LIMIT,
+                        "장소 주소 길이가 정책 허용치를 초과했습니다."
+                ),
                 request.latitude(),
                 request.longitude(),
                 request.priceRangeCode(),
@@ -290,8 +306,20 @@ public class PlaceService {
                 nextDong,
                 requiredTextOrCurrent(request.name(), place.getName(), "장소 이름을 입력해 주세요."),
                 requiredTextOrCurrent(request.categoryCode(), place.getCategoryCode(), "카테고리를 입력해 주세요."),
-                optionalTextOrCurrent(request.addressRoad(), place.getAddressRoad()),
-                optionalTextOrCurrent(request.addressJibun(), place.getAddressJibun()),
+                optionalTextWithinPolicyOrCurrent(
+                        request.addressRoad(),
+                        place.getAddressRoad(),
+                        ADDRESS_MAX_LENGTH_KEY,
+                        ADDRESS_COLUMN_LIMIT,
+                        "장소 주소 길이가 정책 허용치를 초과했습니다."
+                ),
+                optionalTextWithinPolicyOrCurrent(
+                        request.addressJibun(),
+                        place.getAddressJibun(),
+                        ADDRESS_MAX_LENGTH_KEY,
+                        ADDRESS_COLUMN_LIMIT,
+                        "장소 주소 길이가 정책 허용치를 초과했습니다."
+                ),
                 coordinateOrCurrent(request.latitude(), request.longitude(), place.getLatitude(), true),
                 coordinateOrCurrent(request.latitude(), request.longitude(), place.getLongitude(), false),
                 optionalTextOrCurrent(request.priceRangeCode(), place.getPriceRangeCode()),
@@ -456,13 +484,39 @@ public class PlaceService {
             if (imageUrl == null || imageUrl.isBlank()) {
                 continue;
             }
-            placeImageRepository.save(new PlaceImage(place, imageUrl.trim(), index, index == 0, user));
+            String normalizedImageUrl = optionalTextWithinPolicy(
+                    imageUrl,
+                    IMAGE_URL_MAX_LENGTH_KEY,
+                    IMAGE_URL_COLUMN_LIMIT,
+                    "장소 이미지 URL 길이가 정책 허용치를 초과했습니다."
+            );
+            if (normalizedImageUrl != null) {
+                placeImageRepository.save(new PlaceImage(place, normalizedImageUrl, index, index == 0, user));
+            }
         }
     }
 
     private void replaceImages(Place place, List<String> imageUrls, User user) {
+        validateImageUrls(imageUrls);
         placeImageRepository.deleteByPlaceId(place.getId());
         saveImages(place, imageUrls, user);
+    }
+
+    private void validateImageUrls(List<String> imageUrls) {
+        if (imageUrls == null || imageUrls.isEmpty()) {
+            return;
+        }
+        for (String imageUrl : imageUrls) {
+            if (imageUrl == null || imageUrl.isBlank()) {
+                continue;
+            }
+            optionalTextWithinPolicy(
+                    imageUrl,
+                    IMAGE_URL_MAX_LENGTH_KEY,
+                    IMAGE_URL_COLUMN_LIMIT,
+                    "장소 이미지 URL 길이가 정책 허용치를 초과했습니다."
+            );
+        }
     }
 
     private List<String> currentImageUrls(Long placeId) {

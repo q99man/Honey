@@ -20,10 +20,8 @@ public record PlaceCreateRequest(
         @NotNull
         Long dongId,
 
-        @Size(max = 255)
         String addressRoad,
 
-        @Size(max = 255)
         String addressJibun,
 
         @NotNull
@@ -48,6 +46,6 @@ public record PlaceCreateRequest(
 
         boolean franchise,
 
-        List<@Size(max = 255) String> imageUrls
+        List<String> imageUrls
 ) {
 }

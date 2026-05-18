@@ -15,10 +15,8 @@ public record PlaceUpdateRequest(
 
         Long dongId,
 
-        @Size(max = 255)
         String addressRoad,
 
-        @Size(max = 255)
         String addressJibun,
 
         @DecimalMin("-90.0")
@@ -40,6 +38,6 @@ public record PlaceUpdateRequest(
 
         Boolean franchise,
 
-        List<@Size(max = 255) String> imageUrls
+        List<String> imageUrls
 ) {
 }

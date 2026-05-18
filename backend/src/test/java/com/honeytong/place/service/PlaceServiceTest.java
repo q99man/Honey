@@ -119,6 +119,13 @@ class PlaceServiceTest {
         ReflectionTestUtils.setField(userDong, "id", 30L);
         targetDong = new RegionDong(city, district, "Hapjeong-dong", "Hapjeong-dong", null, "1144068000");
         ReflectionTestUtils.setField(targetDong, "id", 31L);
+
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("place", "image_url_max_length"))
+                .thenReturn(255);
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("place", "address_max_length"))
+                .thenReturn(255);
     }
 
     @Test
@@ -173,6 +180,51 @@ class PlaceServiceTest {
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(placeRepository, never()).save(any());
         verify(placeStatsRepository, never()).save(any());
+    }
+
+    @Test
+    void createPlace_rejectsImageUrlLongerThanPolicyLimit() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(policyService.getRequiredInteger("place", "image_url_max_length")).thenReturn(5);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+
+        assertThatThrownBy(() -> placeService.createPlace(
+                USER_ID,
+                createRequestWithImages(List.of("123456"))
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(placeRepository, never()).save(any(Place.class));
+        verify(placeImageRepository, never()).save(any(PlaceImage.class));
+        verify(placeStatsRepository, never()).save(any(PlaceStats.class));
+    }
+
+    @Test
+    void createPlace_rejectsAddressLongerThanPolicyLimit() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(policyService.getRequiredInteger("place", "address_max_length")).thenReturn(5);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+
+        assertThatThrownBy(() -> placeService.createPlace(
+                USER_ID,
+                createRequestWithAddress("123456", null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(placeRepository, never()).save(any(Place.class));
+        verify(placeStatsRepository, never()).save(any(PlaceStats.class));
     }
 
     @Test
@@ -309,6 +361,42 @@ class PlaceServiceTest {
     }
 
     @Test
+    void updatePlace_rejectsImageUrlLongerThanPolicyLimit() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(policyService.getRequiredInteger("place", "image_url_max_length")).thenReturn(5);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateRequest(null, null, List.of("123456"))
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(placeImageRepository, never()).deleteByPlaceId(100L);
+        verify(placeImageRepository, never()).save(any(PlaceImage.class));
+    }
+
+    @Test
+    void updatePlace_rejectsAddressLongerThanPolicyLimit() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(policyService.getRequiredInteger("place", "address_max_length")).thenReturn(5);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateAddressRequest("123456", null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        assertThat(place.getAddressRoad()).isEqualTo("1 Test Road");
+        verify(placeSearchDocumentService, never()).syncPlace(place);
+    }
+
+    @Test
     void updatePlace_rejectsNonOwnerUser() {
         User otherUser = new User("other", "other@example.com");
         ReflectionTestUtils.setField(otherUser, "id", 2L);
@@ -430,6 +518,42 @@ class PlaceServiceTest {
         );
     }
 
+    private PlaceCreateRequest createRequestWithImages(List<String> imageUrls) {
+        return new PlaceCreateRequest(
+                "Test Place",
+                "KOREAN",
+                31L,
+                "1 Test Road",
+                null,
+                BigDecimal.valueOf(37.5500000),
+                BigDecimal.valueOf(126.9100000),
+                "10000_20000",
+                "Test Menu",
+                "Local favorite worth revisiting",
+                "Fast service and rich taste",
+                false,
+                imageUrls
+        );
+    }
+
+    private PlaceCreateRequest createRequestWithAddress(String addressRoad, String addressJibun) {
+        return new PlaceCreateRequest(
+                "Test Place",
+                "KOREAN",
+                31L,
+                addressRoad,
+                addressJibun,
+                BigDecimal.valueOf(37.5500000),
+                BigDecimal.valueOf(126.9100000),
+                "10000_20000",
+                "Test Menu",
+                "Local favorite worth revisiting",
+                "Fast service and rich taste",
+                false,
+                List.of("https://image.example.com/place.jpg")
+        );
+    }
+
     private PlaceCreateRequest createRequestWithText(
             String recommendedMenu,
             String shortRecommendation,
@@ -523,6 +647,24 @@ class PlaceServiceTest {
                 recommendedMenu,
                 shortRecommendation,
                 featureText,
+                null,
+                null
+        );
+    }
+
+    private PlaceUpdateRequest updateAddressRequest(String addressRoad, String addressJibun) {
+        return new PlaceUpdateRequest(
+                null,
+                null,
+                null,
+                addressRoad,
+                addressJibun,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
                 null,
                 null
         );

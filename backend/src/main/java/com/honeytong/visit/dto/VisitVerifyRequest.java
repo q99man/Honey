@@ -3,7 +3,6 @@ package com.honeytong.visit.dto;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 
 public record VisitVerifyRequest(
@@ -17,7 +16,6 @@ public record VisitVerifyRequest(
         @DecimalMax("180.0")
         BigDecimal longitude,
 
-        @Size(max = 255)
         String imageUrl
 ) {
 }

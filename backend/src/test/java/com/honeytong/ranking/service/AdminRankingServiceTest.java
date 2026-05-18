@@ -14,6 +14,8 @@ import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.repository.PlaceRepository;
+import com.honeytong.admin.service.AdminTextPolicyService;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.ranking.cache.RankingCache;
 import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeRequest;
 import com.honeytong.ranking.dto.AdminRankingPlaceExclusionRequest;
@@ -68,6 +70,9 @@ class AdminRankingServiceTest {
     @Mock
     private RankingHistoryFinalizationService rankingHistoryFinalizationService;
 
+    @Mock
+    private PolicyService policyService;
+
     private AdminRankingService adminRankingService;
     private User admin;
     private Season season;
@@ -83,7 +88,8 @@ class AdminRankingServiceTest {
                 rankingCache,
                 rankingRecalculationService,
                 rankingHistoryFinalizationService,
-                new ObjectMapper()
+                new ObjectMapper(),
+                new AdminTextPolicyService(policyService)
         );
 
         admin = new User("admin", "admin@example.com");
@@ -125,6 +131,10 @@ class AdminRankingServiceTest {
                 false
         );
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
+
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("admin", "action_memo_max_length"))
+                .thenReturn(255);
     }
 
     @Test
@@ -214,6 +224,22 @@ class AdminRankingServiceTest {
 
         assertThat(response.rankingExcluded()).isFalse();
         verify(rankingCache, never()).evictAllPlaceRankings();
+        verify(adminActionLogRepository, never()).save(any(AdminActionLog.class));
+    }
+
+    @Test
+    void finalizeRankingHistory_rejectsMemoLongerThanPolicy() {
+        when(policyService.getRequiredInteger("admin", "action_memo_max_length")).thenReturn(5);
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(rankingHistoryFinalizationService.finalizeSeasonHistory(SEASON_ID))
+                .thenReturn(new RankingHistoryFinalizationResult(SEASON_ID, "2026-04", 3));
+
+        assertThatThrownBy(() -> adminRankingService.finalizeRankingHistory(
+                ADMIN_ID,
+                SEASON_ID,
+                new AdminRankingHistoryFinalizeRequest("123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(adminActionLogRepository, never()).save(any(AdminActionLog.class));
     }
 

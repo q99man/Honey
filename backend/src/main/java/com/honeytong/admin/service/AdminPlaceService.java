@@ -48,6 +48,7 @@ public class AdminPlaceService {
     private final UserRepository userRepository;
     private final AdminActionLogRepository adminActionLogRepository;
     private final ObjectMapper objectMapper;
+    private final AdminTextPolicyService adminTextPolicyService;
 
     public AdminPlaceService(
             PlaceRepository placeRepository,
@@ -55,7 +56,8 @@ public class AdminPlaceService {
             PlaceImageRepository placeImageRepository,
             UserRepository userRepository,
             AdminActionLogRepository adminActionLogRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AdminTextPolicyService adminTextPolicyService
     ) {
         this.placeRepository = placeRepository;
         this.placeStatsRepository = placeStatsRepository;
@@ -63,6 +65,7 @@ public class AdminPlaceService {
         this.userRepository = userRepository;
         this.adminActionLogRepository = adminActionLogRepository;
         this.objectMapper = objectMapper;
+        this.adminTextPolicyService = adminTextPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -97,7 +100,8 @@ public class AdminPlaceService {
         if (beforeStatus != request.exposureStatus()) {
             String beforeValue = serializePlaceModerationState(place);
             place.changeExposureStatus(request.exposureStatus());
-            saveActionLog(admin, place, PLACE_EXPOSURE_ACTION, beforeValue, normalize(request.memo()));
+            saveActionLog(admin, place, PLACE_EXPOSURE_ACTION, beforeValue,
+                    adminTextPolicyService.normalizeActionMemo(request.memo()));
         }
         return toModerationResponse(place);
     }
@@ -114,7 +118,8 @@ public class AdminPlaceService {
         if (beforeStatus != request.approvalStatus()) {
             String beforeValue = serializePlaceModerationState(place);
             place.changeApprovalStatus(request.approvalStatus());
-            saveActionLog(admin, place, PLACE_APPROVAL_ACTION, beforeValue, normalize(request.memo()));
+            saveActionLog(admin, place, PLACE_APPROVAL_ACTION, beforeValue,
+                    adminTextPolicyService.normalizeActionMemo(request.memo()));
         }
         return toModerationResponse(place);
     }
@@ -131,7 +136,8 @@ public class AdminPlaceService {
         if (beforeStatus != request.franchiseReviewStatus()) {
             String beforeValue = serializePlaceModerationState(place);
             place.changeFranchiseReviewStatus(request.franchiseReviewStatus());
-            saveActionLog(admin, place, PLACE_FRANCHISE_REVIEW_ACTION, beforeValue, normalize(request.memo()));
+            saveActionLog(admin, place, PLACE_FRANCHISE_REVIEW_ACTION, beforeValue,
+                    adminTextPolicyService.normalizeActionMemo(request.memo()));
         }
         return toModerationResponse(place);
     }
@@ -158,7 +164,7 @@ public class AdminPlaceService {
                 PLACE_SCORE_ADJUST_ACTION,
                 beforeValue,
                 serializePlaceScoreState(place, stats),
-                normalize(request.memo())
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         );
         return new AdminPlaceScoreAdjustmentResponse(
                 place.getId(),
@@ -246,13 +252,6 @@ public class AdminPlaceService {
         } catch (JsonProcessingException exception) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "Could not create admin action log.");
         }
-    }
-
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
     }
 
     private AdminPlaceModerationResponse toModerationResponse(Place place) {

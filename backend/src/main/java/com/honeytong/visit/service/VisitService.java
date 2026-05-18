@@ -35,6 +35,8 @@ public class VisitService {
     private static final String VISIT_POLICY_GROUP = "visit";
     private static final String RADIUS_METER_KEY = "radius_meter";
     private static final String COOLDOWN_HOUR_KEY = "cooldown_hour";
+    private static final String IMAGE_URL_MAX_LENGTH_KEY = "image_url_max_length";
+    private static final int IMAGE_URL_COLUMN_LIMIT = 255;
     private static final String RANKING_POLICY_GROUP = "ranking";
     private static final String VISIT_WEIGHT_KEY = "visit_weight";
     private static final String VALID_REASON = "VALID";
@@ -234,7 +236,18 @@ public class VisitService {
         if (imageUrl == null || imageUrl.isBlank()) {
             return null;
         }
-        return imageUrl.trim();
+        String normalized = imageUrl.trim();
+        int maxLength = policyService.getRequiredInteger(VISIT_POLICY_GROUP, IMAGE_URL_MAX_LENGTH_KEY);
+        if (maxLength <= 0 || maxLength > IMAGE_URL_COLUMN_LIMIT) {
+            throw new ApiException(
+                    ErrorCode.POLICY_VIOLATION,
+                    "방문 인증 이미지 URL 길이 정책은 1-" + IMAGE_URL_COLUMN_LIMIT + " 사이여야 합니다."
+            );
+        }
+        if (normalized.length() > maxLength) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "방문 인증 이미지 URL 길이가 정책 허용치를 초과했습니다.");
+        }
+        return normalized;
     }
 
     private int calculateDistanceMeter(double lat1, double lng1, double lat2, double lng2) {

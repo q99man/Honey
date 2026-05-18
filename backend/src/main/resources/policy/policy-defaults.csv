@@ -1,22 +1,27 @@
 policy_group,policy_key,policy_value,value_type,description
-growth,visit_exp,2,INTEGER,EXP gained from one valid visit
-growth,level_exp_thresholds,1:10;2:20;3:30;4:40;5:50,STRING,EXP needed to advance from each current level
-trust,valid_visit_score,1,INTEGER,Trust score gained from one valid visit
-trust,grade_thresholds,SEED_BEE:0;VERIFIED_BEE:5;LOCAL_BEE:10;ACTIVE_BEE:20;TRUSTED_BEE:40;INFLUENCER_BEE:80,STRING,Minimum trust score for each trust grade
-trust,recommend_weight_by_grade,SEED_BEE:1.00;VERIFIED_BEE:1.05;LOCAL_BEE:1.10;ACTIVE_BEE:1.15;TRUSTED_BEE:1.20;INFLUENCER_BEE:1.30,STRING,Recommendation weight by trust grade
+growth,visit_exp,2,INTEGER,유효 방문 1회로 획득하는 경험치
+growth,level_exp_thresholds,1:10;2:20;3:30;4:40;5:50,STRING,각 현재 레벨에서 다음 레벨로 올라가기 위한 경험치
+trust,valid_visit_score,1,INTEGER,유효 방문 1회로 획득하는 신뢰 점수
+trust,grade_thresholds,SEED_BEE:0;VERIFIED_BEE:5;LOCAL_BEE:10;ACTIVE_BEE:20;TRUSTED_BEE:40;INFLUENCER_BEE:80,STRING,신뢰 등급별 최소 신뢰 점수
+trust,recommend_weight_by_grade,SEED_BEE:1.00;VERIFIED_BEE:1.05;LOCAL_BEE:1.10;ACTIVE_BEE:1.15;TRUSTED_BEE:1.20;INFLUENCER_BEE:1.30,STRING,신뢰 등급별 추천 영향 가중치
 region,change_cooldown_day,7,INTEGER,지역 변경 쿨다운 일수
 region,registration_scope,DISTRICT,STRING,장소 등록 허용 지역 범위
 place,registration_limit,5,INTEGER,사용자별 장소 등록 가능 개수
 place,recommended_menu_max_length,255,INTEGER,장소 추천 메뉴 최대 길이
-place,short_recommendation_max_length,255,INTEGER,장소 대표 추천 문구 최대 길이
+place,short_recommendation_max_length,255,INTEGER,장소 한줄 추천 문구 최대 길이
 place,feature_text_max_length,500,INTEGER,장소 특징 문구 최대 길이
+place,image_url_max_length,255,INTEGER,장소 이미지 URL 최대 길이
+place,address_max_length,255,INTEGER,장소 주소 최대 길이
 recommend,daily_limit,20,INTEGER,일일 추천 가능 개수
 report,reason_text_max_length,255,INTEGER,신고 상세 사유 최대 길이
 report,review_note_max_length,255,INTEGER,신고 관리자 검토 메모 최대 길이
 report,follow_up_reason_max_length,255,INTEGER,신고 후속 조치 사유 최대 길이
 report,follow_up_memo_max_length,255,INTEGER,신고 후속 조치 메모 최대 길이
+admin,sanction_reason_max_length,255,INTEGER,관리자 사용자 제재 사유 최대 길이
+admin,action_memo_max_length,255,INTEGER,관리자 작업 메모 최대 길이
 visit,radius_meter,70,INTEGER,방문 인증 허용 반경 미터
 visit,cooldown_hour,24,INTEGER,장소별 방문 인증 쿨다운 시간
+visit,image_url_max_length,255,INTEGER,방문 인증 이미지 URL 최대 길이
 ranking,recommend_weight,1.0,DECIMAL,추천 점수 가중치
 ranking,visit_weight,2.0,DECIMAL,방문 점수 가중치
 ranking,comment_weight,0.5,DECIMAL,댓글 점수 가중치

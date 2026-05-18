@@ -12,6 +12,7 @@ import com.honeytong.admin.dto.AdminUserTrustAdjustRequest;
 import com.honeytong.admin.repository.AdminActionLogRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.TrustGrade;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserLevel;
@@ -56,6 +57,9 @@ class AdminUserServiceTest {
     @Mock
     private AdminActionLogRepository adminActionLogRepository;
 
+    @Mock
+    private PolicyService policyService;
+
     private AdminUserService adminUserService;
     private User admin;
     private User user;
@@ -68,7 +72,8 @@ class AdminUserServiceTest {
                 userLevelRepository,
                 userSanctionRepository,
                 adminActionLogRepository,
-                new ObjectMapper()
+                new ObjectMapper(),
+                new AdminTextPolicyService(policyService)
         );
 
         admin = new User("admin", "admin@example.com");
@@ -77,6 +82,8 @@ class AdminUserServiceTest {
 
         user = new User("bee", "bee@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);
+
+        stubAdminTextPolicies(255, 255);
     }
 
     @Test
@@ -217,6 +224,20 @@ class AdminUserServiceTest {
     }
 
     @Test
+    void createSanction_rejectsReasonLongerThanPolicy() {
+        when(policyService.getRequiredInteger("admin", "sanction_reason_max_length")).thenReturn(5);
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> adminUserService.createSanction(
+                ADMIN_ID,
+                USER_ID,
+                new AdminUserSanctionRequest(UserSanctionType.WARNING, "123456", null, null, null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
     void adjustTrust_updatesTrustAndLogsAction() {
         UserTrust trust = new UserTrust(user);
         when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
@@ -274,6 +295,22 @@ class AdminUserServiceTest {
     }
 
     @Test
+    void adjustTrust_rejectsMemoLongerThanPolicy() {
+        UserTrust trust = new UserTrust(user);
+        when(policyService.getRequiredInteger("admin", "action_memo_max_length")).thenReturn(5);
+        when(userRepository.findById(ADMIN_ID)).thenReturn(Optional.of(admin));
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userTrustRepository.findById(USER_ID)).thenReturn(Optional.of(trust));
+
+        assertThatThrownBy(() -> adminUserService.adjustTrust(
+                ADMIN_ID,
+                USER_ID,
+                new AdminUserTrustAdjustRequest(20, TrustGrade.LOCAL_BEE, "123456")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
     void adjustTrust_rejectsAdminAccountTarget() {
         User targetAdmin = new User("target-admin", "target-admin@example.com");
         ReflectionTestUtils.setField(targetAdmin, "id", 9L);
@@ -287,5 +324,14 @@ class AdminUserServiceTest {
                 new AdminUserTrustAdjustRequest(10, TrustGrade.VERIFIED_BEE, "Invalid target.")
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    private void stubAdminTextPolicies(int sanctionReasonMaxLength, int actionMemoMaxLength) {
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("admin", "sanction_reason_max_length"))
+                .thenReturn(sanctionReasonMaxLength);
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("admin", "action_memo_max_length"))
+                .thenReturn(actionMemoMaxLength);
     }
 }

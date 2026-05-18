@@ -113,6 +113,10 @@ class VisitServiceTest {
         );
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
         stats = new PlaceStats(place);
+
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredInteger("visit", "image_url_max_length"))
+                .thenReturn(255);
     }
 
     @Test
@@ -198,6 +202,29 @@ class VisitServiceTest {
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VISIT_COOLDOWN_ACTIVE));
         verify(visitRepository, never()).save(any(Visit.class));
+    }
+
+    @Test
+    void verifyVisit_rejectsImageUrlLongerThanPolicyLimit() {
+        stubActiveUserAndVisiblePlace();
+        when(policyService.getRequiredInteger("visit", "radius_meter")).thenReturn(70);
+        when(policyService.getRequiredInteger("visit", "cooldown_hour")).thenReturn(24);
+        when(policyService.getRequiredInteger("visit", "image_url_max_length")).thenReturn(5);
+        when(visitCooldownCache.getCooldownUntil(eq(USER_ID), eq(PLACE_ID), any()))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> visitService.verifyVisit(
+                USER_ID,
+                PLACE_ID,
+                new VisitVerifyRequest(
+                        BigDecimal.valueOf(37.5501000),
+                        BigDecimal.valueOf(126.9101000),
+                        "123456"
+                )
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+        verify(visitRepository, never()).save(any(Visit.class));
+        verify(placeStatsRepository, never()).findByIdForUpdate(any());
     }
 
     @Test

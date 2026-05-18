@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.honeytong.admin.entity.AdminActionLog;
 import com.honeytong.admin.repository.AdminActionLogRepository;
+import com.honeytong.admin.service.AdminTextPolicyService;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
@@ -51,6 +52,7 @@ public class AdminRankingService {
     private final RankingRecalculationService rankingRecalculationService;
     private final RankingHistoryFinalizationService rankingHistoryFinalizationService;
     private final ObjectMapper objectMapper;
+    private final AdminTextPolicyService adminTextPolicyService;
 
     public AdminRankingService(
             SeasonRepository seasonRepository,
@@ -60,7 +62,8 @@ public class AdminRankingService {
             RankingCache rankingCache,
             RankingRecalculationService rankingRecalculationService,
             RankingHistoryFinalizationService rankingHistoryFinalizationService,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AdminTextPolicyService adminTextPolicyService
     ) {
         this.seasonRepository = seasonRepository;
         this.placeRepository = placeRepository;
@@ -70,6 +73,7 @@ public class AdminRankingService {
         this.rankingRecalculationService = rankingRecalculationService;
         this.rankingHistoryFinalizationService = rankingHistoryFinalizationService;
         this.objectMapper = objectMapper;
+        this.adminTextPolicyService = adminTextPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -104,7 +108,7 @@ public class AdminRankingService {
                 season.getId(),
                 null,
                 serializeSeason(season),
-                request.memo()
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         );
         return AdminSeasonResponse.from(season);
     }
@@ -135,7 +139,7 @@ public class AdminRankingService {
                 season.getId(),
                 beforeValue,
                 afterValue,
-                request.memo()
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         );
         return AdminSeasonResponse.from(season);
     }
@@ -157,7 +161,7 @@ public class AdminRankingService {
                 result.seasonId(),
                 null,
                 serializeRankingResult(result),
-                request == null ? null : request.memo()
+                request == null ? null : adminTextPolicyService.normalizeActionMemo(request.memo())
         );
         return new AdminRankingRecalculateResponse(result.seasonCode(), result.placeCount(), result.scoreCount());
     }
@@ -178,7 +182,7 @@ public class AdminRankingService {
                 result.seasonId(),
                 null,
                 serializeHistoryFinalizationResult(result),
-                request == null ? null : normalize(request.memo())
+                request == null ? null : adminTextPolicyService.normalizeActionMemo(request.memo())
         );
         return new AdminRankingHistoryFinalizeResponse(
                 result.seasonId(),
@@ -206,7 +210,7 @@ public class AdminRankingService {
                     place.getId(),
                     beforeValue,
                     serializePlaceRankingExclusion(place),
-                    normalize(request.memo())
+                    adminTextPolicyService.normalizeActionMemo(request.memo())
             );
             rankingCache.evictAllPlaceRankings();
         }
@@ -299,13 +303,6 @@ public class AdminRankingService {
                 "rankingExcluded", place.isRankingExcluded(),
                 "currentStarLevel", place.getCurrentStarLevel()
         ));
-    }
-
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
     }
 
     private String serialize(Map<String, Object> value) {

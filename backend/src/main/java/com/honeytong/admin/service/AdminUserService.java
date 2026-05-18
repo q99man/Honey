@@ -48,6 +48,7 @@ public class AdminUserService {
     private final UserSanctionRepository userSanctionRepository;
     private final AdminActionLogRepository adminActionLogRepository;
     private final ObjectMapper objectMapper;
+    private final AdminTextPolicyService adminTextPolicyService;
 
     public AdminUserService(
             UserRepository userRepository,
@@ -55,7 +56,8 @@ public class AdminUserService {
             UserLevelRepository userLevelRepository,
             UserSanctionRepository userSanctionRepository,
             AdminActionLogRepository adminActionLogRepository,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            AdminTextPolicyService adminTextPolicyService
     ) {
         this.userRepository = userRepository;
         this.userTrustRepository = userTrustRepository;
@@ -63,6 +65,7 @@ public class AdminUserService {
         this.userSanctionRepository = userSanctionRepository;
         this.adminActionLogRepository = adminActionLogRepository;
         this.objectMapper = objectMapper;
+        this.adminTextPolicyService = adminTextPolicyService;
     }
 
     @Transactional(readOnly = true)
@@ -101,7 +104,7 @@ public class AdminUserService {
         UserSanction sanction = userSanctionRepository.save(new UserSanction(
                 targetUser,
                 request.sanctionType(),
-                normalize(request.reason()),
+                adminTextPolicyService.normalizeSanctionReason(request.reason()),
                 startAt,
                 request.endAt(),
                 admin
@@ -118,7 +121,7 @@ public class AdminUserService {
                 targetUser.getId(),
                 beforeValue,
                 afterValue,
-                normalize(request.memo())
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         ));
 
         return toSanctionResponse(sanction);
@@ -145,7 +148,7 @@ public class AdminUserService {
                 targetUser.getId(),
                 beforeValue,
                 afterValue,
-                normalize(request.memo())
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         ));
 
         return toTrustAdjustResponse(targetUser, trust);
@@ -173,7 +176,7 @@ public class AdminUserService {
                 targetUser.getId(),
                 beforeValue,
                 afterValue,
-                normalize(request.memo())
+                adminTextPolicyService.normalizeActionMemo(request.memo())
         ));
 
         return toTrustAdjustResponse(targetUser, trust);
@@ -362,10 +365,4 @@ public class AdminUserService {
         }
     }
 
-    private String normalize(String value) {
-        if (value == null || value.isBlank()) {
-            return null;
-        }
-        return value.trim();
-    }
 }
