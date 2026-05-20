@@ -1,0 +1,42 @@
+name: honeytong_mobile
+description: Honeytong - Local Restaurant Discovery Platform Mobile App
+
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: '>=3.0.0 <4.0.0'
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # HTTP Client for REST API communication
+  dio: ^5.4.0
+
+  # Secure token storage for JWT (Access / Refresh tokens)
+  flutter_secure_storage: ^9.0.0
+
+  # Basic state management & Dependency Injection (easy to learn & highly readable)
+  provider: ^6.1.1
+
+  # Local cache for lightweight settings
+  shared_preferences: ^2.2.2
+
+  # GPS Geolocation for location verification and nearby place searches
+  geolocator: ^10.1.0
+
+  # Kakao Login SDK for native OAuth authentication
+  kakao_flutter_sdk_user: ^1.9.0
+
+  # Cupertino icons
+  cupertino_icons: ^1.0.5
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^2.0.0
+
+flutter:
+  uses-material-design: true

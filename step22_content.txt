@@ -1,0 +1,63 @@
+Created At: 2026-05-20T13:35:08Z
+Completed At: 2026-05-20T13:35:08Z
+File Path: `file:///c:/SpringWork/Honey/docs/progress.md`
+Total Lines: 606
+Total Bytes: 63944
+Showing lines 1 to 606
+The following code has been modified to include a line number before every line, in the format: <line_number>: <original_line>. Please note that any changes targeting the original code should remove the line number, colon, and leading space.
+1: # Development Progress
+2: 
+3: This document tracks the current development state of Honeytong.
+4: 
+5: It is used to:
+6: - maintain development continuity
+7: - inform Codex of current progress
+8: - prevent duplicate or conflicting implementations
+9: - guide next steps
+10: 
+11: ---
+12: 
+13: ## 1. Current Phase
+14: 
+15: Phase: MVP STABILIZATION AND RELEASE READINESS
+16: Status: Core MVP implementation is complete; the current focus is document sync, seeded browser QA, Home/My panel parity, and production go/no-go preparation.
+17: 
+18: The system design, API structure, database schema, and operating rules are defined.
+19: Backend, frontend, admin, community, and core user flows have been implemented and locally verified; remaining work is validation, polish, and production-readiness review.
+20: 
+21: ---
+22: 
+23: ## 2. Completed Documents
+24: 
+25: The following documents are restored locally and should be treated as the working development harness:
+26: 
+27: - [x] prd.md
+28: - [x] rules.md
+29: - [x] agent.md
+30: - [x] db-schema.md
+31: - [x] api-spec.md
+32: - [x] architecture.md
+33: - [x] tasks.md
+34: - [x] progress.md
+35: - [x] decisions.md
+36: - [x] mvp-flow-checklist.md
+37: 
+38: These documents are intentionally ignored by Git in the current workspace and are used as local working context. Keep them synced when implementation, scope, or priorities change.
+39: 
+40: ---
+41: 
+42: ## 3. Implementation Status
+43: 
+44: ### Harness / Repository Setup
+45: - [x] Root Git repository initialized
+46: - [x] Root GitHub remote configured
+47: - [x] UTF-8 editor and Git attributes
+<truncated 45283 bytes>
+web browser QA was rerun with Chrome CDP at 768px, 1024px, 1280px, 1440px, 1536px, and 1920px; desktop widths kept `documentElement.scrollWidth` equal to the viewport width, the left rail/panel/map/category/control structure stayed separated, the category more popover remained within the viewport, and mobile 360px/393px/430px rechecks still used the app mobile overlay. Minimal desktop fixes made the top category chips horizontally scrollable at 1024px, hid the map status chip while the more popover is open, and aligned the desktop rail labels with the web navigation scope.
+483: - [x] Home web 2.5 detail refactor follow-up kept the desktop map fixed while converting the left rail to Home-local panel modes, added a compact left information-panel collapse/expand toggle, kept desktop map categories limited to existing Honeytong food categories, removed the lower weather/status chip, and verified 360px, 1024px, 1280px, and 1440px Chrome CDP widths without horizontal overflow.
+484: - [x] Home web selected-place information panel detail pass added a desktop-only detail card with a fuller image area, title-side save button, compact place summary, and the confirmed tabs `홈`, `메뉴`, `사진`, `댓글`, `신고`; the mobile place sheet remains on the existing shared card path. Frontend lint/build passed, while an attempted Chrome CDP selected-panel screenshot timed out in the local tool session after the temporary server and browser were cleaned up.
+485: - [x] Home web 2.5 follow-up continued without final verification by request: the hidden legacy desktop overlay was reduced to an inert placeholder, the map status chip over the desktop map was removed, the left information panel keeps collapse/expand behavior, and selected-place panel copy/encoding was normalized for Korean-first UI before the user review pass.
+486: - [x] Home web 2.5 image follow-up applied
+<truncated 18156 bytes>
+
+NOTE: The output was truncated because it was too long. Use a more targeted query or a smaller range to get the information you need.
