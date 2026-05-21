@@ -1,4 +1,4 @@
-package com.example.honeytong_mobile
+package com.honeytong.app
 
 import io.flutter.embedding.android.FlutterActivity
 

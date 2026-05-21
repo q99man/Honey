@@ -1,10 +1,10 @@
 package com.honeytong.auth.service;
 
-import com.honeytong.auth.config.SecurityProperties;
 import com.honeytong.auth.entity.RefreshToken;
 import com.honeytong.auth.repository.RefreshTokenRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
@@ -21,22 +21,22 @@ public class RefreshTokenService {
     private static final int TOKEN_BYTE_LENGTH = 64;
 
     private final RefreshTokenRepository refreshTokenRepository;
-    private final SecurityProperties securityProperties;
+    private final PolicyService policyService;
     private final SecureRandom secureRandom = new SecureRandom();
 
     public RefreshTokenService(
             RefreshTokenRepository refreshTokenRepository,
-            SecurityProperties securityProperties
+            PolicyService policyService
     ) {
         this.refreshTokenRepository = refreshTokenRepository;
-        this.securityProperties = securityProperties;
+        this.policyService = policyService;
     }
 
     @Transactional
     public String issue(User user) {
         String rawToken = generateRawToken();
         String tokenHash = hash(rawToken);
-        LocalDateTime expiresAt = LocalDateTime.now().plusDays(securityProperties.refreshTokenDays());
+        LocalDateTime expiresAt = LocalDateTime.now().plusDays(getRefreshTokenDays());
         refreshTokenRepository.save(new RefreshToken(user, tokenHash, expiresAt));
         return rawToken;
     }
@@ -75,5 +75,13 @@ public class RefreshTokenService {
         } catch (NoSuchAlgorithmException ex) {
             throw new IllegalStateException("SHA-256 algorithm is not available.", ex);
         }
+    }
+
+    private int getRefreshTokenDays() {
+        int days = policyService.getRequiredInteger("auth", "jwt_refresh_token_days");
+        if (days < 1 || days > 365) { // 1일에서 365일 사이
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "리프레시 토큰 만료 시간은 1일 이상 365일 이하여야 합니다.");
+        }
+        return days;
     }
 }

@@ -1,6 +1,5 @@
 package com.honeytong.auth.service;
 
-import com.honeytong.auth.config.PhoneVerificationProperties;
 import com.honeytong.auth.dto.PhoneVerificationSendRequest;
 import com.honeytong.auth.dto.PhoneVerificationSendResponse;
 import com.honeytong.auth.dto.PhoneVerificationStatusResponse;
@@ -11,6 +10,7 @@ import com.honeytong.auth.verification.PhoneVerificationCache;
 import com.honeytong.auth.verification.PhoneVerificationState;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
@@ -29,7 +29,7 @@ public class PhoneVerificationService {
     private final PhoneVerificationCodeRepository phoneVerificationCodeRepository;
     private final PhoneVerificationSender phoneVerificationSender;
     private final PhoneVerificationCache phoneVerificationCache;
-    private final PhoneVerificationProperties properties;
+    private final PolicyService policyService;
     private final PasswordEncoder passwordEncoder;
     private final SecureRandom secureRandom = new SecureRandom();
 
@@ -39,7 +39,7 @@ public class PhoneVerificationService {
             PhoneVerificationCodeRepository phoneVerificationCodeRepository,
             PhoneVerificationSender phoneVerificationSender,
             PhoneVerificationCache phoneVerificationCache,
-            PhoneVerificationProperties properties,
+            PolicyService policyService,
             PasswordEncoder passwordEncoder
     ) {
         this.userRepository = userRepository;
@@ -47,7 +47,7 @@ public class PhoneVerificationService {
         this.phoneVerificationCodeRepository = phoneVerificationCodeRepository;
         this.phoneVerificationSender = phoneVerificationSender;
         this.phoneVerificationCache = phoneVerificationCache;
-        this.properties = properties;
+        this.policyService = policyService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -57,7 +57,7 @@ public class PhoneVerificationService {
         validatePhoneAvailable(request.phone(), userId);
         String code = generateCode();
         String codeHash = passwordEncoder.encode(code);
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(properties.codeTtlMinutes());
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(getCodeTtlMinutes());
 
         PhoneVerificationCode verificationCode = new PhoneVerificationCode(
                 user,
@@ -115,7 +115,7 @@ public class PhoneVerificationService {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "만료된 인증 코드입니다.");
         }
 
-        if (!verificationCode.canAttempt(properties.maxAttempts())) {
+        if (!verificationCode.canAttempt(getMaxAttempts())) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드 입력 횟수를 초과했습니다.");
         }
     }
@@ -125,7 +125,7 @@ public class PhoneVerificationService {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "만료된 인증 코드입니다.");
         }
 
-        if (!verificationState.canAttempt(properties.maxAttempts())) {
+        if (!verificationState.canAttempt(getMaxAttempts())) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "인증 코드 입력 횟수를 초과했습니다.");
         }
     }
@@ -166,8 +166,32 @@ public class PhoneVerificationService {
         }
     }
 
+    private int getCodeLength() {
+        int length = policyService.getRequiredInteger("auth", "phone_verification_code_length");
+        if (length < 4 || length > 8) {
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "인증번호 길이는 4자 이상 8자 이하여야 합니다.");
+        }
+        return length;
+    }
+
+    private int getCodeTtlMinutes() {
+        int ttl = policyService.getRequiredInteger("auth", "phone_verification_code_ttl_minutes");
+        if (ttl < 1 || ttl > 60) {
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "인증번호 유효 시간은 1분 이상 60분 이하여야 합니다.");
+        }
+        return ttl;
+    }
+
+    private int getMaxAttempts() {
+        int max = policyService.getRequiredInteger("auth", "phone_verification_max_attempts");
+        if (max < 1 || max > 20) {
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "최대 인증 시도 횟수는 1회 이상 20회 이하여야 합니다.");
+        }
+        return max;
+    }
+
     private String generateCode() {
-        int length = properties.codeLength();
+        int length = getCodeLength();
         StringBuilder builder = new StringBuilder(length);
         for (int i = 0; i < length; i++) {
             builder.append(secureRandom.nextInt(10));

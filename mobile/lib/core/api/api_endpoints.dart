@@ -31,6 +31,7 @@ class ApiEndpoints {
   // Recommendation
   static String recommendPlace(int id) => '/api/places/$id/recommend';
   static String recommendPolicy(int id) => '/api/places/$id/recommend-policy';
+  static const String myRecommendations = '/api/users/me/recommendations';
 
   // Visit
   static String verifyVisit(int id) => '/api/places/$id/visits';
@@ -45,6 +46,13 @@ class ApiEndpoints {
   // Rankings
   static const String currentSeason = '/api/rankings/seasons/current';
   static const String rankingPlaces = '/api/rankings/places';
+
+  // Community
+  static const String communityPosts = '/api/community/posts';
+  static String communityPostDetail(int id) => '/api/community/posts/$id';
+  static String updateCommunityPost(int id) => '/api/community/posts/$id';
+  static String deleteCommunityPost(int id) => '/api/community/posts/$id';
+  static const String myCommunityPosts = '/api/users/me/community-posts';
 
   // User Status & Activity
   static const String userStatus = '/api/users/me/status';

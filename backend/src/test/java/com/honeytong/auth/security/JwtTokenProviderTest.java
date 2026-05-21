@@ -1,22 +1,30 @@
 package com.honeytong.auth.security;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 import com.honeytong.auth.config.SecurityProperties;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.security.core.Authentication;
 import org.springframework.test.util.ReflectionTestUtils;
 
 class JwtTokenProviderTest {
 
-    private final JwtTokenProvider jwtTokenProvider = new JwtTokenProvider(
-            new SecurityProperties(
-                    "test-honeytong-jwt-secret-key-for-unit-test-1234567890",
-                    15,
-                    14
-            )
-    );
+    private SecurityProperties securityProperties;
+    private PolicyService policyService;
+    private JwtTokenProvider jwtTokenProvider;
+
+    @BeforeEach
+    void setUp() {
+        securityProperties = new SecurityProperties("test-honeytong-jwt-secret-key-for-unit-test-1234567890");
+        policyService = mock(PolicyService.class);
+        when(policyService.getRequiredInteger("auth", "jwt_access_token_minutes")).thenReturn(15);
+        jwtTokenProvider = new JwtTokenProvider(securityProperties, policyService);
+    }
 
     @Test
     void createAccessToken_containsUserIdAndRole() {

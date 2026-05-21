@@ -4,17 +4,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.honeytong.auth.config.PhoneVerificationProperties;
 import com.honeytong.auth.dto.PhoneVerificationSendRequest;
 import com.honeytong.auth.dto.PhoneVerificationVerifyRequest;
 import com.honeytong.auth.entity.PhoneVerificationCode;
 import com.honeytong.auth.repository.PhoneVerificationCodeRepository;
 import com.honeytong.auth.verification.PhoneVerificationCache;
 import com.honeytong.auth.verification.PhoneVerificationState;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
@@ -49,6 +50,9 @@ class PhoneVerificationServiceTest {
     @Mock
     private PhoneVerificationCache phoneVerificationCache;
 
+    @Mock
+    private PolicyService policyService;
+
     @Captor
     private ArgumentCaptor<PhoneVerificationCode> codeCaptor;
 
@@ -66,9 +70,13 @@ class PhoneVerificationServiceTest {
                 phoneVerificationCodeRepository,
                 sender,
                 phoneVerificationCache,
-                new PhoneVerificationProperties(6, 5, 5),
+                policyService,
                 new BCryptPasswordEncoder()
         );
+
+        lenient().when(policyService.getRequiredInteger("auth", "phone_verification_code_length")).thenReturn(6);
+        lenient().when(policyService.getRequiredInteger("auth", "phone_verification_code_ttl_minutes")).thenReturn(5);
+        lenient().when(policyService.getRequiredInteger("auth", "phone_verification_max_attempts")).thenReturn(5);
 
         user = new User("tester", "tester@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);

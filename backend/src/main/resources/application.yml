@@ -76,12 +76,7 @@ app:
   security:
     jwt:
       secret: ${JWT_SECRET:dev-only-honeytong-jwt-secret-key-must-be-replaced}
-      access-token-minutes: ${JWT_ACCESS_TOKEN_MINUTES:15}
-      refresh-token-days: ${JWT_REFRESH_TOKEN_DAYS:14}
     phone-verification:
-      code-length: ${PHONE_VERIFICATION_CODE_LENGTH:6}
-      code-ttl-minutes: ${PHONE_VERIFICATION_CODE_TTL_MINUTES:5}
-      max-attempts: ${PHONE_VERIFICATION_MAX_ATTEMPTS:5}
       sender:
         provider: ${PHONE_VERIFICATION_SENDER_PROVIDER:dev}
         message-template: ${PHONE_VERIFICATION_MESSAGE_TEMPLATE:[Honeytong] 인증번호 {code}를 입력해 주세요.}

@@ -8,6 +8,12 @@ import 'features/auth/views/login_screen.dart';
 import 'features/home/views/home_map_screen.dart';
 import 'features/my/views/my_page_screen.dart';
 import 'features/place/services/place_service.dart';
+import 'features/ranking/services/ranking_service.dart';
+import 'features/ranking/views/ranking_screen.dart';
+import 'features/wishlist/services/wishlist_service.dart';
+import 'features/wishlist/views/wishlist_screen.dart';
+import 'features/community/services/community_service.dart';
+import 'features/community/views/community_screen.dart';
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -41,6 +47,18 @@ class HoneytongApp extends StatelessWidget {
         // Inject PlaceService
         ProxyProvider<ApiClient, PlaceService>(
           update: (_, apiClient, __) => PlaceService(apiClient),
+        ),
+        // Inject RankingService
+        ProxyProvider<ApiClient, RankingService>(
+          update: (_, apiClient, __) => RankingService(apiClient),
+        ),
+        // Inject WishlistService
+        ProxyProvider<ApiClient, WishlistService>(
+          update: (_, apiClient, __) => WishlistService(apiClient),
+        ),
+        // Inject CommunityService
+        ProxyProvider<ApiClient, CommunityService>(
+          update: (_, apiClient, __) => CommunityService(apiClient),
         ),
         // Inject AuthProvider (ChangeNotifier)
         ChangeNotifierProvider<AuthProvider>(
@@ -79,23 +97,36 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
   // Screens list matching the BottomNavigationBar tabs
-  final List<Widget> _screens = [
-    const HomeMapScreen(), // 홈 (지도로 맛집 탐험)
-    const Center(child: Text('실시간 랭킹 화면\n(준비 중)', style: TextStyle(fontSize: 16), textAlign: TextAlign.center)),
-    const Center(child: Text('저장한 맛집 화면 (위시리스트)\n(준비 중)', style: TextStyle(fontSize: 16), textAlign: TextAlign.center)),
-    const Center(child: Text('커뮤니티 화면\n(준비 중)', style: TextStyle(fontSize: 16), textAlign: TextAlign.center)),
-    const MyPageScreen(), // 마이페이지 (성장 지표 및 휴대폰 인증)
-  ];
+  late final List<Widget> _screens;
+
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      const HomeMapScreen(), // 홈 (지도로 맛집 탐험)
+      const RankingScreen(), // 실시간 랭킹 화면
+      WishlistScreen(
+        onExploreTap: () {
+          setState(() {
+            _currentIndex = 0;
+          });
+        },
+      ),
+      CommunityScreen(
+        onTabSwitch: (index) {
+          setState(() {
+            _currentIndex = index;
+          });
+        },
+      ),
+      const MyPageScreen(), // 마이페이지 (성장 지표 및 휴대폰 인증)
+    ];
+  }
 
   void _onTabTapped(int index) {
-    // If accessing "저장" (Saved Wishlist) tab and not logged in, prompt login
-    if ((index == 2) && !Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
-      _showLoginRequiredPrompt();
-    } else {
-      setState(() {
-        _currentIndex = index;
-      });
-    }
+    setState(() {
+      _currentIndex = index;
+    });
   }
 
   void _showLoginRequiredPrompt() {

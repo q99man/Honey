@@ -1,30 +1,47 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
+// This is a test file for Honeytong mobile models.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:honeytong_mobile/main.dart';
+import 'package:honeytong_mobile/models/community_post.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const HoneytongApp());
+  group('CommunityPost Model Tests', () {
+    test('Should parse CommunityPost from valid JSON', () {
+      final json = {
+        'postId': 1,
+        'authorUserId': 10,
+        'authorNickname': '꿀벌123',
+        'title': '오늘 날씨가 너무 좋네요',
+        'content': '동네 광장에 꿀 따러 가기 좋은 날입니다. 🐝',
+        'createdAt': '2026-05-21T15:30:00Z',
+        'updatedAt': '2026-05-21T15:30:00Z',
+        'mine': true,
+      };
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      final post = CommunityPost.fromJson(json);
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+      expect(post.postId, 1);
+      expect(post.authorUserId, 10);
+      expect(post.authorNickname, '꿀벌123');
+      expect(post.title, '오늘 날씨가 너무 좋네요');
+      expect(post.content, '동네 광장에 꿀 따러 가기 좋은 날입니다. 🐝');
+      expect(post.createdAt, '2026-05-21T15:30:00Z');
+      expect(post.updatedAt, '2026-05-21T15:30:00Z');
+      expect(post.mine, true);
+    });
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    test('Should parse CommunityPost from JSON with missing fields (null safety)', () {
+      final json = <String, dynamic>{};
+
+      final post = CommunityPost.fromJson(json);
+
+      expect(post.postId, 0);
+      expect(post.authorUserId, 0);
+      expect(post.authorNickname, '');
+      expect(post.title, '');
+      expect(post.content, '');
+      expect(post.createdAt, '');
+      expect(post.updatedAt, '');
+      expect(post.mine, false);
+    });
   });
 }

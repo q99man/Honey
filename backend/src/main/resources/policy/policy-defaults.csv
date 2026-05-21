@@ -28,3 +28,8 @@ ranking,comment_weight,0.5,DECIMAL,댓글 점수 가중치
 comment,max_length,300,INTEGER,댓글 내용 최대 길이
 community,post_title_max_length,120,INTEGER,커뮤니티 게시글 제목 최대 길이
 community,post_content_max_length,2000,INTEGER,커뮤니티 게시글 내용 최대 길이
+auth,phone_verification_code_length,6,INTEGER,휴대폰 인증번호 길이
+auth,phone_verification_code_ttl_minutes,5,INTEGER,휴대폰 인증번호 유효 시간(분)
+auth,phone_verification_max_attempts,5,INTEGER,휴대폰 인증번호 최대 시도 횟수
+auth,jwt_access_token_minutes,15,INTEGER,JWT 액세스 토큰 만료 시간(분)
+auth,jwt_refresh_token_days,14,INTEGER,JWT 리프레시 토큰 만료 시간(일)
