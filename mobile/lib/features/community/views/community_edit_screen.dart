@@ -63,8 +63,8 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: const [
+            content: const Row(
+              children: [
                 Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 10),
                 Text('게시글이 성공적으로 수정되었습니다! 🐝', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
@@ -83,8 +83,8 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Row(
-              children: const [
+            content: const Row(
+              children: [
                 Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 10),
                 Text('글 수정에 실패했습니다. 정책 위반이거나 오류입니다.', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
@@ -215,7 +215,7 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF8F00).withOpacity(0.25),
+                              color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),

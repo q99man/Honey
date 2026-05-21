@@ -78,15 +78,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
     // 1. Place details
     final details = await _placeService.getPlace(widget.placeId);
+    if (!mounted) return;
 
     // 2. Recommendation policy (only if authenticated)
     Map<String, dynamic>? policy;
     if (authProvider.isAuthenticated) {
       policy = await _placeService.getRecommendationPolicy(widget.placeId);
+      if (!mounted) return;
     }
 
     // 3. Comments
     final commentsList = await _placeService.getPlaceComments(widget.placeId);
+    if (!mounted) return;
 
     setState(() {
       _placeDetails = details;
@@ -100,6 +103,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   Future<void> _refreshComments() async {
     setState(() => _isLoadingComments = true);
     final commentsList = await _placeService.getPlaceComments(widget.placeId);
+    if (!mounted) return;
     setState(() {
       _comments = commentsList;
       _isLoadingComments = false;
@@ -124,6 +128,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (_isRecommended) {
       // Cancel
       success = await _placeService.cancelRecommendPlace(widget.placeId);
+      if (!mounted) return;
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('맛집 추천을 취소했습니다.')),
@@ -146,6 +151,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       }
 
       success = await _placeService.recommendPlace(widget.placeId);
+      if (!mounted) return;
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('이 맛집을 추천했습니다! 👍')),
@@ -157,6 +163,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       // Reload details and recommendation status
       final details = await _placeService.getPlace(widget.placeId);
       final policy = await _placeService.getRecommendationPolicy(widget.placeId);
+      if (!mounted) return;
       setState(() {
         _placeDetails = details;
         _recommendationPolicy = policy;
@@ -197,6 +204,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         position.latitude,
         position.longitude,
       );
+      if (!mounted) return;
 
       setState(() => _isActionInProgress = false);
 
@@ -205,6 +213,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         
         // Reload details to update stats
         final details = await _placeService.getPlace(widget.placeId);
+        if (!mounted) return;
         setState(() {
           _placeDetails = details;
         });
@@ -217,6 +226,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         );
       }
     } catch (e) {
+      if (!mounted) return;
       setState(() => _isActionInProgress = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -241,12 +251,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     setState(() => _isLoadingComments = true);
 
     final result = await _placeService.createComment(widget.placeId, text);
+    if (!mounted) return;
 
     if (result['success'] == true) {
       _commentController.clear();
       _refreshComments();
       // Reload place stats to show updated comment count
       final details = await _placeService.getPlace(widget.placeId);
+      if (!mounted) return;
       setState(() {
         _placeDetails = details;
       });
@@ -281,15 +293,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ),
     );
 
+    if (!mounted) return;
     if (confirm != true) return;
 
     setState(() => _isLoadingComments = true);
     final success = await _placeService.deleteComment(commentId);
+    if (!mounted) return;
 
     if (success) {
       _refreshComments();
       // Reload place details
       final details = await _placeService.getPlace(widget.placeId);
+      if (!mounted) return;
       setState(() {
         _placeDetails = details;
       });
@@ -309,8 +324,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Row(
-          children: const [
+        title: const Row(
+          children: [
             Icon(Icons.stars, color: Color(0xFFFFB300), size: 28),
             SizedBox(width: 8),
             Text('방문 인증 성공!', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -397,10 +412,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
-      body: WillPopScope(
-        onWillPop: () async {
+      body: PopScope(
+        canPop: false,
+        onPopInvokedWithResult: (didPop, result) {
+          if (didPop) return;
           Navigator.of(context).pop(true); // Return true so home map reloads
-          return false;
         },
         child: Stack(
           children: [
@@ -456,7 +472,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFB300).withOpacity(0.15),
+                                color: const Color(0xFFFFB300).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(6),
                               ),
                               child: Text(
@@ -511,8 +527,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Row(
-                                children: const [
+                              const Row(
+                                children: [
                                   Icon(Icons.restaurant_menu, color: Color(0xFFFFB300), size: 20),
                                   SizedBox(width: 8),
                                   Text(
@@ -527,8 +543,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                 style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 12),
-                              Row(
-                                children: const [
+                              const Row(
+                                children: [
                                   Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFB300), size: 20),
                                   SizedBox(width: 8),
                                   Text(
@@ -690,8 +706,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: Colors.black12),
         ),
-        child: Column(
-          children: const [
+        child: const Column(
+          children: [
             Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Colors.black26),
             SizedBox(height: 8),
             Text('첫 피드백(댓글)을 남겨보세요!', style: TextStyle(color: Colors.black38, fontSize: 12)),
@@ -733,7 +749,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           child: ListTile(
             contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFFFFB300).withOpacity(0.15),
+              backgroundColor: const Color(0xFFFFB300).withValues(alpha: 0.15),
               radius: 18,
               child: Text(
                 comment['nickname'] != null && comment['nickname'].toString().isNotEmpty

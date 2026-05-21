@@ -4,7 +4,6 @@ import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/services/auth_service.dart';
-import 'features/auth/views/login_screen.dart';
 import 'features/home/views/home_map_screen.dart';
 import 'features/my/views/my_page_screen.dart';
 import 'features/place/services/place_service.dart';
@@ -75,7 +74,7 @@ class HoneytongApp extends StatelessWidget {
             seedColor: const Color(0xFFFFB300), // Honey/Amber brand color
             primary: const Color(0xFFFFB300),
             secondary: const Color(0xFFFF8F00),
-            background: const Color(0xFFFAFAFA),
+            surface: const Color(0xFFFAFAFA),
           ),
           fontFamily: 'NanumSquare',
         ),
@@ -129,36 +128,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-  void _showLoginRequiredPrompt() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('로그인 필요', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('위시리스트 기능은 로그인 후 이용하실 수 있습니다.'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('취소', style: TextStyle(color: Colors.black54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context); // Close dialog
-              Navigator.of(context).push(
-                MaterialPageRoute(builder: (context) => const LoginScreen()),
-              );
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-            ),
-            child: const Text('로그인하기'),
-          ),
-        ],
-      ),
-    );
-  }
+
 
   @override
   Widget build(BuildContext context) {

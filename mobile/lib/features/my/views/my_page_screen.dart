@@ -24,6 +24,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   void _showPhoneVerificationDialog(BuildContext context) {
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
     setState(() {
       _phoneController.clear();
       _codeController.clear();
@@ -50,11 +51,12 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
               setStateInDialog(() => _isVerifying = true);
               final success = await authProvider.sendPhoneVerification(phone);
+              if (!mounted || !dialogContext.mounted) return;
               setStateInDialog(() {
                 _isVerifying = false;
                 if (success) {
                   _codeSent = true;
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  scaffoldMessenger.showSnackBar(
                     const SnackBar(content: Text('인증코드가 발송되었습니다. (인증코드: 123456)')),
                   );
                 }
@@ -73,27 +75,24 @@ class _MyPageScreenState extends State<MyPageScreen> {
 
               setStateInDialog(() => _isVerifying = true);
               final success = await authProvider.verifyPhoneCode(phone, code);
+              if (!mounted || !dialogContext.mounted) return;
               setStateInDialog(() => _isVerifying = false);
 
               if (success) {
-                if (mounted) {
-                  Navigator.of(dialogContext).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('휴대폰 본인 인증이 완료되었습니다! 🎉'),
-                      backgroundColor: Colors.green,
-                    ),
-                  );
-                }
+                Navigator.of(dialogContext).pop();
+                scaffoldMessenger.showSnackBar(
+                  const SnackBar(
+                    content: Text('휴대폰 본인 인증이 완료되었습니다! 🎉'),
+                    backgroundColor: Colors.green,
+                  ),
+                );
               } else {
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      content: Text(authProvider.errorMessage ?? '인증코드 확인에 실패했습니다.'),
-                      backgroundColor: Colors.redAccent,
-                    ),
-                  );
-                }
+                scaffoldMessenger.showSnackBar(
+                  SnackBar(
+                    content: Text(authProvider.errorMessage ?? '인증코드 확인에 실패했습니다.'),
+                    backgroundColor: Colors.redAccent,
+                  ),
+                );
               }
             }
 
@@ -271,7 +270,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor: const Color(0xFFFFB300).withOpacity(0.1),
+                        backgroundColor: const Color(0xFFFFB300).withValues(alpha: 0.1),
                         child: const Icon(Icons.emoji_nature, color: Color(0xFFFFB300), size: 32),
                       ),
                       const SizedBox(width: 16),
@@ -307,8 +306,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           color: user.phoneVerified ? Colors.green : Colors.orange,
                         ),
                         backgroundColor: user.phoneVerified
-                            ? Colors.green.withOpacity(0.1)
-                            : Colors.orange.withOpacity(0.1),
+                            ? Colors.green.withValues(alpha: 0.1)
+                            : Colors.orange.withValues(alpha: 0.1),
                         label: Text(
                           user.phoneVerified ? '인증됨' : '미인증',
                           style: TextStyle(
@@ -351,7 +350,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFF8F00).withOpacity(0.1),
+                              color: const Color(0xFFFF8F00).withValues(alpha: 0.1),
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
@@ -435,9 +434,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                     decoration: BoxDecoration(
-                      color: Colors.orange.withOpacity(0.08),
+                      color: Colors.orange.withValues(alpha: 0.08),
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.orange.withOpacity(0.3)),
+                      border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
                     ),
                     child: const Row(
                       children: [

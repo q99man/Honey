@@ -298,7 +298,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.06),
+            color: Colors.black.withValues(alpha: 0.06),
             blurRadius: 10,
             offset: const Offset(0, 4),
           )
@@ -388,7 +388,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
                     width: 30,
                     height: 30,
                     decoration: BoxDecoration(
-                      color: Colors.blueAccent.withOpacity(0.2),
+                      color: Colors.blueAccent.withValues(alpha: 0.2),
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.blueAccent, width: 2),
                     ),
@@ -413,7 +413,6 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
               final place = entry.value;
               
               // Distribute markers around the center user position
-              final double angle = (idx * 2.1) + 0.5;
               final double dist = 80.0 + (idx * 45.0);
               final double left = 200 + (dist * double.parse((idx.isEven ? 1 : -1).toString()) * 0.7 * (idx % 2 == 0 ? 0.8 : 1.2));
               final double top = 350 + (dist * double.parse((idx.isOdd ? 1 : -1).toString()) * 0.5);
@@ -439,8 +438,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(8),
-                          boxShadow: [
-                            BoxShadow(color: Colors.black26, blurRadius: 4, offset: const Offset(0, 2))
+                          boxShadow: const [
+                            BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2))
                           ],
                           border: Border.all(color: const Color(0xFFFFB300), width: 1),
                         ),
@@ -512,7 +511,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
               width: 60,
               height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFFFFB300).withOpacity(0.1),
+                color: const Color(0xFFFFB300).withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.restaurant, color: Color(0xFFFFB300), size: 28),
@@ -527,7 +526,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
                 Container(
                   padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFFFB300).withOpacity(0.15),
+                    color: const Color(0xFFFFB300).withValues(alpha: 0.15),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -604,7 +603,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> with SingleTickerProvider
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFFFB300).withOpacity(0.1),
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.1),
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: const Icon(Icons.restaurant, color: Color(0xFFFFB300), size: 36),
@@ -689,7 +688,7 @@ class MapGridPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
-      ..color = Colors.black.withOpacity(0.04)
+      ..color = Colors.black.withValues(alpha: 0.04)
       ..strokeWidth = 1.0
       ..style = PaintingStyle.stroke;
 
@@ -704,7 +703,7 @@ class MapGridPainter extends CustomPainter {
 
     // Draw concentric circles
     final circlePaint = Paint()
-      ..color = const Color(0xFFFFB300).withOpacity(0.08)
+      ..color = const Color(0xFFFFB300).withValues(alpha: 0.08)
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke;
 

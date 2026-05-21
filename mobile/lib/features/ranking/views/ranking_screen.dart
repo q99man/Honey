@@ -49,17 +49,21 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
       _isLoadingRanking = true;
     });
 
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+
     // 1. Fetch current season
-    _currentSeason = await _rankingService.getCurrentSeason();
+    final season = await _rankingService.getCurrentSeason();
+    if (!mounted) return;
     setState(() {
+      _currentSeason = season;
       _isLoadingSeason = false;
     });
 
     // 2. Fetch user primary region if authenticated
-    final authProvider = Provider.of<AuthProvider>(context, listen: false);
     Map<String, dynamic>? primaryRegion;
     if (authProvider.isAuthenticated) {
       primaryRegion = await _placeService.getMyRegion();
+      if (!mounted) return;
     }
 
     if (primaryRegion != null && primaryRegion['dongId'] != null) {
@@ -72,18 +76,21 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
     } else {
       // Guest or unverified user: fallback to first available region in database
       final cities = await _rankingService.getCities();
+      if (!mounted) return;
       if (cities.isNotEmpty) {
         final defaultCity = cities.first;
         _cityId = defaultCity.id;
         _cityName = defaultCity.nameKo;
 
         final districts = await _rankingService.getDistricts(defaultCity.id);
+        if (!mounted) return;
         if (districts.isNotEmpty) {
           final defaultDistrict = districts.first;
           _districtId = defaultDistrict.id;
           _districtName = defaultDistrict.nameKo;
 
           final dongs = await _rankingService.getDongs(defaultDistrict.id);
+          if (!mounted) return;
           if (dongs.isNotEmpty) {
             final defaultDong = dongs.first;
             _dongId = defaultDong.id;
@@ -113,15 +120,18 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
     }
 
     if (activeRegionId != null) {
-      _rankingResponse = await _rankingService.getPlaceRankings(
+      final rankingResponse = await _rankingService.getPlaceRankings(
         regionType: _regionType,
         regionId: activeRegionId,
         seasonCode: _currentSeason?.seasonCode,
       );
+      if (!mounted) return;
+      _rankingResponse = rankingResponse;
     } else {
       _rankingResponse = null;
     }
 
+    if (!mounted) return;
     setState(() {
       _isLoadingRanking = false;
     });
@@ -160,7 +170,6 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     final displayedRegionName = _regionType == 'dong'
         ? '$_cityName $_districtName $_dongName'
         : _regionType == 'district'
@@ -200,7 +209,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFB300).withOpacity(0.1),
+                          color: const Color(0xFFFFB300).withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
@@ -410,7 +419,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
         side: BorderSide(
-          color: item.rank <= 3 ? rankBadgeColor.withOpacity(0.5) : Colors.black12,
+          color: item.rank <= 3 ? rankBadgeColor.withValues(alpha: 0.5) : Colors.black12,
           width: item.rank <= 3 ? 1.5 : 1,
         ),
       ),
@@ -438,7 +447,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                   boxShadow: item.rank <= 3
                       ? [
                           BoxShadow(
-                            color: rankBadgeColor.withOpacity(0.3),
+                            color: rankBadgeColor.withValues(alpha: 0.3),
                             blurRadius: 4,
                             offset: const Offset(0, 2),
                           )
@@ -579,6 +588,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
   Future<void> _loadCities() async {
     setState(() => _isLoadingCities = true);
     final citiesList = await widget.rankingService.getCities();
+    if (!mounted) return;
     setState(() {
       _cities = citiesList;
       _isLoadingCities = false;
@@ -604,6 +614,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
     });
 
     final districtsList = await widget.rankingService.getDistricts(cityId);
+    if (!mounted) return;
     setState(() {
       _districts = districtsList;
       _isLoadingDistricts = false;
@@ -627,6 +638,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
     });
 
     final dongsList = await widget.rankingService.getDongs(districtId);
+    if (!mounted) return;
     setState(() {
       _dongs = dongsList;
       _isLoadingDongs = false;
@@ -676,7 +688,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
           _isLoadingCities
               ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionCity>(
-                  value: _selectedCity,
+                  initialValue: _selectedCity,
                   decoration: InputDecoration(
                     labelText: '시/도 선택',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -702,7 +714,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
           _isLoadingDistricts
               ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionDistrict>(
-                  value: _selectedDistrict,
+                  initialValue: _selectedDistrict,
                   decoration: InputDecoration(
                     labelText: '시/군/구 선택',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
@@ -730,7 +742,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
           _isLoadingDongs
               ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionDong>(
-                  value: _selectedDong,
+                  initialValue: _selectedDong,
                   decoration: InputDecoration(
                     labelText: '동/읍/면 선택',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),

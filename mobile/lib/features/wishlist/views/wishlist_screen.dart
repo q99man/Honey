@@ -228,7 +228,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFB300).withOpacity(0.12),
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -268,6 +268,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const LoginScreen()),
                   ).then((_) {
+                    if (!mounted) return;
                     if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
                       _loadWishlist();
                     }
@@ -285,7 +286,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF8F00).withOpacity(0.25),
+                        color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -324,30 +325,30 @@ class _WishlistScreenState extends State<WishlistScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.01),
+                color: Colors.black.withValues(alpha: 0.01),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Row(
+          child: const Row(
             children: [
-              const ShimmerLoading(
+              ShimmerLoading(
                 width: 90,
                 height: 90,
                 borderRadius: BorderRadius.all(Radius.circular(12)),
               ),
-              const SizedBox(width: 16),
+              SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const ShimmerLoading(width: 60, height: 16),
-                    const SizedBox(height: 8),
-                    const ShimmerLoading(width: 140, height: 18),
-                    const SizedBox(height: 8),
+                    ShimmerLoading(width: 60, height: 16),
+                    SizedBox(height: 8),
+                    ShimmerLoading(width: 140, height: 18),
+                    SizedBox(height: 8),
                     Row(
-                      children: const [
+                      children: [
                         ShimmerLoading(width: 14, height: 14),
                         SizedBox(width: 4),
                         ShimmerLoading(width: 80, height: 14),
@@ -462,9 +463,9 @@ class _WishlistScreenState extends State<WishlistScreen> {
                   end: Alignment.centerRight,
                 ),
               ),
-              child: Row(
+              child: const Row(
                 mainAxisAlignment: MainAxisAlignment.end,
-                children: const [
+                children: [
                   Text(
                     '저장 취소',
                     style: TextStyle(
@@ -485,7 +486,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 border: Border.all(color: const Color(0xFFF3EFE9), width: 1.2),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF8D6E63).withOpacity(0.04),
+                    color: const Color(0xFF8D6E63).withValues(alpha: 0.04),
                     blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),

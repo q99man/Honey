@@ -104,7 +104,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           ),
           ElevatedButton(
             onPressed: () async {
-              Navigator.pop(context); // Close dialog
+              final navigator = Navigator.of(context);
+              navigator.pop(); // Close dialog
               setState(() {
                 _isLoading = true;
               });
@@ -114,7 +115,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               if (success) {
                 if (mounted) {
                   _showSuccessSnackBar('이야기가 성공적으로 삭제되었습니다.');
-                  Navigator.of(context).pop(true); // Return reload=true to refresh list
+                  navigator.pop(true); // Return reload=true to refresh list
                 }
               } else {
                 if (mounted) {
@@ -166,10 +167,11 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
         Navigator.pop(context, _anyChangesMade);
-        return false;
       },
       child: Scaffold(
         backgroundColor: const Color(0xFFFDFBF7),

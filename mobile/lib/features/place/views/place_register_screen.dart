@@ -65,6 +65,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   Future<void> _loadUserRegion() async {
     setState(() => _isLoadingRegion = true);
     final region = await _placeService.getMyRegion();
+    if (!mounted) return;
     setState(() {
       _myRegion = region;
       _isLoadingRegion = false;
@@ -77,6 +78,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
+      if (!mounted) return;
       setState(() {
         _latController.text = position.latitude.toStringAsFixed(6);
         _lngController.text = position.longitude.toStringAsFixed(6);
@@ -84,6 +86,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       });
     } catch (e) {
       debugPrint('Location error: $e');
+      if (!mounted) return;
       setState(() {
         // Fallback default coordinates
         _latController.text = '37.556456';
@@ -131,6 +134,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     };
 
     final result = await _placeService.createPlace(placeData);
+    if (!mounted) return;
 
     setState(() => _isLoading = false);
 
@@ -264,7 +268,6 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
 
   Widget _buildRegionInfoCard() {
     final bool hasRegion = _myRegion != null && _myRegion!['dongId'] != null;
-    final bool isVerified = _myRegion != null && _myRegion!['verified'] == true;
 
     return Container(
       width: double.infinity,
@@ -360,7 +363,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
 
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
-      value: _selectedCategory,
+      initialValue: _selectedCategory,
       decoration: InputDecoration(
         labelText: '카테고리',
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
@@ -406,7 +409,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
         children: [
           Row(
             children: [
-              Expanded(
+              const Expanded(
                 child: Text(
                   '위도/경도 좌표 수집',
                   style: TextStyle(
@@ -475,9 +478,9 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Column(
+          const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            children: const [
+            children: [
               Text(
                 '프랜차이즈 여부',
                 style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
@@ -491,7 +494,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
           ),
           Switch(
             value: _isFranchise,
-            activeColor: const Color(0xFFFFB300),
+            activeThumbColor: const Color(0xFFFFB300),
             onChanged: (val) {
               setState(() => _isFranchise = val);
             },

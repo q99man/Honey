@@ -223,7 +223,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             ),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFFFF8F00).withOpacity(0.3),
+                color: const Color(0xFFFF8F00).withValues(alpha: 0.3),
                 blurRadius: 12,
                 offset: const Offset(0, 6),
               ),
@@ -252,7 +252,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: const Color(0xFFFFB300).withOpacity(0.2),
+                    color: const Color(0xFFFFB300).withValues(alpha: 0.2),
                     blurRadius: 6,
                     offset: const Offset(0, 3),
                   ),
@@ -288,7 +288,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   shape: BoxShape.circle,
                   boxShadow: [
                     BoxShadow(
-                      color: const Color(0xFFFFB300).withOpacity(0.12),
+                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
                       blurRadius: 24,
                       offset: const Offset(0, 8),
                     ),
@@ -328,6 +328,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                   Navigator.of(context).push(
                     MaterialPageRoute(builder: (context) => const LoginScreen()),
                   ).then((_) {
+                    if (!mounted) return;
                     if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
                       _loadPosts();
                     }
@@ -345,7 +346,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFF8F00).withOpacity(0.25),
+                        color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
                         blurRadius: 16,
                         offset: const Offset(0, 8),
                       ),
@@ -383,24 +384,24 @@ class _CommunityScreenState extends State<CommunityScreen> {
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.01),
+                color: Colors.black.withValues(alpha: 0.01),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Column(
+          child: const Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const ShimmerLoading(width: 150, height: 20),
-              const SizedBox(height: 12),
-              const ShimmerLoading(width: double.infinity, height: 14),
-              const SizedBox(height: 6),
-              const ShimmerLoading(width: 200, height: 14),
-              const SizedBox(height: 16),
+              ShimmerLoading(width: 150, height: 20),
+              SizedBox(height: 12),
+              ShimmerLoading(width: double.infinity, height: 14),
+              SizedBox(height: 6),
+              ShimmerLoading(width: 200, height: 14),
+              SizedBox(height: 16),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: const [
+                children: [
                   ShimmerLoading(width: 80, height: 14),
                   ShimmerLoading(width: 60, height: 14),
                 ],
@@ -498,7 +499,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
             border: Border.all(color: const Color(0xFFF3EFE9), width: 1.2),
             boxShadow: [
               BoxShadow(
-                color: const Color(0xFF8D6E63).withOpacity(0.03),
+                color: const Color(0xFF8D6E63).withValues(alpha: 0.03),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
               ),
