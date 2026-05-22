@@ -15,9 +15,11 @@ import com.honeytong.place.dto.PlaceRegistrationPolicyResponse;
 import com.honeytong.place.dto.PlaceUpdateRequest;
 import com.honeytong.place.dto.PlaceUpdateResponse;
 import com.honeytong.place.entity.Place;
+import com.honeytong.place.entity.PlaceAudienceStats;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceImage;
 import com.honeytong.place.entity.PlaceStats;
+import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceImageRepository;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.place.repository.PlaceStatsRepository;
@@ -71,6 +73,8 @@ public class PlaceService {
     private final PlaceRepository placeRepository;
     private final PlaceImageRepository placeImageRepository;
     private final PlaceStatsRepository placeStatsRepository;
+    private final PlaceAudienceStatsRepository placeAudienceStatsRepository;
+    private final PlaceAudienceStatsService placeAudienceStatsService;
     private final PlaceSearchDocumentService placeSearchDocumentService;
     private final RegionDongRepository regionDongRepository;
     private final UserRegionRepository userRegionRepository;
@@ -85,6 +89,8 @@ public class PlaceService {
             PlaceRepository placeRepository,
             PlaceImageRepository placeImageRepository,
             PlaceStatsRepository placeStatsRepository,
+            PlaceAudienceStatsRepository placeAudienceStatsRepository,
+            PlaceAudienceStatsService placeAudienceStatsService,
             PlaceSearchDocumentService placeSearchDocumentService,
             RegionDongRepository regionDongRepository,
             UserRegionRepository userRegionRepository,
@@ -98,6 +104,8 @@ public class PlaceService {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
         this.placeStatsRepository = placeStatsRepository;
+        this.placeAudienceStatsRepository = placeAudienceStatsRepository;
+        this.placeAudienceStatsService = placeAudienceStatsService;
         this.placeSearchDocumentService = placeSearchDocumentService;
         this.regionDongRepository = regionDongRepository;
         this.userRegionRepository = userRegionRepository;
@@ -168,6 +176,7 @@ public class PlaceService {
         ));
         saveImages(place, request.imageUrls(), user);
         placeStatsRepository.save(new PlaceStats(place));
+        placeAudienceStatsRepository.save(new PlaceAudienceStats(place));
         placeSearchDocumentService.syncPlace(place);
         userActionLogService.record(
                 user.getId(),
@@ -531,6 +540,7 @@ public class PlaceService {
     }
 
     private PlaceDetailResponse toDetailResponse(Place place, PlaceStats stats, List<String> imageUrls) {
+        List<String> audienceTags = placeAudienceStatsService.generateAudienceTags(place.getId());
         return new PlaceDetailResponse(
                 place.getId(),
                 place.getName(),
@@ -558,7 +568,8 @@ public class PlaceService {
                 stats.getRecommendCount(),
                 stats.getVisitCount(),
                 stats.getCommentCount(),
-                imageUrls
+                imageUrls,
+                audienceTags
         );
     }
 

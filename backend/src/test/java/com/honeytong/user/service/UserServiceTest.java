@@ -69,14 +69,17 @@ class UserServiceTest {
     }
 
     @Test
-    void updateMyProfile_updatesNicknameAndLanguagePreference() {
+    void updateMyProfile_updatesNicknameAndDemographics() {
         var response = userService.updateMyProfile(
                 USER_ID,
-                new UserProfileUpdateRequest("새닉네임", "en")
+                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
         );
 
         assertThat(response.nickname()).isEqualTo("새닉네임");
         assertThat(response.languagePreference()).isEqualTo("en");
+        assertThat(response.birthYear()).isEqualTo(1995);
+        assertThat(response.gender()).isEqualTo("FEMALE");
+        assertThat(response.nationalityCode()).isEqualTo("KR");
     }
 
     @Test

@@ -25,6 +25,7 @@ import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
 import com.honeytong.user.service.UserActionLogService;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
@@ -65,6 +66,9 @@ class RecommendationServiceTest {
     @Mock
     private UserActionLogService userActionLogService;
 
+    @Mock
+    private PlaceAudienceStatsService placeAudienceStatsService;
+
     private RecommendationService recommendationService;
     private User user;
     private Place place;
@@ -80,7 +84,8 @@ class RecommendationServiceTest {
                 userTrustRepository,
                 policyService,
                 recommendationDailyCounter,
-                userActionLogService
+                userActionLogService,
+                placeAudienceStatsService
         );
 
         user = new User("테스터", "tester@example.com");

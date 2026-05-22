@@ -18,6 +18,7 @@ import com.honeytong.visit.dto.PlaceVisitSummaryResponse;
 import com.honeytong.visit.dto.VisitPolicyResponse;
 import com.honeytong.visit.dto.VisitResponse;
 import com.honeytong.visit.dto.VisitVerifyRequest;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
@@ -49,6 +50,7 @@ public class VisitService {
     private final UserGrowthService userGrowthService;
     private final UserActionLogService userActionLogService;
     private final VisitCooldownCache visitCooldownCache;
+    private final PlaceAudienceStatsService placeAudienceStatsService;
 
     public VisitService(
             VisitRepository visitRepository,
@@ -58,7 +60,8 @@ public class VisitService {
             PolicyService policyService,
             UserGrowthService userGrowthService,
             UserActionLogService userActionLogService,
-            VisitCooldownCache visitCooldownCache
+            VisitCooldownCache visitCooldownCache,
+            PlaceAudienceStatsService placeAudienceStatsService
     ) {
         this.visitRepository = visitRepository;
         this.placeRepository = placeRepository;
@@ -68,6 +71,7 @@ public class VisitService {
         this.userGrowthService = userGrowthService;
         this.userActionLogService = userActionLogService;
         this.visitCooldownCache = visitCooldownCache;
+        this.placeAudienceStatsService = placeAudienceStatsService;
     }
 
     @Transactional
@@ -102,6 +106,7 @@ public class VisitService {
         PlaceStats stats = getStatsForUpdate(placeId);
         stats.addVisit(getVisitWeight());
         visitCooldownCache.evict(userId, placeId);
+        placeAudienceStatsService.recalculateStats(placeId);
         VisitGrowthResult growthResult = userGrowthService.applyValidVisit(userId);
         Map<String, Object> metadata = new LinkedHashMap<>();
         metadata.put("visitId", visit.getId());

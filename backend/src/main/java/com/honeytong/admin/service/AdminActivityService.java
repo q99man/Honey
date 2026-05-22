@@ -24,6 +24,7 @@ import com.honeytong.user.repository.UserRepository;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.repository.VisitRepository;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.LinkedHashMap;
@@ -52,6 +53,7 @@ public class AdminActivityService {
     private final RecommendationDailyCounter recommendationDailyCounter;
     private final VisitCooldownCache visitCooldownCache;
     private final ObjectMapper objectMapper;
+    private final PlaceAudienceStatsService placeAudienceStatsService;
 
     public AdminActivityService(
             RecommendationRepository recommendationRepository,
@@ -62,7 +64,8 @@ public class AdminActivityService {
             PolicyService policyService,
             RecommendationDailyCounter recommendationDailyCounter,
             VisitCooldownCache visitCooldownCache,
-            ObjectMapper objectMapper
+            ObjectMapper objectMapper,
+            PlaceAudienceStatsService placeAudienceStatsService
     ) {
         this.recommendationRepository = recommendationRepository;
         this.visitRepository = visitRepository;
@@ -73,6 +76,7 @@ public class AdminActivityService {
         this.recommendationDailyCounter = recommendationDailyCounter;
         this.visitCooldownCache = visitCooldownCache;
         this.objectMapper = objectMapper;
+        this.placeAudienceStatsService = placeAudienceStatsService;
     }
 
     @Transactional(readOnly = true)
@@ -107,6 +111,7 @@ public class AdminActivityService {
             recommendation.invalidate();
             stats.removeRecommendation(recommendation.getRecommendWeight());
             recommendationDailyCounter.evict(recommendation.getUser().getId(), LocalDate.now());
+            placeAudienceStatsService.recalculateStats(place.getId());
             saveAdminLog(
                     admin,
                     RECOMMENDATION_INVALIDATE_ACTION,
@@ -136,6 +141,7 @@ public class AdminActivityService {
             visit.invalidate(ADMIN_INVALIDATED_VISIT_REASON);
             stats.removeVisit(getVisitWeight());
             visitCooldownCache.evict(visit.getUser().getId(), place.getId());
+            placeAudienceStatsService.recalculateStats(place.getId());
             saveAdminLog(
                     admin,
                     VISIT_INVALIDATE_ACTION,

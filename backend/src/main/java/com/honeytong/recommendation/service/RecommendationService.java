@@ -20,6 +20,7 @@ import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
 import com.honeytong.user.service.UserActionLogService;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -41,6 +42,7 @@ public class RecommendationService {
     private final PolicyService policyService;
     private final RecommendationDailyCounter recommendationDailyCounter;
     private final UserActionLogService userActionLogService;
+    private final PlaceAudienceStatsService placeAudienceStatsService;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
@@ -50,7 +52,8 @@ public class RecommendationService {
             UserTrustRepository userTrustRepository,
             PolicyService policyService,
             RecommendationDailyCounter recommendationDailyCounter,
-            UserActionLogService userActionLogService
+            UserActionLogService userActionLogService,
+            PlaceAudienceStatsService placeAudienceStatsService
     ) {
         this.recommendationRepository = recommendationRepository;
         this.placeRepository = placeRepository;
@@ -60,6 +63,7 @@ public class RecommendationService {
         this.policyService = policyService;
         this.recommendationDailyCounter = recommendationDailyCounter;
         this.userActionLogService = userActionLogService;
+        this.placeAudienceStatsService = placeAudienceStatsService;
     }
 
     @Transactional
@@ -82,6 +86,7 @@ public class RecommendationService {
         PlaceStats stats = getStatsForUpdate(placeId);
         stats.addRecommendation(recommendation.getRecommendWeight());
         recommendationDailyCounter.evict(userId, LocalDate.now());
+        placeAudienceStatsService.recalculateStats(placeId);
         userActionLogService.record(
                 user.getId(),
                 UserActionLogService.ACTION_RECOMMENDATION_CREATE,
@@ -109,6 +114,7 @@ public class RecommendationService {
         PlaceStats stats = getStatsForUpdate(placeId);
         stats.removeRecommendation(recommendation.getRecommendWeight());
         recommendationDailyCounter.evict(userId, LocalDate.now());
+        placeAudienceStatsService.recalculateStats(placeId);
         userActionLogService.record(
                 user.getId(),
                 UserActionLogService.ACTION_RECOMMENDATION_CANCEL,

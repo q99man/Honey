@@ -17,6 +17,7 @@ import com.honeytong.ranking.repository.SeasonRepository;
 import com.honeytong.region.repository.RegionCityRepository;
 import com.honeytong.region.repository.RegionDistrictRepository;
 import com.honeytong.region.repository.RegionDongRepository;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -31,6 +32,7 @@ public class RankingService {
     private final RegionDistrictRepository regionDistrictRepository;
     private final RegionDongRepository regionDongRepository;
     private final RankingCache rankingCache;
+    private final PlaceAudienceStatsService placeAudienceStatsService;
 
     public RankingService(
             SeasonRepository seasonRepository,
@@ -38,7 +40,8 @@ public class RankingService {
             RegionCityRepository regionCityRepository,
             RegionDistrictRepository regionDistrictRepository,
             RegionDongRepository regionDongRepository,
-            RankingCache rankingCache
+            RankingCache rankingCache,
+            PlaceAudienceStatsService placeAudienceStatsService
     ) {
         this.seasonRepository = seasonRepository;
         this.placeSeasonScoreRepository = placeSeasonScoreRepository;
@@ -46,6 +49,7 @@ public class RankingService {
         this.regionDistrictRepository = regionDistrictRepository;
         this.regionDongRepository = regionDongRepository;
         this.rankingCache = rankingCache;
+        this.placeAudienceStatsService = placeAudienceStatsService;
     }
 
     @Transactional(readOnly = true)
@@ -89,7 +93,7 @@ public class RankingService {
                     place.getName(),
                     score.getStarLevel(),
                     score.getTotalScore(),
-                    List.of()
+                    placeAudienceStatsService.generateAudienceTags(place.getId())
             ));
         }
 

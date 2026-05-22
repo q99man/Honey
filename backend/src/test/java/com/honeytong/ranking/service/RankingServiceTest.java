@@ -30,6 +30,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,6 +63,9 @@ class RankingServiceTest {
     @Mock
     private RankingCache rankingCache;
 
+    @Mock
+    private PlaceAudienceStatsService placeAudienceStatsService;
+
     private RankingService rankingService;
     private Season season;
     private RegionCity city;
@@ -77,7 +81,8 @@ class RankingServiceTest {
                 regionCityRepository,
                 regionDistrictRepository,
                 regionDongRepository,
-                rankingCache
+                rankingCache,
+                placeAudienceStatsService
         );
 
         season = new Season(

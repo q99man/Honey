@@ -29,6 +29,7 @@ import com.honeytong.user.repository.UserRepository;
 import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -70,6 +71,9 @@ class AdminActivityServiceTest {
     @Mock
     private VisitCooldownCache visitCooldownCache;
 
+    @Mock
+    private PlaceAudienceStatsService placeAudienceStatsService;
+
     private AdminActivityService adminActivityService;
     private User admin;
     private User user;
@@ -87,7 +91,8 @@ class AdminActivityServiceTest {
                 policyService,
                 recommendationDailyCounter,
                 visitCooldownCache,
-                new ObjectMapper()
+                new ObjectMapper(),
+                placeAudienceStatsService
         );
 
         admin = new User("admin", "admin@example.com");

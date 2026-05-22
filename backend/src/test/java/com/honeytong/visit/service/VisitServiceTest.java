@@ -27,6 +27,7 @@ import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.dto.VisitVerifyRequest;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
+import com.honeytong.place.service.PlaceAudienceStatsService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
@@ -69,6 +70,9 @@ class VisitServiceTest {
     @Mock
     private VisitCooldownCache visitCooldownCache;
 
+    @Mock
+    private PlaceAudienceStatsService placeAudienceStatsService;
+
     private VisitService visitService;
     private User user;
     private Place place;
@@ -84,7 +88,8 @@ class VisitServiceTest {
                 policyService,
                 userGrowthService,
                 userActionLogService,
-                visitCooldownCache
+                visitCooldownCache,
+                placeAudienceStatsService
         );
 
         user = new User("tester", "tester@example.com");

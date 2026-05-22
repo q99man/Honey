@@ -45,6 +45,15 @@ public class User extends BaseTimeEntity {
     @Column(name = "marketing_agreed", nullable = false)
     private boolean marketingAgreed;
 
+    @Column(name = "birth_year")
+    private Integer birthYear;
+
+    @Column(length = 20)
+    private String gender;
+
+    @Column(name = "nationality_code", length = 10)
+    private String nationalityCode;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -85,6 +94,18 @@ public class User extends BaseTimeEntity {
         return marketingAgreed;
     }
 
+    public Integer getBirthYear() {
+        return birthYear;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public String getNationalityCode() {
+        return nationalityCode;
+    }
+
     public LocalDateTime getDeletedAt() {
         return deletedAt;
     }
@@ -93,9 +114,12 @@ public class User extends BaseTimeEntity {
         return phoneVerified;
     }
 
-    public void updateProfile(String nickname, String languagePreference) {
+    public void updateProfile(String nickname, String languagePreference, Integer birthYear, String gender, String nationalityCode) {
         this.nickname = nickname;
         this.languagePreference = languagePreference;
+        this.birthYear = birthYear;
+        this.gender = gender;
+        this.nationalityCode = nationalityCode;
     }
 
     public void verifyPhone(String phone) {

@@ -17,9 +17,11 @@ import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.dto.PlaceCreateRequest;
 import com.honeytong.place.dto.PlaceUpdateRequest;
 import com.honeytong.place.entity.Place;
+import com.honeytong.place.entity.PlaceAudienceStats;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceImage;
 import com.honeytong.place.entity.PlaceStats;
+import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceImageRepository;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.place.repository.PlaceStatsRepository;
@@ -61,6 +63,12 @@ class PlaceServiceTest {
     private PlaceStatsRepository placeStatsRepository;
 
     @Mock
+    private PlaceAudienceStatsRepository placeAudienceStatsRepository;
+
+    @Mock
+    private PlaceAudienceStatsService placeAudienceStatsService;
+
+    @Mock
     private PlaceSearchDocumentService placeSearchDocumentService;
 
     @Mock
@@ -97,6 +105,8 @@ class PlaceServiceTest {
                 placeRepository,
                 placeImageRepository,
                 placeStatsRepository,
+                placeAudienceStatsRepository,
+                placeAudienceStatsService,
                 placeSearchDocumentService,
                 regionDongRepository,
                 userRegionRepository,
@@ -150,6 +160,7 @@ class PlaceServiceTest {
         assertThat(response.placeId()).isEqualTo(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
         verify(placeStatsRepository).save(any(PlaceStats.class));
+        verify(placeAudienceStatsRepository).save(any(PlaceAudienceStats.class));
         verify(placeSearchDocumentService).syncPlace(any(Place.class));
         verify(userActionLogService).record(
                 eq(USER_ID),

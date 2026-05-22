@@ -4,6 +4,9 @@ public record UserProfileResponse(
         Long id,
         String nickname,
         boolean phoneVerified,
-        String languagePreference
+        String languagePreference,
+        Integer birthYear,
+        String gender,
+        String nationalityCode
 ) {
 }
