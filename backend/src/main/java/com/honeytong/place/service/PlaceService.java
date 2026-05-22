@@ -32,6 +32,8 @@ import com.honeytong.region.repository.UserRegionRepository;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.entity.UserSanctionStatus;
+import com.honeytong.mission.entity.MissionTargetType;
+import com.honeytong.mission.service.MissionService;
 import com.honeytong.user.entity.UserSanctionType;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserSanctionRepository;
@@ -84,6 +86,7 @@ public class PlaceService {
     private final AdminActionLogRepository adminActionLogRepository;
     private final ObjectMapper objectMapper;
     private final UserActionLogService userActionLogService;
+    private final MissionService missionService;
 
     public PlaceService(
             PlaceRepository placeRepository,
@@ -99,7 +102,8 @@ public class PlaceService {
             PolicyService policyService,
             AdminActionLogRepository adminActionLogRepository,
             ObjectMapper objectMapper,
-            UserActionLogService userActionLogService
+            UserActionLogService userActionLogService,
+            MissionService missionService
     ) {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
@@ -115,6 +119,7 @@ public class PlaceService {
         this.adminActionLogRepository = adminActionLogRepository;
         this.objectMapper = objectMapper;
         this.userActionLogService = userActionLogService;
+        this.missionService = missionService;
     }
 
     @Transactional
@@ -189,6 +194,7 @@ public class PlaceService {
                         "franchise", place.isFranchise()
                 )
         );
+        missionService.trackProgress(userId, MissionTargetType.PLACE_REGISTER);
 
         return new PlaceCreateResponse(place.getId(), place.getApprovalStatus());
     }

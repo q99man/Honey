@@ -92,6 +92,9 @@ class PlaceServiceTest {
     @Mock
     private UserActionLogService userActionLogService;
 
+    @Mock
+    private com.honeytong.mission.service.MissionService missionService;
+
     private PlaceService placeService;
     private User user;
     private RegionCity city;
@@ -115,7 +118,8 @@ class PlaceServiceTest {
                 policyService,
                 adminActionLogRepository,
                 new ObjectMapper(),
-                userActionLogService
+                userActionLogService,
+                missionService
         );
 
         user = new User("tester", "tester@example.com");

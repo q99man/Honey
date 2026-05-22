@@ -22,6 +22,8 @@ import com.honeytong.place.service.PlaceAudienceStatsService;
 import com.honeytong.visit.cooldown.VisitCooldownCache;
 import com.honeytong.visit.entity.Visit;
 import com.honeytong.visit.repository.VisitRepository;
+import com.honeytong.mission.entity.MissionTargetType;
+import com.honeytong.mission.service.MissionService;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.LinkedHashMap;
@@ -51,6 +53,7 @@ public class VisitService {
     private final UserActionLogService userActionLogService;
     private final VisitCooldownCache visitCooldownCache;
     private final PlaceAudienceStatsService placeAudienceStatsService;
+    private final MissionService missionService;
 
     public VisitService(
             VisitRepository visitRepository,
@@ -61,7 +64,8 @@ public class VisitService {
             UserGrowthService userGrowthService,
             UserActionLogService userActionLogService,
             VisitCooldownCache visitCooldownCache,
-            PlaceAudienceStatsService placeAudienceStatsService
+            PlaceAudienceStatsService placeAudienceStatsService,
+            MissionService missionService
     ) {
         this.visitRepository = visitRepository;
         this.placeRepository = placeRepository;
@@ -72,6 +76,7 @@ public class VisitService {
         this.userActionLogService = userActionLogService;
         this.visitCooldownCache = visitCooldownCache;
         this.placeAudienceStatsService = placeAudienceStatsService;
+        this.missionService = missionService;
     }
 
     @Transactional
@@ -119,6 +124,7 @@ public class VisitService {
                 place.getId(),
                 metadata
         );
+        missionService.trackProgress(userId, MissionTargetType.VISIT);
         return new VisitResponse(true, distanceMeter, growthResult.expGained(), stats.getVisitCount());
     }
 

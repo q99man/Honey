@@ -21,6 +21,8 @@ import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
 import com.honeytong.user.service.UserActionLogService;
 import com.honeytong.place.service.PlaceAudienceStatsService;
+import com.honeytong.mission.entity.MissionTargetType;
+import com.honeytong.mission.service.MissionService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -43,6 +45,7 @@ public class RecommendationService {
     private final RecommendationDailyCounter recommendationDailyCounter;
     private final UserActionLogService userActionLogService;
     private final PlaceAudienceStatsService placeAudienceStatsService;
+    private final MissionService missionService;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
@@ -53,7 +56,8 @@ public class RecommendationService {
             PolicyService policyService,
             RecommendationDailyCounter recommendationDailyCounter,
             UserActionLogService userActionLogService,
-            PlaceAudienceStatsService placeAudienceStatsService
+            PlaceAudienceStatsService placeAudienceStatsService,
+            MissionService missionService
     ) {
         this.recommendationRepository = recommendationRepository;
         this.placeRepository = placeRepository;
@@ -64,6 +68,7 @@ public class RecommendationService {
         this.recommendationDailyCounter = recommendationDailyCounter;
         this.userActionLogService = userActionLogService;
         this.placeAudienceStatsService = placeAudienceStatsService;
+        this.missionService = missionService;
     }
 
     @Transactional
@@ -97,6 +102,7 @@ public class RecommendationService {
                         "recommendationStatus", recommendation.getStatus().name()
                 )
         );
+        missionService.trackProgress(userId, MissionTargetType.RECOMMEND);
         return new RecommendationResponse(true, stats.getRecommendCount(), recommendation.getRecommendWeight());
     }
 

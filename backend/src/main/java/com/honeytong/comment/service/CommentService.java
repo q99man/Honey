@@ -9,6 +9,8 @@ import com.honeytong.comment.entity.CommentStatus;
 import com.honeytong.comment.repository.CommentRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.mission.entity.MissionTargetType;
+import com.honeytong.mission.service.MissionService;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceStats;
@@ -39,6 +41,7 @@ public class CommentService {
     private final UserRepository userRepository;
     private final PolicyService policyService;
     private final UserActionLogService userActionLogService;
+    private final MissionService missionService;
 
     public CommentService(
             CommentRepository commentRepository,
@@ -46,7 +49,8 @@ public class CommentService {
             PlaceStatsRepository placeStatsRepository,
             UserRepository userRepository,
             PolicyService policyService,
-            UserActionLogService userActionLogService
+            UserActionLogService userActionLogService,
+            MissionService missionService
     ) {
         this.commentRepository = commentRepository;
         this.placeRepository = placeRepository;
@@ -54,6 +58,7 @@ public class CommentService {
         this.userRepository = userRepository;
         this.policyService = policyService;
         this.userActionLogService = userActionLogService;
+        this.missionService = missionService;
     }
 
     @Transactional
@@ -75,6 +80,7 @@ public class CommentService {
                 comment.getId(),
                 Map.of("placeId", place.getId())
         );
+        missionService.trackProgress(userId, MissionTargetType.COMMENT);
         return new CommentCreateResponse(comment.getId());
     }
 
@@ -138,7 +144,7 @@ public class CommentService {
             throw new ApiException(ErrorCode.COMMENT_ALREADY_EXISTS);
         }
         if (comment.getStatus() != CommentStatus.DELETED) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "?대떦 ?볤?瑜??ㅼ떆 ?묒꽦?????놁뒿?덈떎.");
+            throw new ApiException(ErrorCode.FORBIDDEN, "해당 댓글을 다시 작성할 수 없습니다.");
         }
         comment.restore(content);
         return comment;

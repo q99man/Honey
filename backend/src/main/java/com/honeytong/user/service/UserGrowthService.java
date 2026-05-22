@@ -51,7 +51,7 @@ public class UserGrowthService {
                 .orElseGet(() -> userTrustRepository.save(new UserTrust(user)));
 
         level.addExp(visitExp);
-        applyLevelUp(user, level);
+        applyLevelUp(user, level, VALID_VISIT_LEVEL_REASON);
         trust.addTrustScore(trustScoreDelta);
         TrustEvaluationResult trustEvaluation = userGrowthPolicyService.evaluateTrust(trust.getTrustScore());
         trust.applyTrustEvaluation(trustEvaluation.trustGrade(), trustEvaluation.recommendWeight());
@@ -59,7 +59,17 @@ public class UserGrowthService {
         return new VisitGrowthResult(visitExp, trustScoreDelta);
     }
 
-    private void applyLevelUp(User user, UserLevel level) {
+    @Transactional
+    public void rewardExp(Long userId, int exp, String reason) {
+        User user = getActiveUser(userId);
+        UserLevel level = userLevelRepository.findById(userId)
+                .orElseGet(() -> userLevelRepository.save(new UserLevel(user)));
+
+        level.addExp(exp);
+        applyLevelUp(user, level, reason);
+    }
+
+    private void applyLevelUp(User user, UserLevel level, String reason) {
         int previousLevel = level.getLevel();
         int currentLevel = level.getLevel();
         int currentExp = level.getExp();
@@ -77,7 +87,7 @@ public class UserGrowthService {
                     user,
                     previousLevel,
                     currentLevel,
-                    VALID_VISIT_LEVEL_REASON
+                    reason
             ));
         }
     }

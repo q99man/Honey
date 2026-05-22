@@ -277,12 +277,12 @@ The goal is:
 ## 15. Mission System (Optional for MVP)
 
 - [x] Design mission system & write implementation plan
-- [ ] Create Flyway database migration (V5__add_mission_system.sql)
-- [ ] Refactor UserGrowthService to support dynamic EXP reasons
-- [ ] Implement Mission core domain (Entity, Repository, Service, DTO)
-- [ ] Inject mission tracking hooks into Recommendation/Visit/Comment/Place services
-- [ ] Implement Mission API Controller & Security Configuration
-- [ ] Write integration & unit tests for Mission System
+- [x] Create Flyway database migration (V5__add_mission_system.sql)
+- [x] Refactor UserGrowthService to support dynamic EXP reasons
+- [x] Implement Mission core domain (Entity, Repository, Service, DTO)
+- [x] Inject mission tracking hooks into Recommendation/Visit/Comment/Place services
+- [x] Implement Mission API Controller & Security Configuration
+- [x] Write integration & unit tests for Mission System
 
 ---
 

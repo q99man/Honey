@@ -73,6 +73,9 @@ class VisitServiceTest {
     @Mock
     private PlaceAudienceStatsService placeAudienceStatsService;
 
+    @Mock
+    private com.honeytong.mission.service.MissionService missionService;
+
     private VisitService visitService;
     private User user;
     private Place place;
@@ -89,7 +92,8 @@ class VisitServiceTest {
                 userGrowthService,
                 userActionLogService,
                 visitCooldownCache,
-                placeAudienceStatsService
+                placeAudienceStatsService,
+                missionService
         );
 
         user = new User("tester", "tester@example.com");

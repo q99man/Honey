@@ -60,6 +60,9 @@ class CommentServiceTest {
     @Mock
     private UserActionLogService userActionLogService;
 
+    @Mock
+    private com.honeytong.mission.service.MissionService missionService;
+
     private CommentService commentService;
     private User user;
     private User otherUser;
@@ -74,7 +77,8 @@ class CommentServiceTest {
                 placeStatsRepository,
                 userRepository,
                 policyService,
-                userActionLogService
+                userActionLogService,
+                missionService
         );
 
         user = new User("테스터", "tester@example.com");

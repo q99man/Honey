@@ -69,6 +69,9 @@ class RecommendationServiceTest {
     @Mock
     private PlaceAudienceStatsService placeAudienceStatsService;
 
+    @Mock
+    private com.honeytong.mission.service.MissionService missionService;
+
     private RecommendationService recommendationService;
     private User user;
     private Place place;
@@ -85,7 +88,8 @@ class RecommendationServiceTest {
                 policyService,
                 recommendationDailyCounter,
                 userActionLogService,
-                placeAudienceStatsService
+                placeAudienceStatsService,
+                missionService
         );
 
         user = new User("테스터", "tester@example.com");

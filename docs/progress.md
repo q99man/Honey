@@ -335,6 +335,14 @@ All documents are consistent with each other.
 - [x] Post-merge release readiness check passed on `main`: backend tests, backend `bootJar`, frontend build, frontend lint, diff check, UI language check, Korean encoding check, doc sync check, secret pattern scan, release runbook presence, and PR draft presence all passed
 - [x] Merged release branch `codex/prepare-mvp-release-packaging` was deleted from `origin` and from the local repository after confirming the squash-merged content is on `main`
 
+### Mission System
+- [x] Database migration added under `db/migration/V5__add_mission_system.sql` with seed data
+- [x] Refactored `UserGrowthService` to allow dynamic EXP reasoning (e.g. `MISSION_COMPLETE_...`)
+- [x] Implemented core domain Entity, Repository, Service, DTOs, and REST API controller for Missions
+- [x] Injected tracking hooks to trigger mission progress on user activities (Recommendation, Visit, Comment, Place registration)
+- [x] Covered API security rules allowing public active missions retrieval while guarding reward claims
+- [x] Wrote comprehensive unit tests and verified all tests pass successfully
+
 ---
 
 ## 4. Key Decisions (Summary)
@@ -506,12 +514,13 @@ Recent update:
 - [x] Flutter mobile release build verification: Executed `scripts/build-mobile-release.ps1` to successfully generate final release APK (`app-release.apk`) and App Bundle (`app-release.aab`) under debug/release keys, verifying output paths.
 - [x] Place Audience Tag System Backend & Frontend: Fully implemented place audience tag system. Demographics (age, gender, nationality) are aggregated from recommendations and visits to generate tags, which are exposed via API and shown as demographic chips on the Flutter mobile ranking screen.
 - [x] Mission System Architecture Design: Designed the database schema for `missions` and `user_mission_progress` tables, established reward claiming and repeatable reset policies, drafted seed data for default missions (`VISIT_3`, `RECOMMEND_5`, `COMMENT_3`), and compiled the detailed implementaton plan (`docs/mission-implementation-plan.md`).
+- [x] Mission System Implementation: Implemented Flyway migration (V5), refactored `UserGrowthService` for dynamic EXP reward logs, implemented the mission domain layer (entities, repositories, services), and integrated mission tracking hooks. Verified all 265 backend tests pass successfully.
 
 Next task:
 
-Mission System Implementation: Implement Flyway migration (V5), refactor `UserGrowthService` for dynamic EXP reward logs, implement the mission domain layer (entities, repositories, services), and integrate mission tracking hooks.
+Performance Optimization - Add caching for hot endpoints: Implement Redis-based caching layer for high-traffic endpoints (such as regional rankings, active missions list, and user profiles) to improve application throughput and reduce database load.
 
-- recommended reasoning level: high
+- recommended reasoning level: medium
 
 ---
 
