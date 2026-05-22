@@ -32,6 +32,7 @@ Thumbs.db
 # MarkDown
 *.md
 !README.md
+!docs/**/*.md
 
 # Java / Gradle
 .gradle/
