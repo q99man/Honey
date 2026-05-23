@@ -10,6 +10,7 @@ import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.ranking.cache.RankingCache;
+import com.honeytong.ranking.cache.SeasonCache;
 import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeRequest;
 import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeResponse;
 import com.honeytong.ranking.dto.AdminRankingPlaceExclusionRequest;
@@ -49,6 +50,7 @@ public class AdminRankingService {
     private final UserRepository userRepository;
     private final AdminActionLogRepository adminActionLogRepository;
     private final RankingCache rankingCache;
+    private final SeasonCache seasonCache;
     private final RankingRecalculationService rankingRecalculationService;
     private final RankingHistoryFinalizationService rankingHistoryFinalizationService;
     private final ObjectMapper objectMapper;
@@ -60,6 +62,7 @@ public class AdminRankingService {
             UserRepository userRepository,
             AdminActionLogRepository adminActionLogRepository,
             RankingCache rankingCache,
+            SeasonCache seasonCache,
             RankingRecalculationService rankingRecalculationService,
             RankingHistoryFinalizationService rankingHistoryFinalizationService,
             ObjectMapper objectMapper,
@@ -70,6 +73,7 @@ public class AdminRankingService {
         this.userRepository = userRepository;
         this.adminActionLogRepository = adminActionLogRepository;
         this.rankingCache = rankingCache;
+        this.seasonCache = seasonCache;
         this.rankingRecalculationService = rankingRecalculationService;
         this.rankingHistoryFinalizationService = rankingHistoryFinalizationService;
         this.objectMapper = objectMapper;
@@ -110,6 +114,7 @@ public class AdminRankingService {
                 serializeSeason(season),
                 adminTextPolicyService.normalizeActionMemo(request.memo())
         );
+        seasonCache.evictCurrentSeason();
         return AdminSeasonResponse.from(season);
     }
 
@@ -141,6 +146,7 @@ public class AdminRankingService {
                 afterValue,
                 adminTextPolicyService.normalizeActionMemo(request.memo())
         );
+        seasonCache.evictCurrentSeason();
         return AdminSeasonResponse.from(season);
     }
 

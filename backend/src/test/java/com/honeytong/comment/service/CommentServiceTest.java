@@ -32,6 +32,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -63,6 +64,12 @@ class CommentServiceTest {
     @Mock
     private com.honeytong.mission.service.MissionService missionService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private com.honeytong.fraud.service.FraudDetectionService fraudDetectionService;
+
     private CommentService commentService;
     private User user;
     private User otherUser;
@@ -78,7 +85,9 @@ class CommentServiceTest {
                 userRepository,
                 policyService,
                 userActionLogService,
-                missionService
+                missionService,
+                eventPublisher,
+                fraudDetectionService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -127,7 +136,8 @@ class CommentServiceTest {
         var response = commentService.createComment(
                 USER_ID,
                 PLACE_ID,
-                new CommentRequest("  국물이 깔끔하고 다시 가고 싶어요.  ")
+                new CommentRequest("  국물이 깔끔하고 다시 가고 싶어요.  "),
+                "127.0.0.1"
         );
 
         assertThat(response.commentId()).isEqualTo(COMMENT_ID);
@@ -152,7 +162,8 @@ class CommentServiceTest {
         assertThatThrownBy(() -> commentService.createComment(
                 USER_ID,
                 PLACE_ID,
-                new CommentRequest("새 댓글")
+                new CommentRequest("새 댓글"),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.COMMENT_ALREADY_EXISTS));
         verify(placeStatsRepository, never()).findById(any());
@@ -166,7 +177,8 @@ class CommentServiceTest {
         assertThatThrownBy(() -> commentService.createComment(
                 USER_ID,
                 PLACE_ID,
-                new CommentRequest("123456")
+                new CommentRequest("123456"),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(commentRepository, never()).findByUserIdAndPlaceId(any(), any());
@@ -184,7 +196,7 @@ class CommentServiceTest {
         when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
 
-        var response = commentService.createComment(USER_ID, PLACE_ID, new CommentRequest("다시 작성한 댓글"));
+        var response = commentService.createComment(USER_ID, PLACE_ID, new CommentRequest("다시 작성한 댓글"), "127.0.0.1");
 
         assertThat(response.commentId()).isEqualTo(COMMENT_ID);
         assertThat(deleted.isVisible()).isTrue();
@@ -292,5 +304,47 @@ class CommentServiceTest {
 
     private void stubCommentMaxLength(int maxLength) {
         when(policyService.getRequiredInteger("comment", "max_length")).thenReturn(maxLength);
+    }
+
+    @Test
+    void createComment_failsWhenPlaceNotFound() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.createComment(
+                USER_ID,
+                999L,
+                new CommentRequest("댓글 내용"),
+                "127.0.0.1"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @Test
+    void updateComment_failsWhenCommentNotFound() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(commentRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> commentService.updateComment(
+                USER_ID,
+                999L,
+                new CommentRequest("수정 내용")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @Test
+    void deleteComment_failsWhenAlreadyDeleted() {
+        Comment comment = newComment("이미 삭제할 댓글");
+        comment.delete();
+
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(commentRepository.findById(COMMENT_ID)).thenReturn(Optional.of(comment));
+
+        assertThatThrownBy(() -> commentService.deleteComment(
+                USER_ID,
+                COMMENT_ID
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
     }
 }

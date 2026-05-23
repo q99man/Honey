@@ -95,6 +95,10 @@ public class PlaceStats extends BaseTimeEntity {
         return manualAdjustmentScore == null ? BigDecimal.ZERO : manualAdjustmentScore;
     }
 
+    public Long getPlaceId() {
+        return placeId;
+    }
+
     public Place getPlace() {
         return place;
     }
@@ -166,4 +170,10 @@ public class PlaceStats extends BaseTimeEntity {
     public void adjustManualScore(BigDecimal scoreDelta) {
         this.manualAdjustmentScore = getManualAdjustmentScore().add(scoreDelta);
     }
+
+    public void updateBonuses(BigDecimal recentScore, BigDecimal diversityScore) {
+        this.recentScore = recentScore;
+        this.diversityScore = diversityScore;
+    }
 }
+

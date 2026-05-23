@@ -131,6 +131,8 @@ app:
     enabled: ${APP_REDIS_ENABLED:false}
     policy-cache-ttl: ${POLICY_CACHE_TTL:10m}
     ranking-cache-ttl: ${RANKING_CACHE_TTL:5m}
+    mission-cache-ttl: ${MISSION_CACHE_TTL:10m}
+    season-cache-ttl: ${SEASON_CACHE_TTL:1h}
   ranking:
     scheduler:
       enabled: ${RANKING_SCHEDULER_ENABLED:false}

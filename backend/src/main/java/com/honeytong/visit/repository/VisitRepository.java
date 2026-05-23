@@ -22,4 +22,7 @@ public interface VisitRepository extends JpaRepository<Visit, Long> {
             LocalDateTime from,
             LocalDateTime to
     );
+
+    long countByPlaceIdAndValidTrueAndCreatedAtGreaterThanEqual(Long placeId, LocalDateTime since);
 }
+

@@ -1,3 +1,5 @@
+import { useTranslation } from "../hooks/useTranslation";
+
 export type AuthMode = "login" | "signup";
 
 type Props = {
@@ -27,13 +29,15 @@ export default function AuthCard({
   onSubmit,
   className = "mt-6",
 }: Props) {
+  const { t } = useTranslation();
+
   return (
     <section
       className={`${className} rounded-m3-xl bg-m3-surface-container-low p-4 text-m3-on-surface shadow-m3-1`}
     >
-      <h2 className="text-m3-title-lg">로그인이 필요해요</h2>
+      <h2 className="text-m3-title-lg">{t("auth.loginRequired")}</h2>
       <p className="mt-2 text-m3-body-md text-m3-on-surface-variant">
-        로그인하면 동네 활동 기록과 내 정보를 더 안전하게 관리할 수 있어요.
+        {t("auth.loginDesc")}
       </p>
 
       <div className="mt-5 grid grid-cols-2 gap-1 rounded-m3-full bg-m3-surface-container-high p-1">
@@ -48,21 +52,21 @@ export default function AuthCard({
                 : "text-m3-on-surface-variant hover:bg-m3-surface-container-highest"
             }`}
           >
-            {mode === "login" ? "로그인" : "회원가입"}
+            {mode === "login" ? t("auth.login") : t("auth.signup")}
           </button>
         ))}
       </div>
 
       <div className="mt-5 flex flex-col gap-4">
-        <FormField label="이메일" value={email} onChange={setEmail} type="email" />
+        <FormField label={t("auth.email")} value={email} onChange={setEmail} type="email" />
         <FormField
-          label="비밀번호"
+          label={t("auth.password")}
           value={password}
           onChange={setPassword}
           type="password"
         />
         {authMode === "signup" && (
-          <FormField label="닉네임" value={nickname} onChange={setNickname} />
+          <FormField label={t("auth.nickname")} value={nickname} onChange={setNickname} />
         )}
       </div>
 
@@ -73,10 +77,10 @@ export default function AuthCard({
         className="mt-5 h-12 w-full rounded-m3-full bg-m3-primary px-5 text-m3-label-lg text-m3-on-primary shadow-m3-1 transition active:scale-[0.98] disabled:cursor-not-allowed disabled:bg-m3-surface-container-highest disabled:text-m3-on-surface-variant disabled:shadow-none"
       >
         {busy
-          ? "처리 중..."
+          ? t("auth.processing")
           : authMode === "login"
-            ? "로그인하기"
-            : "회원가입하고 로그인하기"}
+            ? t("auth.doLogin")
+            : t("auth.doSignup")}
       </button>
     </section>
   );

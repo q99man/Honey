@@ -38,6 +38,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -72,6 +73,9 @@ class AdminReportServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private AdminReportService adminReportService;
     private User admin;
     private User reporter;
@@ -88,7 +92,8 @@ class AdminReportServiceTest {
                 adminCommentService,
                 adminUserService,
                 placeService,
-                policyService
+                policyService,
+                eventPublisher
         );
 
         admin = new User("admin", "admin@example.com");

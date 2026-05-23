@@ -38,19 +38,31 @@ public class RankingRecalculationService {
     private final PlaceSeasonScoreRepository placeSeasonScoreRepository;
     private final PolicyService policyService;
     private final RankingCache rankingCache;
+    private final com.honeytong.recommendation.repository.RecommendationRepository recommendationRepository;
+    private final com.honeytong.visit.repository.VisitRepository visitRepository;
+    private final com.honeytong.comment.repository.CommentRepository commentRepository;
+    private final com.honeytong.place.repository.PlaceAudienceStatsRepository placeAudienceStatsRepository;
 
     public RankingRecalculationService(
             SeasonRepository seasonRepository,
             PlaceStatsRepository placeStatsRepository,
             PlaceSeasonScoreRepository placeSeasonScoreRepository,
             PolicyService policyService,
-            RankingCache rankingCache
+            RankingCache rankingCache,
+            com.honeytong.recommendation.repository.RecommendationRepository recommendationRepository,
+            com.honeytong.visit.repository.VisitRepository visitRepository,
+            com.honeytong.comment.repository.CommentRepository commentRepository,
+            com.honeytong.place.repository.PlaceAudienceStatsRepository placeAudienceStatsRepository
     ) {
         this.seasonRepository = seasonRepository;
         this.placeStatsRepository = placeStatsRepository;
         this.placeSeasonScoreRepository = placeSeasonScoreRepository;
         this.policyService = policyService;
         this.rankingCache = rankingCache;
+        this.recommendationRepository = recommendationRepository;
+        this.visitRepository = visitRepository;
+        this.commentRepository = commentRepository;
+        this.placeAudienceStatsRepository = placeAudienceStatsRepository;
     }
 
     @Transactional
@@ -62,6 +74,36 @@ public class RankingRecalculationService {
         List<PlaceStats> stats = placeStatsRepository.findAll().stream()
                 .filter(this::isVisiblePlaceStats)
                 .toList();
+
+        // Load recency & diversity policies
+        int recencyDays = policyService.getRequiredInteger(RANKING_POLICY_GROUP, "recency_days");
+        BigDecimal recencyRecommendWeight = policyService.getRequiredDecimal(RANKING_POLICY_GROUP, "recency_recommend_weight");
+        BigDecimal recencyVisitWeight = policyService.getRequiredDecimal(RANKING_POLICY_GROUP, "recency_visit_weight");
+        BigDecimal recencyCommentWeight = policyService.getRequiredDecimal(RANKING_POLICY_GROUP, "recency_comment_weight");
+        BigDecimal diversityWeight = policyService.getRequiredDecimal(RANKING_POLICY_GROUP, "diversity_weight");
+
+        java.time.LocalDateTime since = java.time.LocalDateTime.now().minusDays(recencyDays);
+
+        for (PlaceStats stat : stats) {
+            Long placeId = stat.getPlaceId();
+
+            // Calculate Recency Score
+            long recCount = recommendationRepository.countByPlaceIdAndStatusAndCreatedAtGreaterThanEqual(
+                    placeId, com.honeytong.recommendation.entity.RecommendationStatus.ACTIVE, since);
+            long visCount = visitRepository.countByPlaceIdAndValidTrueAndCreatedAtGreaterThanEqual(placeId, since);
+            long comCount = commentRepository.countByPlaceIdAndStatusAndDeletedAtIsNullAndCreatedAtGreaterThanEqual(
+                    placeId, com.honeytong.comment.entity.CommentStatus.VISIBLE, since);
+
+            BigDecimal recentScore = BigDecimal.valueOf(recCount).multiply(recencyRecommendWeight)
+                    .add(BigDecimal.valueOf(visCount).multiply(recencyVisitWeight))
+                    .add(BigDecimal.valueOf(comCount).multiply(recencyCommentWeight));
+
+            // Calculate Diversity Score
+            BigDecimal diversityScore = calculateDiversityScore(placeId, diversityWeight);
+
+            stat.updateBonuses(recentScore, diversityScore);
+            placeStatsRepository.save(stat);
+        }
 
         Map<Long, Integer> maxStarByPlaceId = new HashMap<>();
         List<PlaceSeasonScore> scores = new ArrayList<>();
@@ -197,6 +239,65 @@ public class RankingRecalculationService {
         return !place.isDeleted()
                 && place.getExposureStatus() == PlaceExposureStatus.VISIBLE
                 && !place.isRankingExcluded();
+    }
+
+    private BigDecimal calculateDiversityScore(Long placeId, BigDecimal diversityWeight) {
+        return placeAudienceStatsRepository.findById(placeId)
+                .map(stats -> {
+                    // Age groups: 10s, 20s, 30s, 40s, 50s+
+                    double[] ageCounts = {
+                            stats.getAge10Count(),
+                            stats.getAge20Count(),
+                            stats.getAge30Count(),
+                            stats.getAge40Count(),
+                            stats.getAge50PlusCount()
+                    };
+                    double totalAge = 0;
+                    for (double c : ageCounts) {
+                        totalAge += c;
+                    }
+                    double ageEntropy = 0;
+                    if (totalAge > 0) {
+                        for (double c : ageCounts) {
+                            if (c > 0) {
+                                double p = c / totalAge;
+                                ageEntropy -= p * Math.log(p);
+                            }
+                        }
+                    }
+
+                    // Gender groups: male, female, other
+                    double[] genderCounts = {
+                            stats.getMaleCount(),
+                            stats.getFemaleCount(),
+                            stats.getOtherGenderCount()
+                    };
+                    double totalGender = 0;
+                    for (double c : genderCounts) {
+                        totalGender += c;
+                    }
+                    double genderEntropy = 0;
+                    if (totalGender > 0) {
+                        for (double c : genderCounts) {
+                            if (c > 0) {
+                                double p = c / totalGender;
+                                genderEntropy -= p * Math.log(p);
+                            }
+                        }
+                    }
+
+                    // Normalize entropies
+                    double maxAgeEntropy = Math.log(5); // ln(5)
+                    double maxGenderEntropy = Math.log(3); // ln(3)
+
+                    double normAge = maxAgeEntropy > 0 ? ageEntropy / maxAgeEntropy : 0;
+                    double normGender = maxGenderEntropy > 0 ? genderEntropy / maxGenderEntropy : 0;
+
+                    double averageDiversity = (normAge + normGender) / 2.0;
+
+                    return BigDecimal.valueOf(averageDiversity).multiply(diversityWeight);
+                })
+                .orElse(BigDecimal.ZERO);
     }
 
     private record RankingWeights(

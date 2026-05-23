@@ -28,6 +28,10 @@ import java.time.LocalDateTime;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+
 
 @Service
 public class RegionService {
@@ -43,6 +47,7 @@ public class RegionService {
     private final UserTrustRepository userTrustRepository;
     private final RegionCoordinateResolver regionCoordinateResolver;
     private final PolicyService policyService;
+    private final StringRedisTemplate redisTemplate;
 
     public RegionService(
             RegionCityRepository regionCityRepository,
@@ -52,7 +57,8 @@ public class RegionService {
             UserRepository userRepository,
             UserTrustRepository userTrustRepository,
             RegionCoordinateResolver regionCoordinateResolver,
-            PolicyService policyService
+            PolicyService policyService,
+            StringRedisTemplate redisTemplate
     ) {
         this.regionCityRepository = regionCityRepository;
         this.regionDistrictRepository = regionDistrictRepository;
@@ -62,6 +68,7 @@ public class RegionService {
         this.userTrustRepository = userTrustRepository;
         this.regionCoordinateResolver = regionCoordinateResolver;
         this.policyService = policyService;
+        this.redisTemplate = redisTemplate;
     }
 
     @Transactional(readOnly = true)
@@ -112,6 +119,25 @@ public class RegionService {
 
     @Transactional
     public MyRegionResponse changeMyRegion(Long userId, RegionChangeRequest request) {
+        String lockKey = "lock:region:change:user:" + userId;
+        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", java.time.Duration.ofSeconds(10));
+        if (acquired == null || !acquired) {
+            throw new ApiException(ErrorCode.INVALID_REGION_CHANGE, "이미 지역 변경 처리가 진행 중입니다.");
+        }
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(
+                new TransactionSynchronization() {
+                    @Override
+                    public void afterCompletion(int status) {
+                        redisTemplate.delete(lockKey);
+                    }
+                }
+            );
+        } else {
+            redisTemplate.delete(lockKey);
+        }
+
         User user = getActiveUser(userId);
         UserRegion currentRegion = getCurrentRegion(userId);
         RegionDong nextDong = regionDongRepository.findById(request.dongId())

@@ -17,6 +17,7 @@ import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.admin.service.AdminTextPolicyService;
 import com.honeytong.policy.service.PolicyService;
 import com.honeytong.ranking.cache.RankingCache;
+import com.honeytong.ranking.cache.SeasonCache;
 import com.honeytong.ranking.dto.AdminRankingHistoryFinalizeRequest;
 import com.honeytong.ranking.dto.AdminRankingPlaceExclusionRequest;
 import com.honeytong.ranking.dto.AdminRankingRecalculateRequest;
@@ -65,6 +66,9 @@ class AdminRankingServiceTest {
     private RankingCache rankingCache;
 
     @Mock
+    private SeasonCache seasonCache;
+
+    @Mock
     private RankingRecalculationService rankingRecalculationService;
 
     @Mock
@@ -86,6 +90,7 @@ class AdminRankingServiceTest {
                 userRepository,
                 adminActionLogRepository,
                 rankingCache,
+                seasonCache,
                 rankingRecalculationService,
                 rankingHistoryFinalizationService,
                 new ObjectMapper(),

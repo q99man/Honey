@@ -77,13 +77,13 @@ export default function AdminDashboardPage() {
       description="오늘의 참여 흐름과 운영 대기 항목을 확인합니다."
       maxWidth="max-w-[960px]"
       navItems={[
-        { to: "/admin/activities", label: "활동 관리" },
-        { to: "/admin/places", label: "장소 관리" },
-        { to: "/admin/users", label: "사용자 관리" },
-        { to: "/admin/audit-logs", label: "감사 로그" },
-        { to: "/admin/policies", label: "정책 관리", emphasis: "primary" },
-        { to: "/admin/reports", label: "신고 관리", emphasis: "warning" },
-        { to: "/", label: "사용자 홈" },
+        { to: "/admin/activities", labelKey: "activities" },
+        { to: "/admin/places", labelKey: "places" },
+        { to: "/admin/users", labelKey: "users" },
+        { to: "/admin/audit-logs", labelKey: "auditLogs" },
+        { to: "/admin/policies", labelKey: "policies", emphasis: "primary" },
+        { to: "/admin/reports", labelKey: "reports", emphasis: "warning" },
+        { to: "/", labelKey: "home" },
       ]}
     >
 

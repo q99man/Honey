@@ -2,6 +2,7 @@ package com.honeytong.mission.service;
 
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
+import com.honeytong.mission.cache.MissionCache;
 import com.honeytong.mission.dto.MissionClaimResponse;
 import com.honeytong.mission.dto.MissionResponse;
 import com.honeytong.mission.dto.UserMissionProgressResponse;
@@ -9,6 +10,7 @@ import com.honeytong.mission.entity.Mission;
 import com.honeytong.mission.entity.MissionTargetType;
 import com.honeytong.mission.entity.MissionType;
 import com.honeytong.mission.entity.UserMissionProgress;
+import com.honeytong.mission.event.MissionCompletedEvent;
 import com.honeytong.mission.repository.MissionRepository;
 import com.honeytong.mission.repository.UserMissionProgressRepository;
 import com.honeytong.user.entity.User;
@@ -18,6 +20,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,24 +32,35 @@ public class MissionService {
     private final UserMissionProgressRepository userMissionProgressRepository;
     private final UserRepository userRepository;
     private final UserGrowthService userGrowthService;
+    private final MissionCache missionCache;
+    private final ApplicationEventPublisher eventPublisher;
 
     public MissionService(
             MissionRepository missionRepository,
             UserMissionProgressRepository userMissionProgressRepository,
             UserRepository userRepository,
-            UserGrowthService userGrowthService
+            UserGrowthService userGrowthService,
+            MissionCache missionCache,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.missionRepository = missionRepository;
         this.userMissionProgressRepository = userMissionProgressRepository;
         this.userRepository = userRepository;
         this.userGrowthService = userGrowthService;
+        this.missionCache = missionCache;
+        this.eventPublisher = eventPublisher;
     }
 
     public List<MissionResponse> getActiveMissions() {
-        return missionRepository.findActiveMissions(LocalDateTime.now())
-                .stream()
-                .map(MissionResponse::from)
-                .collect(Collectors.toList());
+        return missionCache.getActiveMissions()
+                .orElseGet(() -> {
+                    List<MissionResponse> activeMissions = missionRepository.findActiveMissions(LocalDateTime.now())
+                            .stream()
+                            .map(MissionResponse::from)
+                            .collect(Collectors.toList());
+                    missionCache.putActiveMissions(activeMissions);
+                    return activeMissions;
+                });
     }
 
     public List<UserMissionProgressResponse> getUserMissionProgresses(Long userId) {
@@ -94,8 +108,18 @@ public class MissionService {
                 continue;
             }
 
+            boolean wasCompletedBefore = progress.isCompleted();
             progress.incrementProgress(1);
             userMissionProgressRepository.save(progress);
+
+            if (!wasCompletedBefore && progress.isCompleted()) {
+                eventPublisher.publishEvent(new MissionCompletedEvent(
+                        userId,
+                        mission.getId(),
+                        mission.getTitle(),
+                        mission.getRewardExp()
+                ));
+            }
         }
     }
 

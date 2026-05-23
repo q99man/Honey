@@ -19,6 +19,7 @@ import com.honeytong.region.entity.RegionCity;
 import com.honeytong.region.entity.RegionDistrict;
 import com.honeytong.region.entity.RegionDong;
 import com.honeytong.user.entity.User;
+import com.honeytong.user.entity.UserStatus;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.service.UserActionLogService;
 import com.honeytong.user.service.UserGrowthService;
@@ -76,6 +77,9 @@ class VisitServiceTest {
     @Mock
     private com.honeytong.mission.service.MissionService missionService;
 
+    @Mock
+    private com.honeytong.fraud.service.FraudDetectionService fraudDetectionService;
+
     private VisitService visitService;
     private User user;
     private Place place;
@@ -93,7 +97,8 @@ class VisitServiceTest {
                 userActionLogService,
                 visitCooldownCache,
                 placeAudienceStatsService,
-                missionService
+                missionService,
+                fraudDetectionService
         );
 
         user = new User("tester", "tester@example.com");
@@ -147,7 +152,8 @@ class VisitServiceTest {
                         BigDecimal.valueOf(37.5501000),
                         BigDecimal.valueOf(126.9101000),
                         " https://image.example.com/visit.jpg "
-                )
+                ),
+                "127.0.0.1"
         );
 
         assertThat(response.verified()).isTrue();
@@ -185,7 +191,8 @@ class VisitServiceTest {
                         BigDecimal.valueOf(37.5700000),
                         BigDecimal.valueOf(126.9300000),
                         null
-                )
+                ),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.OUT_OF_VISIT_RADIUS));
         verify(visitRepository, never()).save(any(Visit.class));
@@ -207,7 +214,8 @@ class VisitServiceTest {
                         BigDecimal.valueOf(37.5501000),
                         BigDecimal.valueOf(126.9101000),
                         null
-                )
+                ),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.VISIT_COOLDOWN_ACTIVE));
         verify(visitRepository, never()).save(any(Visit.class));
@@ -229,7 +237,8 @@ class VisitServiceTest {
                         BigDecimal.valueOf(37.5501000),
                         BigDecimal.valueOf(126.9101000),
                         "123456"
-                )
+                ),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(visitRepository, never()).save(any(Visit.class));
@@ -304,5 +313,62 @@ class VisitServiceTest {
         );
         ReflectionTestUtils.setField(visit, "createdAt", createdAt);
         return visit;
+    }
+
+    @Test
+    void verifyVisit_failsWhenUserInactive() {
+        User inactiveUser = new User("inactive", "inactive@example.com");
+        ReflectionTestUtils.setField(inactiveUser, "id", 2L);
+        ReflectionTestUtils.setField(inactiveUser, "status", UserStatus.SUSPENDED);
+
+        when(userRepository.findById(2L)).thenReturn(Optional.of(inactiveUser));
+
+        assertThatThrownBy(() -> visitService.verifyVisit(
+                2L,
+                PLACE_ID,
+                new VisitVerifyRequest(BigDecimal.valueOf(37.5501000), BigDecimal.valueOf(126.9101000), null),
+                "127.0.0.1"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    void verifyVisit_failsWhenPlaceNotFound() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findById(999L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> visitService.verifyVisit(
+                USER_ID,
+                999L,
+                new VisitVerifyRequest(BigDecimal.valueOf(37.5501000), BigDecimal.valueOf(126.9101000), null),
+                "127.0.0.1"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+
+        Place deletedPlace = new Place(
+                user,
+                place.getRegionDong(),
+                "Deleted Place",
+                "KOREAN",
+                "Address",
+                null,
+                BigDecimal.valueOf(37.5500000),
+                BigDecimal.valueOf(126.9100000),
+                "10000_20000",
+                "Soup",
+                "Short",
+                "Feature",
+                false
+        );
+        deletedPlace.delete();
+        when(placeRepository.findById(101L)).thenReturn(Optional.of(deletedPlace));
+
+        assertThatThrownBy(() -> visitService.verifyVisit(
+                USER_ID,
+                101L,
+                new VisitVerifyRequest(BigDecimal.valueOf(37.5501000), BigDecimal.valueOf(126.9101000), null),
+                "127.0.0.1"
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
     }
 }

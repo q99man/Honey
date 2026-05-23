@@ -32,14 +32,36 @@ public class PlaceSearchDocumentService {
 
     @Transactional(readOnly = true)
     public List<Place> searchVisiblePlaces(String keyword) {
-        return placeSearchDocumentRepository.searchVisible(
-                        normalizeKeyword(keyword),
-                        PlaceExposureStatus.VISIBLE,
-                        PageRequest.of(0, 50)
-                )
-                .stream()
+        String normalized = normalizeKeyword(keyword);
+        if (normalized.isEmpty()) {
+            return List.of();
+        }
+
+        PageRequest pageRequest = PageRequest.of(0, 50);
+        String exposureStatusStr = PlaceExposureStatus.VISIBLE.name();
+
+        List<PlaceSearchDocument> documents;
+        if (normalized.length() < 2) {
+            documents = placeSearchDocumentRepository.searchVisibleLike(normalized, exposureStatusStr, pageRequest);
+        } else {
+            String ftsQuery = buildFtsQuery(normalized);
+            documents = placeSearchDocumentRepository.searchVisibleFts(ftsQuery, exposureStatusStr, pageRequest);
+        }
+
+        return documents.stream()
                 .map(PlaceSearchDocument::getPlace)
                 .toList();
+    }
+
+    private String buildFtsQuery(String keyword) {
+        String[] tokens = keyword.split("\\s+");
+        StringBuilder sb = new StringBuilder();
+        for (String token : tokens) {
+            if (!token.isBlank()) {
+                sb.append("+").append(token).append("* ");
+            }
+        }
+        return sb.toString().trim();
     }
 
     PlaceSearchDocument buildDocument(Place place) {

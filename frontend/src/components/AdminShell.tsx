@@ -1,21 +1,59 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { useTranslation } from "../hooks/useTranslation";
+import { type LocaleType } from "../context/LocaleContext";
 
 type AdminNavItem = {
   to: string;
-  label: string;
+  labelKey: string;
   emphasis?: "primary" | "warning" | "danger";
 };
 
 const DEFAULT_ADMIN_NAV_ITEMS: AdminNavItem[] = [
-  { to: "/admin", label: "대시보드" },
-  { to: "/admin/activities", label: "활동 관리" },
-  { to: "/admin/places", label: "장소 관리" },
-  { to: "/admin/users", label: "사용자 관리" },
-  { to: "/admin/audit-logs", label: "감사 로그" },
-  { to: "/admin/policies", label: "정책 관리", emphasis: "primary" },
-  { to: "/admin/reports", label: "신고 관리", emphasis: "warning" },
+  { to: "/admin", labelKey: "dashboard" },
+  { to: "/admin/activities", labelKey: "activities" },
+  { to: "/admin/places", labelKey: "places" },
+  { to: "/admin/users", labelKey: "users" },
+  { to: "/admin/audit-logs", labelKey: "auditLogs" },
+  { to: "/admin/policies", labelKey: "policies", emphasis: "primary" },
+  { to: "/admin/reports", labelKey: "reports", emphasis: "warning" },
 ];
+
+const navItemTranslations: Record<LocaleType, Record<string, string>> = {
+  ko: {
+    dashboard: "대시보드",
+    activities: "활동 관리",
+    places: "장소 관리",
+    users: "사용자 관리",
+    auditLogs: "감사 로그",
+    policies: "정책 관리",
+    reports: "신고 관리",
+    adminLabel: "관리자",
+    home: "사용자 홈"
+  },
+  en: {
+    dashboard: "Dashboard",
+    activities: "Activities",
+    places: "Places",
+    users: "Users",
+    auditLogs: "Audit Logs",
+    policies: "Policies",
+    reports: "Reports",
+    adminLabel: "Admin",
+    home: "User Home"
+  },
+  ja: {
+    dashboard: "ダッシュボード",
+    activities: "活動管理",
+    places: "場所管理",
+    users: "ユーザー管理",
+    auditLogs: "監査ログ",
+    policies: "ポリシー管理",
+    reports: "報告管理",
+    adminLabel: "管理者",
+    home: "ユーザーホーム"
+  }
+};
 
 export function AdminPageShell({
   title,
@@ -53,10 +91,24 @@ function AdminHeader({
   description: string;
   navItems: AdminNavItem[];
 }) {
+  const { locale, changeLanguage } = useTranslation();
+  const translations = navItemTranslations[locale] || navItemTranslations.ko;
+
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
       <div className="min-w-0">
-        <p className="text-m3-label-md text-m3-primary">관리자</p>
+        <div className="flex items-center gap-3">
+          <p className="text-m3-label-md text-m3-primary">{translations.adminLabel}</p>
+          <select
+            value={locale}
+            onChange={(e) => changeLanguage(e.target.value as LocaleType)}
+            className="h-7 rounded-m3-full border border-m3-outline-variant bg-m3-surface-container-lowest px-2 py-0 text-m3-label-sm text-m3-on-surface-variant outline-none transition focus:border-m3-primary"
+          >
+            <option value="ko">한국어</option>
+            <option value="en">English</option>
+            <option value="ja">日本語</option>
+          </select>
+        </div>
         <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">{title}</h1>
         <p className="mt-2 max-w-2xl text-m3-body-md text-m3-on-surface-variant">
           {description}
@@ -64,14 +116,14 @@ function AdminHeader({
       </div>
       <nav className="flex flex-wrap gap-2" aria-label="관리자 메뉴">
         {navItems.map((item) => (
-          <AdminNavLink key={item.to} {...item} />
+          <AdminNavLink key={item.to} {...item} label={translations[item.labelKey] || item.labelKey} />
         ))}
       </nav>
     </header>
   );
 }
 
-function AdminNavLink({ to, label, emphasis }: AdminNavItem) {
+function AdminNavLink({ to, label, emphasis }: AdminNavItem & { label: string }) {
   const className =
     "inline-flex h-10 items-center justify-center rounded-m3-full border px-4 text-m3-label-lg transition active:scale-[0.98] " +
     (emphasis === "primary"
@@ -88,3 +140,4 @@ function AdminNavLink({ to, label, emphasis }: AdminNavItem) {
     </Link>
   );
 }
+

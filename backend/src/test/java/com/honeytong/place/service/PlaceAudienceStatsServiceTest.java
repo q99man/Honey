@@ -6,6 +6,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.honeytong.place.entity.Place;
+import com.honeytong.place.event.PlaceDemographicsRecalculateEvent;
 import com.honeytong.place.entity.PlaceAudienceStats;
 import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceRepository;
@@ -260,5 +261,23 @@ class PlaceAudienceStatsServiceTest {
 
         // Assert: "외국인 인기", "20대 남성 선호" (order matches logic order: nationality tag first, then demographic tag)
         assertThat(tags).containsExactly("외국인 인기", "20대 남성 선호");
+    }
+
+    @Test
+    void recalculateStats_publishesEventWhenPublisherIsPresent() {
+        // Arrange
+        org.springframework.context.ApplicationEventPublisher mockPublisher = 
+                org.mockito.Mockito.mock(org.springframework.context.ApplicationEventPublisher.class);
+        org.springframework.test.util.ReflectionTestUtils.setField(
+                placeAudienceStatsService, "eventPublisher", mockPublisher);
+
+        // Act
+        placeAudienceStatsService.recalculateStats(PLACE_ID);
+
+        // Assert
+        ArgumentCaptor<PlaceDemographicsRecalculateEvent> eventCaptor = 
+                ArgumentCaptor.forClass(PlaceDemographicsRecalculateEvent.class);
+        verify(mockPublisher).publishEvent(eventCaptor.capture());
+        assertThat(eventCaptor.getValue().getPlaceId()).isEqualTo(PLACE_ID);
     }
 }

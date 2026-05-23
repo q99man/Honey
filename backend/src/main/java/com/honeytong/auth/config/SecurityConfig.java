@@ -33,6 +33,7 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.POST, "/api/auth/oauth/*").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/refresh").permitAll()
                         .requestMatchers(HttpMethod.POST, "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/analytics/regions/*/trends").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/regions/cities").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/regions/cities/*/districts").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/regions/districts/*/dongs").permitAll()

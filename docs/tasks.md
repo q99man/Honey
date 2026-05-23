@@ -298,17 +298,17 @@ The goal is:
 
 ## 17. Performance Optimization
 
-- [ ] Optimize place_stats updates
-- [ ] Add caching for hot endpoints
+- [x] Optimize place_stats updates
+- [x] Add caching for hot endpoints
 - [x] Optimize ranking queries
 - [x] Add ranking query indexes
-- [ ] Add indexes for heavy queries
+- [x] Add indexes for heavy queries
 
 ---
 
 ## 18. Testing
 
-- [ ] Unit test for core services
+- [x] Unit test for core services
 - [x] Test recommendation rules
 - [x] Test visit validation
 - [x] Test policy-based logic
@@ -399,13 +399,13 @@ MVP is complete when:
 
 ## 22. Future Expansion Tasks
 
-- [ ] notification system
-- [ ] advanced analytics
-- [ ] fraud detection system
-- [ ] recommendation optimization
-- [ ] multi-language UI
-- [ ] search optimization
-- [ ] AI-based tagging (optional)
+- [x] notification system
+- [x] advanced analytics
+- [x] fraud detection system
+- [x] recommendation optimization
+- [x] multi-language UI
+- [x] search optimization
+- [x] AI-based tagging (optional)
 
 ---
 

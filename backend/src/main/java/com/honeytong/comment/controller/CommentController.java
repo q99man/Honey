@@ -36,9 +36,19 @@ public class CommentController {
     public ApiResponse<CommentCreateResponse> createComment(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long placeId,
-            @Valid @RequestBody CommentRequest request
+            @Valid @RequestBody CommentRequest request,
+            jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        return ApiResponse.success(commentService.createComment(userId, placeId, request), "Comment created");
+        String clientIp = getClientIp(servletRequest);
+        return ApiResponse.success(commentService.createComment(userId, placeId, request, clientIp), "Comment created");
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     @RequirePhoneVerified

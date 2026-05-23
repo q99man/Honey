@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.honeytong.common.error.ApiException;
+import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceStats;
 import com.honeytong.place.repository.PlaceRepository;
@@ -72,6 +73,9 @@ class RecommendationServiceTest {
     @Mock
     private com.honeytong.mission.service.MissionService missionService;
 
+    @Mock
+    private com.honeytong.fraud.service.FraudDetectionService fraudDetectionService;
+
     private RecommendationService recommendationService;
     private User user;
     private Place place;
@@ -89,7 +93,8 @@ class RecommendationServiceTest {
                 recommendationDailyCounter,
                 userActionLogService,
                 placeAudienceStatsService,
-                missionService
+                missionService,
+                fraudDetectionService
         );
 
         user = new User("테스터", "tester@example.com");
@@ -137,7 +142,7 @@ class RecommendationServiceTest {
         when(recommendationRepository.save(any(Recommendation.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(placeStatsRepository.findByIdForUpdate(PLACE_ID)).thenReturn(Optional.of(stats));
 
-        var response = recommendationService.recommend(USER_ID, PLACE_ID);
+        var response = recommendationService.recommend(USER_ID, PLACE_ID, "127.0.0.1");
 
         assertThat(response.recommended()).isTrue();
         assertThat(response.recommendCount()).isEqualTo(1);
@@ -164,7 +169,7 @@ class RecommendationServiceTest {
         )).thenReturn(true);
         when(policyService.getRequiredInteger("recommend", "daily_limit")).thenReturn(20);
 
-        assertThatThrownBy(() -> recommendationService.recommend(USER_ID, PLACE_ID))
+        assertThatThrownBy(() -> recommendationService.recommend(USER_ID, PLACE_ID, "127.0.0.1"))
                 .isInstanceOf(ApiException.class);
     }
 
@@ -211,5 +216,38 @@ class RecommendationServiceTest {
                 eq(PLACE_ID),
                 any()
         );
+    }
+
+    @Test
+    void recommend_failsWhenDailyLimitExceeded() {
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findById(PLACE_ID)).thenReturn(Optional.of(place));
+        when(recommendationRepository.existsByUserIdAndPlaceIdAndStatus(
+                USER_ID,
+                PLACE_ID,
+                RecommendationStatus.ACTIVE
+        )).thenReturn(false);
+        when(policyService.getRequiredInteger("recommend", "daily_limit")).thenReturn(5);
+        when(recommendationDailyCounter.getUsedCount(eq(USER_ID), any(LocalDate.class), any()))
+                .thenReturn(5L);
+
+        assertThatThrownBy(() -> recommendationService.recommend(USER_ID, PLACE_ID, "127.0.0.1"))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.DAILY_RECOMMEND_LIMIT_EXCEEDED));
+    }
+
+    @Test
+    void cancelRecommendation_failsWhenAlreadyCanceled() {
+        Recommendation recommendation = new Recommendation(user, place, BigDecimal.ONE);
+        recommendation.cancel();
+        
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findById(PLACE_ID)).thenReturn(Optional.of(place));
+        when(recommendationRepository.findByUserIdAndPlaceId(USER_ID, PLACE_ID))
+                .thenReturn(Optional.of(recommendation));
+
+        assertThatThrownBy(() -> recommendationService.cancelRecommendation(USER_ID, PLACE_ID))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
     }
 }

@@ -8,8 +8,11 @@ import com.honeytong.map.config.MapProperties;
 import com.honeytong.policy.cache.PolicyRedisProperties;
 import com.honeytong.policy.seed.PolicySeedProperties;
 import com.honeytong.ranking.cache.RankingRedisProperties;
+import com.honeytong.ranking.cache.SeasonRedisProperties;
 import com.honeytong.ranking.scheduler.RankingSchedulerProperties;
 import com.honeytong.region.seed.RegionSeedProperties;
+import com.honeytong.mission.cache.MissionRedisProperties;
+import com.honeytong.analytics.cache.AnalyticsRedisProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -27,7 +30,10 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         RankingSchedulerProperties.class,
         RegionSeedProperties.class,
         PolicySeedProperties.class,
-        AdminBootstrapProperties.class
+        AdminBootstrapProperties.class,
+        MissionRedisProperties.class,
+        SeasonRedisProperties.class,
+        AnalyticsRedisProperties.class
 })
 public class HoneytongApplication {
 

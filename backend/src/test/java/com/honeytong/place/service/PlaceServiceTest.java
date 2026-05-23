@@ -38,6 +38,8 @@ import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserSanctionRepository;
 import com.honeytong.user.service.UserActionLogService;
+import com.honeytong.fraud.service.FraudDetectionService;
+import org.springframework.context.ApplicationEventPublisher;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -95,6 +97,15 @@ class PlaceServiceTest {
     @Mock
     private com.honeytong.mission.service.MissionService missionService;
 
+    @Mock
+    private FraudDetectionService fraudDetectionService;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
+    @Mock
+    private PlaceAiTagService placeAiTagService;
+
     private PlaceService placeService;
     private User user;
     private RegionCity city;
@@ -119,7 +130,10 @@ class PlaceServiceTest {
                 adminActionLogRepository,
                 new ObjectMapper(),
                 userActionLogService,
-                missionService
+                missionService,
+                fraudDetectionService,
+                eventPublisher,
+                placeAiTagService
         );
 
         user = new User("tester", "tester@example.com");
@@ -159,7 +173,7 @@ class PlaceServiceTest {
             return place;
         });
 
-        var response = placeService.createPlace(USER_ID, createRequest());
+        var response = placeService.createPlace(USER_ID, createRequest(), "127.0.0.1");
 
         assertThat(response.placeId()).isEqualTo(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
@@ -190,7 +204,8 @@ class PlaceServiceTest {
 
         assertThatThrownBy(() -> placeService.createPlace(
                 USER_ID,
-                createRequestWithText("Test Menu", "123456", "Fast service")
+                createRequestWithText("Test Menu", "123456", "Fast service"),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(placeRepository, never()).save(any());
@@ -212,7 +227,8 @@ class PlaceServiceTest {
 
         assertThatThrownBy(() -> placeService.createPlace(
                 USER_ID,
-                createRequestWithImages(List.of("123456"))
+                createRequestWithImages(List.of("123456")),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(placeRepository, never()).save(any(Place.class));
@@ -235,7 +251,8 @@ class PlaceServiceTest {
 
         assertThatThrownBy(() -> placeService.createPlace(
                 USER_ID,
-                createRequestWithAddress("123456", null)
+                createRequestWithAddress("123456", null),
+                "127.0.0.1"
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
         verify(placeRepository, never()).save(any(Place.class));
@@ -260,7 +277,7 @@ class PlaceServiceTest {
         when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
 
-        assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest()))
+        assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest(), "127.0.0.1"))
                 .isInstanceOf(ApiException.class);
     }
 
@@ -302,7 +319,7 @@ class PlaceServiceTest {
         Place place = createPlaceEntity(targetDong);
         ReflectionTestUtils.setField(place, "id", 100L);
         PlaceStats stats = new PlaceStats(place);
-        when(placeRepository.findByDeletedAtIsNullAndExposureStatus(PlaceExposureStatus.VISIBLE))
+        when(placeRepository.findNearbyPlaces(eq("POINT(126.9100000 37.5500000)"), eq("VISIBLE"), eq(100)))
                 .thenReturn(List.of(place));
         when(placeStatsRepository.findById(100L)).thenReturn(Optional.of(stats));
         when(placeImageRepository.findByPlaceIdOrderBySortOrderAsc(100L)).thenReturn(List.of());
@@ -311,6 +328,7 @@ class PlaceServiceTest {
 
         assertThat(response).hasSize(1);
         assertThat(response.getFirst().distanceMeter()).isEqualTo(0);
+        verify(placeRepository).findNearbyPlaces(eq("POINT(126.9100000 37.5500000)"), eq("VISIBLE"), eq(100));
     }
 
     @Test
@@ -696,5 +714,93 @@ class PlaceServiceTest {
                 .thenReturn(shortRecommendationMaxLength);
         when(policyService.getRequiredInteger("place", "feature_text_max_length"))
                 .thenReturn(featureTextMaxLength);
+    }
+
+    @Test
+    void getPlace_failsWhenNotFoundOrDeleted() {
+        when(placeRepository.findById(999L)).thenReturn(Optional.empty());
+        assertThatThrownBy(() -> placeService.getPlace(999L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+
+        Place deletedPlace = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(deletedPlace, "id", 100L);
+        deletedPlace.delete();
+        when(placeRepository.findById(100L)).thenReturn(Optional.of(deletedPlace));
+        assertThatThrownBy(() -> placeService.getPlace(100L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+
+        Place invisiblePlace = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(invisiblePlace, "id", 101L);
+        ReflectionTestUtils.setField(invisiblePlace, "exposureStatus", PlaceExposureStatus.HIDDEN);
+        when(placeRepository.findById(101L)).thenReturn(Optional.of(invisiblePlace));
+        assertThatThrownBy(() -> placeService.getPlace(101L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.RESOURCE_NOT_FOUND));
+    }
+
+    @Test
+    void getNearbyPlaces_failsWhenRadiusInvalid() {
+        assertThatThrownBy(() -> placeService.getNearbyPlaces(37.5500000, 126.9100000, 0))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+
+        assertThatThrownBy(() -> placeService.getNearbyPlaces(37.5500000, 126.9100000, -10))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
+    void searchPlaces_failsWhenKeywordBlank() {
+        assertThatThrownBy(() -> placeService.searchPlaces(null))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+
+        assertThatThrownBy(() -> placeService.searchPlaces("   "))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+    }
+
+    @Test
+    void createPlace_failsWhenPolicyInvalid() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(-1);
+        assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest(), "127.0.0.1"))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_VIOLATION));
+
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("INVALID_SCOPE");
+        assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest(), "127.0.0.1"))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_VIOLATION));
+    }
+
+    @Test
+    void updatePlace_failsWhenCoordinatePartial() {
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                coordinateOnlyUpdateRequest(BigDecimal.valueOf(37.5510000), null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                coordinateOnlyUpdateRequest(null, BigDecimal.valueOf(126.9110000))
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
     }
 }

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../utils/localization.dart';
 import '../../../../models/ranking.dart';
 import '../../../../models/region.dart';
 import '../../auth/providers/auth_provider.dart';
@@ -192,20 +193,27 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.emoji_nature, color: Color(0xFFFFB300), size: 24),
-                          const SizedBox(width: 6),
-                          Text(
-                            _currentSeason?.seasonName ?? '시즌 랭킹',
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w900,
-                              color: Colors.black87,
+                      Expanded(
+                        child: Row(
+                          children: [
+                            const Icon(Icons.emoji_nature, color: Color(0xFFFFB300), size: 24),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _currentSeason?.seasonName ?? 'ranking.seasonRanking'.tr,
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.w900,
+                                  color: Colors.black87,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
+                      const SizedBox(width: 8),
                       Container(
                         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
@@ -213,7 +221,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
-                          _currentSeason != null ? '실시간 랭킹' : '시즌 준비중',
+                          _currentSeason != null ? 'ranking.liveRanking'.tr : 'ranking.seasonPreparing'.tr,
                           style: const TextStyle(
                             fontSize: 12,
                             color: Color(0xFFFF8F00),
@@ -227,7 +235,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                   Text(
                     _currentSeason != null
                         ? '${_currentSeason!.startAt.month}월 ${_currentSeason!.startAt.day}일 ~ ${_currentSeason!.endAt.month}월 ${_currentSeason!.endAt.day}일 집계'
-                        : '종합 랭킹 집계 중입니다.',
+                        : 'ranking.seasonLoading'.tr,
                     style: const TextStyle(
                       fontSize: 12,
                       color: Colors.black45,
@@ -255,7 +263,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        displayedRegionName.isEmpty ? '지역을 로딩 중입니다...' : displayedRegionName,
+                        displayedRegionName.isEmpty ? 'ranking.loadingRegion'.tr : displayedRegionName,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
@@ -263,9 +271,9 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                         ),
                       ),
                     ),
-                    const Text(
-                      '지역 변경',
-                      style: TextStyle(
+                    Text(
+                      'ranking.changeRegion'.tr,
+                      style: const TextStyle(
                         fontSize: 13,
                         color: Color(0xFFFF8F00),
                         fontWeight: FontWeight.w600,
@@ -283,11 +291,11 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: Row(
                 children: [
-                  _buildTabButton('읍면동', 'dong'),
+                  _buildTabButton('ranking.tabDong'.tr, 'dong'),
                   const SizedBox(width: 8),
-                  _buildTabButton('시군구', 'district'),
+                  _buildTabButton('ranking.tabDistrict'.tr, 'district'),
                   const SizedBox(width: 8),
-                  _buildTabButton('시도', 'city'),
+                  _buildTabButton('ranking.tabCity'.tr, 'city'),
                 ],
               ),
             ),
@@ -368,21 +376,21 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
           children: [
             const Icon(Icons.leaderboard_outlined, size: 64, color: Colors.black12),
             const SizedBox(height: 16),
-            const Text(
-              '랭킹 정보가 없습니다',
-              style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            Text(
+              'ranking.emptyTitle'.tr,
+              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
             ),
             const SizedBox(height: 8),
-            const Text(
-              '이 지역에서 아직 수집된 맛집 데이터가 없거나\n새로운 시즌 랭킹 계산 대기 중입니다.',
+            Text(
+              'ranking.emptyDesc'.tr,
               textAlign: TextAlign.center,
-              style: TextStyle(fontSize: 13, color: Colors.black45, height: 1.4),
+              style: const TextStyle(fontSize: 13, color: Colors.black45, height: 1.4),
             ),
             const SizedBox(height: 24),
             ElevatedButton.icon(
               onPressed: _initData,
               icon: const Icon(Icons.refresh),
-              label: const Text('다시 시도'),
+              label: Text('ranking.retry'.tr),
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFB300),
                 foregroundColor: Colors.white,
@@ -668,9 +676,9 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              const Text(
-                '랭킹 조회 지역 변경',
-                style: TextStyle(
+              Text(
+                'ranking.changePopupTitle'.tr,
+                style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
                   color: Colors.black87,
@@ -690,7 +698,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
               : DropdownButtonFormField<RegionCity>(
                   initialValue: _selectedCity,
                   decoration: InputDecoration(
-                    labelText: '시/도 선택',
+                    labelText: 'ranking.selectCity'.tr,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _cities.map((city) {
@@ -716,7 +724,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
               : DropdownButtonFormField<RegionDistrict>(
                   initialValue: _selectedDistrict,
                   decoration: InputDecoration(
-                    labelText: '시/군/구 선택',
+                    labelText: 'ranking.selectDistrict'.tr,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _districts.map((district) {
@@ -744,7 +752,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
               : DropdownButtonFormField<RegionDong>(
                   initialValue: _selectedDong,
                   decoration: InputDecoration(
-                    labelText: '동/읍/면 선택',
+                    labelText: 'ranking.selectDong'.tr,
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _dongs.map((dong) {
@@ -782,7 +790,7 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
-            child: const Text('확인', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text('common.confirm'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

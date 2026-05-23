@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../utils/localization.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
 
@@ -196,20 +197,20 @@ class _MyPageScreenState extends State<MyPageScreen> {
               color: Colors.black12,
             ),
             const SizedBox(height: 24),
-            const Text(
-              '더 풍성한 꿀벌 활동을 해보세요!',
+            Text(
+              'auth.loginRequired'.tr,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 20,
                 fontWeight: FontWeight.bold,
                 color: Colors.black87,
               ),
             ),
             const SizedBox(height: 12),
-            const Text(
-              '로그인하시면 나만의 활동 기록, 맛집 추천,\n실시간 성장 지표를 확인하실 수 있습니다.',
+            Text(
+              'auth.phoneVerificationRequired'.tr,
               textAlign: TextAlign.center,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 14,
                 color: Colors.black45,
                 height: 1.5,
@@ -339,9 +340,9 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            '꿀벌 성장 상태',
-                            style: TextStyle(
+                          Text(
+                            'mypage.level'.tr,
+                            style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
                               color: Colors.black87,
@@ -354,7 +355,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              '등급: ${status?.trustGrade ?? 'Seed Bee'}',
+                              '${'mypage.trust'.tr}: ${status?.trustGrade ?? 'Seed Bee'}',
                               style: const TextStyle(
                                 fontSize: 12,
                                 color: Color(0xFFFF8F00),
@@ -464,6 +465,57 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   ),
                 ),
               const SizedBox(height: 24),
+
+              // Language Setting
+              Card(
+                elevation: 0,
+                color: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.black12),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          const Icon(Icons.language, color: Color(0xFFFFB300)),
+                          const SizedBox(width: 12),
+                          Text(
+                            'mypage.language'.tr,
+                            style: const TextStyle(
+                              fontSize: 14,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.black87,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Consumer<Localization>(
+                        builder: (context, localization, _) {
+                          return DropdownButton<String>(
+                            value: localization.locale,
+                            underline: const SizedBox(),
+                            items: const [
+                              DropdownMenuItem(value: 'ko', child: Text('한국어')),
+                              DropdownMenuItem(value: 'en', child: Text('English')),
+                              DropdownMenuItem(value: 'ja', child: Text('日本語')),
+                            ],
+                            onChanged: (value) {
+                              if (value != null) {
+                                localization.changeLocale(value);
+                              }
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
 
               // Logout Button
               OutlinedButton.icon(

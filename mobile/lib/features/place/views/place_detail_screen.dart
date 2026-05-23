@@ -464,9 +464,13 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         // Title & Category Row
                         Row(
                           children: [
-                            Text(
-                              _placeDetails!['name'],
-                              style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                            Flexible(
+                              child: Text(
+                                _placeDetails!['name'],
+                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
                             ),
                             const SizedBox(width: 10),
                             Container(
@@ -486,7 +490,39 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 6),
+                        if (_placeDetails!['aiTags'] != null && (_placeDetails!['aiTags'] as List).isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          Wrap(
+                            spacing: 6.0,
+                            runSpacing: 6.0,
+                            children: (_placeDetails!['aiTags'] as List).map<Widget>((tag) {
+                              return Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFF3E5F5),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(color: const Color(0xFFE1BEE7), width: 0.8),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    const Icon(Icons.auto_awesome, size: 12, color: Color(0xFF8E24AA)),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      '#$tag',
+                                      style: const TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF8E24AA),
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              );
+                            }).toList(),
+                          ),
+                        ],
+                        const SizedBox(height: 8),
 
                         // Stats Summary Row
                         Row(

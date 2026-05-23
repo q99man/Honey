@@ -4,6 +4,7 @@ import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceAudienceStats;
+import com.honeytong.place.event.PlaceDemographicsRecalculateEvent;
 import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.user.entity.User;
@@ -11,6 +12,8 @@ import com.honeytong.user.repository.UserRepository;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +23,9 @@ public class PlaceAudienceStatsService {
     private final PlaceAudienceStatsRepository placeAudienceStatsRepository;
     private final PlaceRepository placeRepository;
     private final UserRepository userRepository;
+
+    @Autowired(required = false)
+    private ApplicationEventPublisher eventPublisher;
 
     public PlaceAudienceStatsService(
             PlaceAudienceStatsRepository placeAudienceStatsRepository,
@@ -31,8 +37,16 @@ public class PlaceAudienceStatsService {
         this.userRepository = userRepository;
     }
 
-    @Transactional
     public void recalculateStats(Long placeId) {
+        if (eventPublisher != null) {
+            eventPublisher.publishEvent(new PlaceDemographicsRecalculateEvent(placeId));
+        } else {
+            recalculateStatsSync(placeId);
+        }
+    }
+
+    @Transactional
+    public void recalculateStatsSync(Long placeId) {
         Place place = placeRepository.findById(placeId)
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "맛집을 찾을 수 없습니다."));
 

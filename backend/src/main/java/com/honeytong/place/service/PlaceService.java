@@ -46,6 +46,11 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import org.springframework.context.ApplicationEventPublisher;
+import com.honeytong.place.event.PlaceCreatedEvent;
+import com.honeytong.fraud.service.FraudDetectionService;
 
 @Service
 public class PlaceService {
@@ -87,6 +92,9 @@ public class PlaceService {
     private final ObjectMapper objectMapper;
     private final UserActionLogService userActionLogService;
     private final MissionService missionService;
+    private final FraudDetectionService fraudDetectionService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final PlaceAiTagService placeAiTagService;
 
     public PlaceService(
             PlaceRepository placeRepository,
@@ -103,7 +111,10 @@ public class PlaceService {
             AdminActionLogRepository adminActionLogRepository,
             ObjectMapper objectMapper,
             UserActionLogService userActionLogService,
-            MissionService missionService
+            MissionService missionService,
+            FraudDetectionService fraudDetectionService,
+            ApplicationEventPublisher eventPublisher,
+            PlaceAiTagService placeAiTagService
     ) {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
@@ -120,10 +131,13 @@ public class PlaceService {
         this.objectMapper = objectMapper;
         this.userActionLogService = userActionLogService;
         this.missionService = missionService;
+        this.fraudDetectionService = fraudDetectionService;
+        this.eventPublisher = eventPublisher;
+        this.placeAiTagService = placeAiTagService;
     }
 
     @Transactional
-    public PlaceCreateResponse createPlace(Long userId, PlaceCreateRequest request) {
+    public PlaceCreateResponse createPlace(Long userId, PlaceCreateRequest request, String clientIp) {
         User user = getActiveUser(userId);
         UserRegion userRegion = getPrimaryRegion(userId);
         RegionDong placeDong = regionDongRepository.findById(request.dongId())
@@ -196,6 +210,19 @@ public class PlaceService {
         );
         missionService.trackProgress(userId, MissionTargetType.PLACE_REGISTER);
 
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_PLACE_CREATE, clientIp, place.getId());
+                    eventPublisher.publishEvent(new PlaceCreatedEvent(place.getId()));
+                }
+            });
+        } else {
+            fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_PLACE_CREATE, clientIp, place.getId());
+            eventPublisher.publishEvent(new PlaceCreatedEvent(place.getId()));
+        }
+
         return new PlaceCreateResponse(place.getId(), place.getApprovalStatus());
     }
 
@@ -243,17 +270,21 @@ public class PlaceService {
         if (radiusMeter <= 0) {
             throw new ApiException(ErrorCode.INVALID_REQUEST, "검색 반경은 1 이상이어야 합니다.");
         }
-        return placeRepository.findByDeletedAtIsNullAndExposureStatus(PlaceExposureStatus.VISIBLE).stream()
-                .map(place -> new NearbyPlace(place, calculateDistanceMeter(
-                        latitude,
-                        longitude,
-                        place.getLatitude().doubleValue(),
-                        place.getLongitude().doubleValue()
-                )))
-                .filter(item -> item.distanceMeter() <= radiusMeter)
-                .sorted(Comparator.comparingInt(NearbyPlace::distanceMeter))
-                .limit(50)
-                .map(item -> toListItemResponse(item.place(), getStats(item.place().getId()), item.distanceMeter()))
+        String pointText = String.format(java.util.Locale.ROOT, "POINT(%.7f %.7f)", longitude, latitude);
+        String exposureStatusStr = PlaceExposureStatus.VISIBLE.name();
+
+        List<Place> places = placeRepository.findNearbyPlaces(pointText, exposureStatusStr, radiusMeter);
+
+        return places.stream()
+                .map(place -> {
+                    int distance = calculateDistanceMeter(
+                            latitude,
+                            longitude,
+                            place.getLatitude().doubleValue(),
+                            place.getLongitude().doubleValue()
+                    );
+                    return toListItemResponse(place, getStats(place.getId()), distance);
+                })
                 .toList();
     }
 
@@ -547,6 +578,7 @@ public class PlaceService {
 
     private PlaceDetailResponse toDetailResponse(Place place, PlaceStats stats, List<String> imageUrls) {
         List<String> audienceTags = placeAudienceStatsService.generateAudienceTags(place.getId());
+        List<String> aiTags = placeAiTagService.getTagsByPlaceId(place.getId());
         return new PlaceDetailResponse(
                 place.getId(),
                 place.getName(),
@@ -575,7 +607,8 @@ public class PlaceService {
                 stats.getVisitCount(),
                 stats.getCommentCount(),
                 imageUrls,
-                audienceTags
+                audienceTags,
+                aiTags
         );
     }
 

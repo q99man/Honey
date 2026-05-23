@@ -373,6 +373,7 @@ CREATE TABLE places (
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   deleted_at DATETIME NULL,
+  location POINT AS (ST_PointFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'), 4326)) STORED,
   CONSTRAINT fk_places_user
     FOREIGN KEY (created_by) REFERENCES users(id),
   CONSTRAINT fk_places_city
@@ -380,7 +381,8 @@ CREATE TABLE places (
   CONSTRAINT fk_places_district
     FOREIGN KEY (region_district_id) REFERENCES region_district(id),
   CONSTRAINT fk_places_dong
-    FOREIGN KEY (region_dong_id) REFERENCES region_dong(id)
+    FOREIGN KEY (region_dong_id) REFERENCES region_dong(id),
+  SPATIAL KEY idx_places_location (location)
 );
 Notes
 approval_status supports future moderation policies
@@ -489,6 +491,26 @@ CREATE TABLE place_tags (
 Notes
 tag_type examples: SYSTEM, ADMIN
 source_type examples: AUTO, MANUAL
+
+4.6 place_search_documents
+
+Stores aggregated search text documents for fast discovery.
+
+```sql
+CREATE TABLE place_search_documents (
+  place_id BIGINT PRIMARY KEY,
+  search_text VARCHAR(3000) NOT NULL,
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  CONSTRAINT fk_place_search_documents_place
+    FOREIGN KEY (place_id) REFERENCES places(id),
+  FULLTEXT INDEX idx_place_search_documents_fts (search_text) WITH PARSER ngram
+);
+```
+
+Notes
+- search_text contains a space-separated concatenation of place fields (name, category, menu, features, addresses, region names in KO/EN).
+- utilizes a MySQL FULLTEXT index with the CJK ngram parser for performance optimization.
 
 5. Activity Tables
 
@@ -930,6 +952,50 @@ target_type stores the primary object being investigated, such as PLACE, COMMENT
 metadata_json stores small event-specific context such as place id, distance, recommendation weight, or report target information
 user action logs are written after the domain transaction commits and should not break the completed user action if telemetry storage fails
 
+10.2 notifications
+
+Stores notification events for users.
+
+```sql
+CREATE TABLE notifications (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  type VARCHAR(50) NOT NULL,
+  title VARCHAR(150) NOT NULL,
+  content TEXT NOT NULL,
+  target_id BIGINT,
+  is_read BOOLEAN NOT NULL DEFAULT FALSE,
+  read_at DATETIME NULL,
+  created_at DATETIME NOT NULL,
+  updated_at DATETIME NOT NULL,
+  CONSTRAINT fk_notifications_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+Notes
+- Stores system, comments, missions, and report-processed notifications.
+- target_id points to the target object id relevant to the notification type (e.g. place_id for NEW_COMMENT).
+
+10.3 fraud_alerts
+
+Stores abnormal activity alerts flagged by the Fraud Detection System.
+
+```sql
+CREATE TABLE fraud_alerts (
+  id BIGINT PRIMARY KEY AUTO_INCREMENT,
+  user_id BIGINT NOT NULL,
+  alert_type VARCHAR(50) NOT NULL,
+  risk_score DOUBLE NOT NULL,
+  description VARCHAR(255) NOT NULL,
+  ip_address VARCHAR(64),
+  target_id BIGINT,
+  created_at DATETIME NOT NULL,
+  CONSTRAINT fk_fraud_alerts_user FOREIGN KEY (user_id) REFERENCES users(id)
+);
+```
+Notes
+- Stores alerts flagged by automated scan patterns (e.g. RAPID_PARTICIPATION, GPS_TELEPORTATION, IP_SPAM).
+- target_id points to the target object id relevant to the activity (e.g. place_id, visit_id, comment_id).
+
 11. Recommended MVP Table Set
 
 The minimum useful MVP schema should include:
@@ -958,6 +1024,8 @@ admin_action_logs
 system_policies
 place_ranking_history
 user_action_logs
+notifications
+fraud_alerts
 
 12. Recommended Future Expansion Tables
 
@@ -986,6 +1054,7 @@ index on (user_id, phone, verified, created_at)
 visits
 index on (place_id, created_at)
 index on (user_id, place_id, created_at)
+index on (place_id, is_valid, user_id)
 comments
 unique index on (user_id, place_id)
 index on (place_id, status)
@@ -998,6 +1067,19 @@ index on (season_id, region_type, region_ref_id, rank_no)
 reports
 index on (status, target_type)
 index on (reporter_user_id, created_at)
+user_sanctions
+index on (user_id, status, sanction_type, start_at, end_at)
+user_action_logs
+index on (created_at DESC)
+admin_action_logs
+index on (created_at DESC)
+users
+index on (created_at DESC)
+notifications
+index on (user_id, is_read, created_at DESC)
+fraud_alerts
+index on (created_at DESC)
+index on (user_id, alert_type)
 
 14. Final Notes
 

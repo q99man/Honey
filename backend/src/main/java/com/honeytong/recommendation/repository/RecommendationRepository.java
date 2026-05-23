@@ -31,4 +31,7 @@ public interface RecommendationRepository extends JpaRepository<Recommendation, 
     List<Recommendation> findTop50ByOrderByCreatedAtDesc();
 
     List<Recommendation> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, RecommendationStatus status);
+
+    long countByPlaceIdAndStatusAndCreatedAtGreaterThanEqual(Long placeId, RecommendationStatus status, LocalDateTime since);
 }
+

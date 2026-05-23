@@ -1,13 +1,17 @@
 package com.honeytong.user.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
+import com.honeytong.common.error.ApiException;
+import com.honeytong.common.error.ErrorCode;
 
 import com.honeytong.user.dto.UserActivitySummaryResponse;
 import com.honeytong.user.dto.UserProfileUpdateRequest;
 import com.honeytong.user.dto.UserStatusResponse;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserLevel;
+import com.honeytong.user.entity.UserStatus;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserLevelRepository;
 import com.honeytong.user.repository.UserRepository;
@@ -55,7 +59,7 @@ class UserServiceTest {
 
         user = new User("테스터", "tester@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);
-        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        org.mockito.Mockito.lenient().when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
     }
 
     @Test
@@ -111,5 +115,66 @@ class UserServiceTest {
         assertThat(response.visitCount()).isEqualTo(2);
         assertThat(response.commentCount()).isEqualTo(3);
         assertThat(response.registeredPlaceCount()).isEqualTo(4);
+    }
+
+    @Test
+    void getMyProfile_failsWhenUserNotFound() {
+        assertThatThrownBy(() -> userService.getMyProfile(999L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    void updateMyProfile_failsWhenUserNotFound() {
+        assertThatThrownBy(() -> userService.updateMyProfile(
+                999L,
+                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    void getMyStatus_failsWhenUserNotFound() {
+        assertThatThrownBy(() -> userService.getMyStatus(999L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    void getMyProfile_failsWhenUserInactive() {
+        User inactiveUser = new User("비활성", "inactive@example.com");
+        ReflectionTestUtils.setField(inactiveUser, "id", 2L);
+        ReflectionTestUtils.setField(inactiveUser, "status", UserStatus.SUSPENDED);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(inactiveUser));
+
+        assertThatThrownBy(() -> userService.getMyProfile(2L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    void updateMyProfile_failsWhenUserInactive() {
+        User inactiveUser = new User("비활성", "inactive@example.com");
+        ReflectionTestUtils.setField(inactiveUser, "id", 2L);
+        ReflectionTestUtils.setField(inactiveUser, "status", UserStatus.SUSPENDED);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(inactiveUser));
+
+        assertThatThrownBy(() -> userService.updateMyProfile(
+                2L,
+                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
+    }
+
+    @Test
+    void getMyStatus_failsWhenUserInactive() {
+        User inactiveUser = new User("비활성", "inactive@example.com");
+        ReflectionTestUtils.setField(inactiveUser, "id", 2L);
+        ReflectionTestUtils.setField(inactiveUser, "status", UserStatus.SUSPENDED);
+        when(userRepository.findById(2L)).thenReturn(Optional.of(inactiveUser));
+
+        assertThatThrownBy(() -> userService.getMyStatus(2L))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
     }
 }

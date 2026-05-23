@@ -10,6 +10,7 @@ import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.ranking.cache.RankingCache;
+import com.honeytong.ranking.cache.SeasonCache;
 import com.honeytong.ranking.dto.PlaceRankingItemResponse;
 import com.honeytong.ranking.dto.PlaceRankingResponse;
 import com.honeytong.ranking.entity.PlaceSeasonScore;
@@ -64,6 +65,9 @@ class RankingServiceTest {
     private RankingCache rankingCache;
 
     @Mock
+    private SeasonCache seasonCache;
+
+    @Mock
     private PlaceAudienceStatsService placeAudienceStatsService;
 
     private RankingService rankingService;
@@ -82,6 +86,7 @@ class RankingServiceTest {
                 regionDistrictRepository,
                 regionDongRepository,
                 rankingCache,
+                seasonCache,
                 placeAudienceStatsService
         );
 

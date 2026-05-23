@@ -1182,12 +1182,39 @@ Automated sanctions or moderation actions are not applied by user report creatio
 Users cannot report themselves as USER targets.
 14. Notification API
 
-This can be added after MVP, but should be reserved in API design.
-
 14.1 Get Notifications
 GET /api/notifications
+
+Returns list of notifications for the authenticated user, sorted by creation date in descending order.
+
+Response:
+{
+  "success": true,
+  "data": [
+    {
+      "id": 100,
+      "type": "NEW_COMMENT",
+      "title": "새로운 댓글이 등록되었습니다.",
+      "content": "[맛집 이름] 맛집에 새로운 댓글이 작성되었습니다: \"정말 맛있는 맛집이네요!\"",
+      "targetId": 10,
+      "isRead": false,
+      "createdAt": "2026-05-23T14:16:00"
+    }
+  ],
+  "message": "OK"
+}
+
 14.2 Mark Notification as Read
 PATCH /api/notifications/{notificationId}/read
+
+Marks a notification as read.
+
+Response:
+{
+  "success": true,
+  "data": null,
+  "message": "Notification marked as read"
+}
 15. Admin API
 
 Admin APIs must be separated from normal user APIs.
@@ -2245,7 +2272,53 @@ Admin user action log list returns the latest 50 user action rows.
 It is read-only and does not write admin_action_logs or user_action_logs.
 The endpoint is separated under `/api/admin` and is intended for operation, abuse investigation, and participation audit review.
 
-15.12 Operational Health Check
+15.12 Admin Fraud Management
+GET /api/admin/fraud/alerts
+
+Get all fraud alerts flagged by the system.
+
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "id": 1,
+      "userId": 1,
+      "alertType": "RAPID_PARTICIPATION",
+      "riskScore": 1.0,
+      "description": "동일 유저가 5.0초 내에 연속된 행동을 감지했습니다. (직전: PLACE_CREATE, 현재: RECOMMENDATION_CREATE)",
+      "ipAddress": "127.0.0.1",
+      "targetId": 100,
+      "createdAt": "2026-05-23T14:30:00"
+    }
+  ],
+  "message": "OK"
+}
+
+GET /api/admin/fraud/suspicious-users
+
+Get list of suspicious users with their cumulative fraud alert count.
+
+Response:
+
+{
+  "success": true,
+  "data": [
+    {
+      "userId": 1,
+      "nickname": "spammer_bee",
+      "email": "spammer@example.com",
+      "phone": "01012345678",
+      "alertCount": 8,
+      "trustScore": 75,
+      "status": "ACTIVE"
+    }
+  ],
+  "message": "OK"
+}
+
+15.13 Operational Health Check
 GET /actuator/health
 
 Purpose:

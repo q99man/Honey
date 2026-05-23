@@ -31,12 +31,22 @@ public class RecommendationController {
     @PostMapping("/places/{placeId}/recommend")
     public ApiResponse<RecommendationResponse> recommend(
             @AuthenticationPrincipal Long userId,
-            @PathVariable Long placeId
+            @PathVariable Long placeId,
+            jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
+        String clientIp = getClientIp(servletRequest);
         return ApiResponse.success(
-                recommendationService.recommend(userId, placeId),
+                recommendationService.recommend(userId, placeId, clientIp),
                 "Recommendation completed"
         );
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     @DeleteMapping("/places/{placeId}/recommend")

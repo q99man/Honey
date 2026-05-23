@@ -57,6 +57,10 @@ export function loadKakaoMapSdk(appKey: string) {
       `#${KAKAO_MAP_SCRIPT_ID}, script[data-kakao-map-sdk="true"]`,
     );
     if (existingScript) {
+      if (window.kakao?.maps) {
+        handleLoad();
+        return;
+      }
       existingScript.addEventListener("load", handleLoad, { once: true });
       existingScript.addEventListener(
         "error",

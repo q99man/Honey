@@ -101,7 +101,7 @@ public class AuthService {
 
         User user = userAuth.getUser();
         if (!user.isActive()) {
-            throw new ApiException(ErrorCode.FORBIDDEN, "?댁슜?????녿뒗 怨꾩젙?낅땲??");
+            throw new ApiException(ErrorCode.FORBIDDEN, "이용할 수 없는 계정입니다.");
         }
 
         userAuth.markLoggedIn();

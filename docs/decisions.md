@@ -1913,6 +1913,183 @@ Implement the **Audience Tag System** in Honeytong to dynamically aggregate demo
 
 ---
 
+## 41. Redis Caching for Hot Endpoints (Active Missions and Current Season)
+
+### Decision
+Implement Redis caching for hot endpoints (`GET /api/missions` and `GET /api/rankings/seasons/current`) to improve performance and throughput.
+- Separate caching boundaries (`MissionCache` and `SeasonCache` interfaces) are introduced to support both `Redis` and `NoOp` implementations based on the `app.redis.enabled` flag.
+- Default TTL configurations are set to 10 minutes for active missions and 1 hour for current season data.
+- Safe serialization using Jackson `ObjectMapper` with `JavaTimeModule` is used.
+- Exceptions during Redis read/write operations are caught and logged, allowing a silent fallback to the database.
+- Cache invalidation (evict) hook is integrated in `AdminRankingService` to clear the cached current season whenever a season is created or modified.
+
+### Reason
+- Highly concurrent endpoints like active missions and current season queries can place unnecessary load on the database. Caching them reduces latency and DB traffic.
+- Transparent database fallback ensures high availability, even if Redis experiences connection issues.
+- Manual cache eviction on admin mutations keeps the current season cache consistent.
+
+---
+
+## 42. Decoupled Demographics Recalculation for Place Stats
+
+### Decision
+Decouple the heavy demographic statistics recalculation query from the main transactional request-response path (recommendation, visit, invalidation) using Spring Application Events and asynchronous event listeners.
+- Enable Spring's asynchronous processing (`@EnableAsync`) with a dedicated `ThreadPoolTaskExecutor` bean `taskExecutor` under `AsyncConfig` with a thread name prefix `Honey-Async-`.
+- Define a custom event `PlaceDemographicsRecalculateEvent` carrying the `placeId`.
+- Modify `PlaceAudienceStatsService.recalculateStats(Long placeId)` to publish this event using an autowired optional `ApplicationEventPublisher`.
+- If the event publisher is not present (such as during mock-based service unit tests), fall back to synchronous execution to ensure test stability.
+- Create `PlaceDemographicsEventListener` to listen to this event using `@TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)` combined with `@Async("taskExecutor")`. The listener executes `PlaceAudienceStatsService.recalculateStatsSync(Long placeId)` asynchronously in a separate thread.
+
+### Reason
+- Running the heavy SQL query `findDemographicsByPlaceId` inside the request-response transaction holds a pessimistic write lock on the `place_stats` row for the entire duration of the query (often tens of milliseconds).
+- Decoupling this recalculation to run asynchronously after the main transaction commits releases the lock on `place_stats` immediately (reducing lock duration to milliseconds), preventing lock contention and database serialization bottlenecks under concurrent traffic.
+- Running the async listener after the main transaction commits preserves consistency since it ensures we only recalculate statistics for successfully committed recommendations and visits.
+
+---
+
+## 43. Database Index Optimization for Heavy Queries
+
+### Decision
+Implement database indexes to optimize heavy read and write operations, including audit logs sorting, active sanction validations, and covering index for demographic aggregations:
+1. **User Action Logs**: Add index `idx_user_action_logs_created_at` on `(created_at DESC)` to optimize `findTop50ByOrderByCreatedAtDesc()`.
+2. **Admin Action Logs**: Add index `idx_admin_action_logs_created_at` on `(created_at DESC)` to optimize `findTop50ByOrderByCreatedAtDesc()`.
+3. **User Sanctions**: Add index `idx_user_sanctions_active_check` on `(user_id, status, sanction_type, start_at, end_at)` to optimize `existsBlockingSanction(...)`.
+4. **Visits**: Add index `idx_visits_place_valid_user` on `(place_id, is_valid, user_id)` as a covering index to optimize user demographic aggregation queries.
+5. **Users**: Add index `idx_users_created_at` on `(created_at DESC)` to optimize `findAllByOrderByCreatedAtDesc()`.
+
+### Reason
+- **Sorting Performance**: Action logs (`user_action_logs` and `admin_action_logs`) and user lists (`users`) accumulate huge numbers of records. Indexing on `created_at DESC` removes CPU-intensive filesort operations for operator dashboard scanning.
+- **Critical Path Latency**: The active sanction check is queried before every core user write action. A composite index covering target fields minimizes check duration and prevents transactional delays.
+- **Covering Index Optimization**: Joining visits in demographic recalculations is optimized by creating a composite covering index, enabling the DB to resolve the query entirely from the index tree without loading table data pages.
+
+---
+
+## 44. Notification System Implementation
+
+### Decision
+Implement an in-app database-backed notification system to alert users about key updates, interactions, and events (comments on registered places, completed missions, processed reports).
+- Created a Flyway schema migration (V7) for the `notifications` table.
+- Implemented core domain classes (`Notification` entity, `NotificationRepository` with custom query methods, and `NotificationResponse` DTO).
+- Built user APIs: `GET /api/notifications` (for listing user's notifications in descending order of creation time) and `PATCH /api/notifications/{notificationId}/read` (for reading notifications after validating user ownership).
+- Designed the notification event architecture using Spring's `ApplicationEventPublisher` to decouple domains: defined `CommentCreatedEvent`, `MissionCompletedEvent`, and `ReportProcessedEvent`.
+- Implemented `NotificationEventListener` to handle events and generate custom localized Korean notification messages.
+- Integrated event publishing hooks into existing service layers (`CommentService`, `MissionService`, and `AdminReportService`).
+
+### Reason
+- In-app database notifications provide a baseline history of events for users without requiring real-time setup (like FCM/WebSockets) which is out of the scope of MVP.
+- Decoupling notification trigger logic from the core business domains using Spring Application Events avoids circular dependencies and enforces architectural separation.
+- Handling localized messaging within the event listener preserves Korean language policies while keeping other service domains language-agnostic.
+
+---
+
+## 45. Advanced Analytics System
+
+### Decision
+Implement an Advanced Analytics System in Honeytong to track user preferences, hyperlocal regional trends, and daily platform activity trends.
+- Structured response mappers through custom DTO records (`UserAnalyticsResponse`, `RegionalTrendsResponse`, `AdminAnalyticsResponse`).
+- Implemented `AnalyticsRepository` with optimized Native SQL queries to aggregate data dynamically across different entities (`places`, `visits`, `recommendations`, `comments`, `users`).
+- Constructed two service layers: `AnalyticsService` for user statistics (category/price preferences percentage calculations, and 30-day activity count padding) and regional trends; `AdminAnalyticsService` for global platform activity trends.
+- Designed `AnalyticsCache` (supporting optional Redis and NoOp configurations) to cache regional trends (TTL: 1 hour) and admin dashboard trends (TTL: 2 hours).
+- Exposed REST API endpoints: `GET /api/analytics/me` (authenticated), `GET /api/analytics/regions/{dongId}/trends` (public/permitted), and `GET /api/admin/analytics/activity-trends` (restricted to ADMIN/SUPER_ADMIN role).
+
+### Reason
+- Real-time logging queries can stress the DB under heavy traffic. Using custom Native Queries with existing optimized indexes combined with Redis caching limits latency and database serialization overhead.
+- Grouping user-specific trends client-side after returning small date maps reduces payload size, while zero-count date padding is handled elegantly in Java to prevent UI chart failures.
+- Separating public trends from authenticated endpoints maintains exploration-first UX benefits for guest users while securing user data.
+
+## 46. Fraud Detection System Implementation
+
+### Decision
+Implement a Fraud Detection System to detect abnormal recommendation or visit activity patterns (rapid participation, GPS teleportation, IP spam), record them in the `fraud_alerts` table, alert admins, and automatically penalize the user's trust score.
+- Created Flyway schema migration (V8) for the `fraud_alerts` table.
+- Defined `FraudAlertType` with rules: `RAPID_PARTICIPATION` (actions within a short interval), `GPS_TELEPORTATION` (physically impossible movement between consecutive visits), and `IP_SPAM` (multiple accounts operating under the same IP address).
+- Implemented `FraudDetectionService` to perform abnormal pattern scans.
+- Configured real-time detection via `@Async` and `TransactionalEventListener` to isolate the scan from core business transactions, preventing delays or rollback propagation.
+- Automatically subtracts 5 points from the user's trust score upon alert generation, triggering a recalculation of their trust grade and recommendation weight.
+- Implemented admin endpoints: `GET /api/admin/fraud/alerts` (list of all alerts) and `GET /api/admin/fraud/suspicious-users` (users with highest alert counts).
+
+### Reason
+- **Transaction Safety**: To prevent potential lock contention or transaction rollbacks from affecting normal user operations, the detection logic is processed asynchronously only after the parent business transaction successfully commits.
+- **Automatic Penalization with Manual Sanctions**: While trust scores are automatically penalized by 5 points to limit immediate ranking manipulation, full account suspension (Sanction) is kept as a manual admin-only action to prevent false-positive automated bans.
+
+---
+
+## 47. Recommendation & Ranking Scoring Optimization
+
+### Decision
+Implement Shannon Entropy for demographic diversity bonus and timeframe-based recency bonus calculation in the ranking recalculation service, driven dynamically by system policies.
+- **Demographic Diversity Score**: Shannon Entropy is calculated over user birth years (grouped by decades) and gender cohorts. The entropy value is normalized between 0.0 and 1.0 based on active count ratio, then multiplied by the dynamic policy `ranking.diversity_weight`.
+- **Recency Score**: Based on a configurable timeframe (`ranking.recency_days`), query and count recommendations, valid visits, and comments. Calculate `recentScore` using dynamic policy weights (`ranking.recency_recommend_weight`, `ranking.recency_visit_weight`, `ranking.recency_comment_weight`).
+- **Integration**: Apply both bonuses to the `PlaceStats` model using an atomic update `updateBonuses(recentScore, diversityScore)`. The combined score is persistent in the database.
+
+### Reason
+- **Exploration-First UX**: Encourages diversity by ranking places that attract varied demographics higher, aligning with the platform's core discovery identity.
+- **System Policy Control**: Adheres to the non-negotiable rule of avoiding hardcoded business rules, allowing administrators to tune scoring dynamics in real time.
+- **Transactional Consistency**: Keeps database operations optimized and isolated within the recalculation phase.
+
+---
+
+## 48. Place Search Optimization with FULLTEXT ngram Index
+
+### Decision
+Optimize the place search keyword matching query by introducing a MySQL FULLTEXT index with the CJK `ngram` parser, combined with a hybrid search execution strategy.
+- **Database Indexing**: Drop the old prefix B-tree index on `place_search_documents.search_text` and create a `FULLTEXT INDEX` using the native `ngram` token parser.
+- **Hybrid Service Routing**: 
+  - For keywords >= 2 characters, execute a native SQL Full-Text Search query utilizing `MATCH(d.search_text) AGAINST(:keyword IN BOOLEAN MODE)`. Keywords are preprocessed into FTS Boolean terms (e.g. `+term1* +term2*`) to perform precise substring and multi-word matching.
+  - For 1-character keywords, fallback to a traditional `LIKE CONCAT('%', :keyword, '%')` wildcard search to bypass CJK tokenization limitations of the ngram parser.
+
+### Reason
+- **Search Scale Performance**: Wildcard prefix LIKE queries perform full table scans which cannot scale with search volumes. FTS utilizes specialized index trees for rapid, indexed word lookup.
+- **CJK Token Boundaries**: CJK (Chinese, Japanese, Korean) text has no native space-based boundaries, so normal full-text parsers fail. The `ngram` parser indexes overlapping character groups, enabling accurate Korean substring searches.
+- **Single-Character Usability**: Fallback routing ensures that searches for single Korean letters (e.g., "닭") continue to yield results, avoiding empty sets that FTS would return due to default minimum token length limits.
+
+---
+
+## 49. Spatial Index & Spatial Query for Nearby Places
+
+### Decision
+Optimize the nearby places API (`GET /api/places/nearby`) by introducing a native MySQL `SPATIAL INDEX` and refactoring coordinates range query execution to the database layer.
+- **Database Indexing**: Define a `location` point column on `places` as a `STORED` Generated Column derived from `longitude` and `latitude`. Create a `SPATIAL INDEX` on this column. This ensures no third-party Java geometry dependencies (e.g. `hibernate-spatial`) are introduced to the core JPA mapping.
+- **Query Optimization**: Implement a native SQL query `findNearbyPlaces` utilizing native spatial functions `ST_Distance_Sphere` and `ST_PointFromText` to filter, sort by proximity, and limit (50 items) inside MySQL.
+- **Hybrid Distance Representation**: JVM computes the precise Haversine distance in memory *only* for the returned 50 places to populate the DTO response, completely bypassing full table Haversine scans.
+
+### Reason
+- **Platform Scale**: Fetching the entire places table into JVM memory to calculate distance is highly inefficient and creates CPU and memory exhaustion risks. DB-side spatial indexing ensures sub-millisecond range scans even with large datasets.
+- **Code Decoupling**: Generated columns allow the JPA application code to insert and update normal `latitude`/`longitude` columns without mapping JTS or Geolatte geometry types in Java.
+- **H2 Test Compatibility**: Because Java entities remain decoupled from spatial column mappings, H2 database schemas in the test profile are auto-created without spatial generated column features, preventing test context startup crashes.
+
+---
+
+## 50. Non-Intrusive Lightweight Localization Architecture
+
+### Decision
+Implement a lightweight, dependency-free localization system (i18n) for React web frontend and Flutter mobile app to prevent dependency version conflicts.
+- **React Frontend**: Created `LocaleContext` and custom hook `useTranslation()` utilizing native React Context/Hooks to manage locale transitions dynamically. Stored locale selections in `localStorage`.
+- **Flutter Mobile**: Created a lightweight `Localization` singleton ChangeNotifier and String extension method (`tr`) utilizing SharedPreferences to persist local settings.
+- **Resources**: Organized translations in JSON format (`ko.json`, `en.json`, `ja.json`) and Dart maps, prioritizing Korean as the default locale source.
+- **In-App Dynamic Selection**: Formally rejected multi-package app store builds (separate builds for English/Japanese installers) due to high maintenance overhead. Adopted in-app locale switches that toggle translation keys instantly without page reloads.
+
+### Reason
+- **Dependency Isolation**: Adding external multi-language frameworks (e.g. `react-i18next`, `easy_localization`) can break builds during compiler updates or when packages clash with core framework versions (React 19 or Flutter 3.x).
+- **Zero Refresh Switch**: Utilizing React Context and Flutter ChangeNotifier allows the application UI to switch languages instantly without refreshing pages or rebooting.
+- **Client-Side Autonomy**: Keeps translation concerns on the client side, decoupled from backend systems to avoid API-level translations.
+- **Maintenance & Scalability**: Bundling translation files (several KBs) in a single package is lightweight and allows effortless translation expansion (e.g., adding Chinese) later by simply introducing a new JSON/map asset without changing the core layout structure.
+
+---
+
+## 51. Redis-Based Concurrency Lock for User Region Change
+
+### Decision
+Implement a Redis-based distributed lock (`SETNX`) on `changeMyRegion` inside `RegionService` to prevent concurrent region change requests from bypassing cooldown policies.
+- **Lock Key**: `lock:region:change:user:{userId}` with a 10-second expiry duration.
+- **Transaction Safety**: Utilize Spring's `TransactionSynchronizationManager` to release the Redis lock inside the `afterCompletion` callback, guaranteeing that locks are only freed after the database transaction has committed or rolled back.
+
+### Reason
+- **Cooldown Policy Integrity**: Without lock enforcement, concurrent regional requests can execute parallel check-queries, bypassing the 7-day cooldown threshold and creating duplicate primary regions.
+- **Race Condition Prevention**: Relies on Redis atomic set-if-absent capabilities to immediately reject concurrent write attempts and preserve data consistency across instances.
+
+---
+
 ## Final Note
 
 Every new feature must respect these decisions.
@@ -1921,3 +2098,4 @@ If a change conflicts with a decision:
 - document it here
 - explain the reason
 - update related systems accordingly
+

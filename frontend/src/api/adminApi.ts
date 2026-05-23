@@ -188,6 +188,7 @@ export type AdminPlaceDetail = AdminPlaceListItem & {
   trustWeightedScore: number;
   lastActivityAt: string | null;
   imageUrls: string[];
+  aiTags?: string[];
 };
 
 export type AdminPlaceModerationResponse = {

@@ -23,6 +23,7 @@ import com.honeytong.report.dto.AdminReportResponse;
 import com.honeytong.report.entity.Report;
 import com.honeytong.report.entity.ReportStatus;
 import com.honeytong.report.entity.ReportTargetType;
+import com.honeytong.report.event.ReportProcessedEvent;
 import com.honeytong.report.repository.ReportRepository;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserRole;
@@ -30,6 +31,7 @@ import com.honeytong.user.repository.UserRepository;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -56,6 +58,7 @@ public class AdminReportService {
     private final AdminUserService adminUserService;
     private final PlaceService placeService;
     private final PolicyService policyService;
+    private final ApplicationEventPublisher eventPublisher;
 
     public AdminReportService(
             ReportRepository reportRepository,
@@ -66,7 +69,8 @@ public class AdminReportService {
             AdminCommentService adminCommentService,
             AdminUserService adminUserService,
             PlaceService placeService,
-            PolicyService policyService
+            PolicyService policyService,
+            ApplicationEventPublisher eventPublisher
     ) {
         this.reportRepository = reportRepository;
         this.userRepository = userRepository;
@@ -77,6 +81,7 @@ public class AdminReportService {
         this.adminUserService = adminUserService;
         this.placeService = placeService;
         this.policyService = policyService;
+        this.eventPublisher = eventPublisher;
     }
 
     @Transactional(readOnly = true)
@@ -115,6 +120,15 @@ public class AdminReportService {
                 afterValue,
                 request.reviewNote()
         ));
+
+        eventPublisher.publishEvent(new ReportProcessedEvent(
+                report.getReporter().getId(),
+                report.getId(),
+                report.getTargetType().name(),
+                report.getStatus().name(),
+                report.getReviewNote()
+        ));
+
         return toResponse(report);
     }
 

@@ -5,6 +5,7 @@ import com.honeytong.common.error.ErrorCode;
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.ranking.cache.RankingCache;
+import com.honeytong.ranking.cache.SeasonCache;
 import com.honeytong.ranking.dto.CurrentSeasonResponse;
 import com.honeytong.ranking.dto.PlaceRankingItemResponse;
 import com.honeytong.ranking.dto.PlaceRankingResponse;
@@ -32,6 +33,7 @@ public class RankingService {
     private final RegionDistrictRepository regionDistrictRepository;
     private final RegionDongRepository regionDongRepository;
     private final RankingCache rankingCache;
+    private final SeasonCache seasonCache;
     private final PlaceAudienceStatsService placeAudienceStatsService;
 
     public RankingService(
@@ -41,6 +43,7 @@ public class RankingService {
             RegionDistrictRepository regionDistrictRepository,
             RegionDongRepository regionDongRepository,
             RankingCache rankingCache,
+            SeasonCache seasonCache,
             PlaceAudienceStatsService placeAudienceStatsService
     ) {
         this.seasonRepository = seasonRepository;
@@ -49,6 +52,7 @@ public class RankingService {
         this.regionDistrictRepository = regionDistrictRepository;
         this.regionDongRepository = regionDongRepository;
         this.rankingCache = rankingCache;
+        this.seasonCache = seasonCache;
         this.placeAudienceStatsService = placeAudienceStatsService;
     }
 
@@ -109,15 +113,20 @@ public class RankingService {
 
     @Transactional(readOnly = true)
     public CurrentSeasonResponse getCurrentSeason() {
-        Season season = getActiveSeason();
-        return new CurrentSeasonResponse(
-                season.getSeasonCode(),
-                season.getSeasonName(),
-                season.getSeasonType().name(),
-                season.getStartAt(),
-                season.getEndAt(),
-                season.getStatus().name()
-        );
+        return seasonCache.getCurrentSeason()
+                .orElseGet(() -> {
+                    Season season = getActiveSeason();
+                    CurrentSeasonResponse response = new CurrentSeasonResponse(
+                            season.getSeasonCode(),
+                            season.getSeasonName(),
+                            season.getSeasonType().name(),
+                            season.getStartAt(),
+                            season.getEndAt(),
+                            season.getStatus().name()
+                    );
+                    seasonCache.putCurrentSeason(response);
+                    return response;
+                });
     }
 
     private Season resolveSeason(String seasonCode) {

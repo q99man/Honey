@@ -34,6 +34,7 @@ public record PlaceDetailResponse(
         int visitCount,
         int commentCount,
         List<String> imageUrls,
-        List<String> audienceTags
+        List<String> audienceTags,
+        List<String> aiTags
 ) {
 }

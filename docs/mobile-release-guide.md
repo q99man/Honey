@@ -40,7 +40,7 @@ storeFile=key.jks
 
 ## 🛠️ 3. 빌드 자동화 스크립트 실행
 
-허니통 프로젝트는 Windows 환경에서 원클릭으로 정적 분석 및 릴리즈 빌드를 완료할 수 있는 자동화 스크립트를 제공합니다.
+허니통 프로젝트는 Windows 환경에서 원클릭으로 정적 분석 및 릴리즈 빌드를 완료할 수 있는 자동화 스크립트를 제공합니다. 이 스크립트는 개발(dev) 환경과 프로덕션(prod) 환경용 빌드를 분리하여 생성합니다.
 
 프로젝트 루트 디렉토리에서 PowerShell을 열고 다음 스크립트를 호출합니다:
 
@@ -52,8 +52,10 @@ storeFile=key.jks
 1. `scripts/dev-env.ps1`을 통한 도구 환경 정규화 및 초기화
 2. Flutter 종속성 최신화 (`flutter pub get`)
 3. Flutter 코드 정적 분석 및 오류 검사 (`flutter analyze`)
-4. 로컬 테스트 및 사이드로드용 릴리즈 APK 빌드 (`flutter build apk`)
-5. 구글 플레이 스토어 업로드용 App Bundle 빌드 (`flutter build appbundle`)
+4. 개발 환경(`dev`) 및 프로덕션 환경(`prod`) 릴리즈 APK 빌드
+   - `flutter build apk --flavor dev` (개발용, 패키지 ID: `com.honeytong.app.dev`, 앱 이름: `허니통 (개발)`, API 주소: `http://10.0.2.2:8080`)
+   - `flutter build apk --flavor prod` (배포용, 패키지 ID: `com.honeytong.app`, 앱 이름: `허니통`, API 주소: `https://api.honeytong.com`)
+5. 구글 플레이 스토어 업로드용 App Bundle 빌드 (`flutter build appbundle --flavor prod`)
 
 ---
 
@@ -61,7 +63,9 @@ storeFile=key.jks
 
 빌드가 정상 종료되면 다음 경로에서 생성된 파일들을 확인할 수 있습니다:
 
-- **릴리즈 APK 파일 (수동 설치용)**:
-  `mobile/build/app/outputs/flutter-apk/app-release.apk`
+- **개발자 테스트 및 수동 설치용 APK**:
+  `mobile/build/app/outputs/flutter-apk/app-dev-release.apk`
+- **프로덕션 릴리즈 및 수동 설치용 APK**:
+  `mobile/build/app/outputs/flutter-apk/app-prod-release.apk`
 - **릴리즈 AAB 파일 (구글 플레이 업로드용)**:
-  `mobile/build/app/outputs/bundle/release/app-release.aab`
+  `mobile/build/app/outputs/bundle/prodRelease/app-prod-release.aab`

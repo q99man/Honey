@@ -31,6 +31,9 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.honeytong.fraud.service.FraudDetectionService;
 
 @Service
 public class VisitService {
@@ -54,6 +57,7 @@ public class VisitService {
     private final VisitCooldownCache visitCooldownCache;
     private final PlaceAudienceStatsService placeAudienceStatsService;
     private final MissionService missionService;
+    private final FraudDetectionService fraudDetectionService;
 
     public VisitService(
             VisitRepository visitRepository,
@@ -65,7 +69,8 @@ public class VisitService {
             UserActionLogService userActionLogService,
             VisitCooldownCache visitCooldownCache,
             PlaceAudienceStatsService placeAudienceStatsService,
-            MissionService missionService
+            MissionService missionService,
+            FraudDetectionService fraudDetectionService
     ) {
         this.visitRepository = visitRepository;
         this.placeRepository = placeRepository;
@@ -77,10 +82,11 @@ public class VisitService {
         this.visitCooldownCache = visitCooldownCache;
         this.placeAudienceStatsService = placeAudienceStatsService;
         this.missionService = missionService;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     @Transactional
-    public VisitResponse verifyVisit(Long userId, Long placeId, VisitVerifyRequest request) {
+    public VisitResponse verifyVisit(Long userId, Long placeId, VisitVerifyRequest request, String clientIp) {
         User user = getActiveUser(userId);
         Place place = getVisiblePlace(placeId);
         int radiusMeter = getRadiusMeter();
@@ -125,6 +131,20 @@ public class VisitService {
                 metadata
         );
         missionService.trackProgress(userId, MissionTargetType.VISIT);
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_VISIT_VERIFY, clientIp, visit.getId());
+                    fraudDetectionService.auditVisitVerification(userId, placeId, clientIp);
+                }
+            });
+        } else {
+            fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_VISIT_VERIFY, clientIp, visit.getId());
+            fraudDetectionService.auditVisitVerification(userId, placeId, clientIp);
+        }
+
         return new VisitResponse(true, distanceMeter, growthResult.expGained(), stats.getVisitCount());
     }
 

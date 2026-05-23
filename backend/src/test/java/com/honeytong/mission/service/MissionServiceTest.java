@@ -9,6 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.honeytong.common.error.ApiException;
+import com.honeytong.mission.cache.MissionCache;
 import com.honeytong.mission.dto.MissionClaimResponse;
 import com.honeytong.mission.entity.Mission;
 import com.honeytong.mission.entity.MissionTargetType;
@@ -27,6 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,6 +49,12 @@ class MissionServiceTest {
     @Mock
     private UserGrowthService userGrowthService;
 
+    @Mock
+    private MissionCache missionCache;
+
+    @Mock
+    private ApplicationEventPublisher eventPublisher;
+
     private MissionService missionService;
     private User user;
     private Mission mission;
@@ -57,7 +65,9 @@ class MissionServiceTest {
                 missionRepository,
                 userMissionProgressRepository,
                 userRepository,
-                userGrowthService
+                userGrowthService,
+                missionCache,
+                eventPublisher
         );
 
         user = new User("테스터", "tester@example.com");

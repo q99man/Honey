@@ -17,4 +17,6 @@ public interface CommentRepository extends JpaRepository<Comment, Long> {
     List<Comment> findByPlaceIdAndStatusOrderByCreatedAtDesc(Long placeId, CommentStatus status);
 
     List<Comment> findByUserIdAndStatusOrderByCreatedAtDesc(Long userId, CommentStatus status);
+
+    long countByPlaceIdAndStatusAndDeletedAtIsNullAndCreatedAtGreaterThanEqual(Long placeId, CommentStatus status, java.time.LocalDateTime since);
 }

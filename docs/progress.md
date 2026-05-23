@@ -343,6 +343,15 @@ All documents are consistent with each other.
 - [x] Covered API security rules allowing public active missions retrieval while guarding reward claims
 - [x] Wrote comprehensive unit tests and verified all tests pass successfully
 
+### Fraud Detection System
+- [x] Database migration added under `db/migration/V8__add_fraud_detection.sql` to support `fraud_alerts`
+- [x] Defined `FraudAlertType` and implemented core domain Entity, Repository, and Response/User DTOs
+- [x] Implemented `FraudDetectionService` with rules: RAPID_PARTICIPATION, GPS_TELEPORTATION, and IP_SPAM
+- [x] Connected async `@Async` and TransactionalEventListener hooks from Place, Recommendation, Visit, and Comment domains
+- [x] Applied automatic trust score penalty (-5 points) and status re-evaluation upon alert generation
+- [x] Implemented admin controllers `/api/admin/fraud/alerts` and `/api/admin/fraud/suspicious-users`
+- [x] Added unit and integration tests and verified all tests pass successfully
+
 ---
 
 ## 4. Key Decisions (Summary)
@@ -515,12 +524,35 @@ Recent update:
 - [x] Place Audience Tag System Backend & Frontend: Fully implemented place audience tag system. Demographics (age, gender, nationality) are aggregated from recommendations and visits to generate tags, which are exposed via API and shown as demographic chips on the Flutter mobile ranking screen.
 - [x] Mission System Architecture Design: Designed the database schema for `missions` and `user_mission_progress` tables, established reward claiming and repeatable reset policies, drafted seed data for default missions (`VISIT_3`, `RECOMMEND_5`, `COMMENT_3`), and compiled the detailed implementaton plan (`docs/mission-implementation-plan.md`).
 - [x] Mission System Implementation: Implemented Flyway migration (V5), refactored `UserGrowthService` for dynamic EXP reward logs, implemented the mission domain layer (entities, repositories, services), and integrated mission tracking hooks. Verified all 265 backend tests pass successfully.
+- [x] Redis Caching for Hot Endpoints: Implemented Redis caching layers for active missions list (`GET /api/missions`) and current season data (`GET /api/rankings/seasons/current`). Added Redis/NoOp implementation bounds, dynamic TTL properties configurations, ObjectMapper serialization with JavaTimeModule, exception-safe DB fallback, and admin eviction hooks for current season updates. All unit and integration tests compile and pass.
+- [x] Optimize place_stats updates: Decoupled demographics recalculation from request-response transactions using Spring Application Events and asynchronous listeners. Configured a task executor thread pool, set up TransactionPhase.AFTER_COMMIT listener, and kept PlaceAudienceStatsService backwards compatible for unit tests. All backend unit and integration tests compile and pass.
+- [x] Heavy query index optimization: Created Flyway migration (V6) containing indexes on user_action_logs (created_at DESC), admin_action_logs (created_at DESC), users (created_at DESC), user_sanctions (user_id, status, sanction_type, start_at, end_at), and visits (place_id, is_valid, user_id). All backend tests compile, validate, and pass successfully.
+- [x] Core Services Edge-Case Unit Testing: Added and expanded unit tests for key domain services (PlaceService, RecommendationService, VisitService, CommentService, UserService, AuthService) covering validation failures, invalid state transitions, and edge cases. Resolved mock stubbing issues and strict stubbing mismatches. Verified all backend unit tests pass successfully.
+
+- [x] Notification System Implementation: Created the Flyway DB schema migration (V7) for the notifications table. Implemented the core entity, repository, response DTOs, service, and controller for API endpoints (`GET /api/notifications` and `PATCH /api/notifications/{notificationId}/read`). Defined `CommentCreatedEvent`, `MissionCompletedEvent`, and `ReportProcessedEvent` and implemented the `NotificationEventListener` to handle localized notification generation. Integrated event publishing in `CommentService`, `MissionService`, and `AdminReportService`. Added unit and listener tests, verifying all backend tests compile, validate, and pass successfully.
+
+- [x] Advanced Analytics System Implementation: Implemented custom DTO records, `AnalyticsRepository` with optimized Native SQL queries, and service layers (`AnalyticsService` and `AdminAnalyticsService`) to track user preferences, hyperlocal regional trends, and global activity counts. Created `AnalyticsCache` supporting Redis and NoOp configurations. Exposed endpoints: `GET /api/analytics/me` (authenticated), `GET /api/analytics/regions/{dongId}/trends` (public), and `GET /api/admin/analytics/activity-trends` (admin roles). Added unit tests, verifying all backend tests compile, validate, and pass successfully.
+
+- [x] Recommendation & Ranking Scoring Optimization: Refactored the ranking calculation engine to dynamically compute diversity and recency bonus scores. Implemented Shannon Entropy to evaluate user demographic (age decade and gender) distribution as a normalized diversity factor (0.0 to 1.0) scaled by policy weight. Added timeframe-based counts for recommendations, visits, and comments to calculate recency bonuses. Ensured database persistence in PlaceStats, loaded all parameters from Dynamic System Policies, updated the database seed, and verified with robust Mockito lenient testing.
+
+- [x] Place Search Optimization: Refactored the search architecture to utilize a MySQL FULLTEXT index on place_search_documents(search_text) with the CJK ngram parser. Implemented a hybrid search execution strategy in PlaceSearchDocumentService that delegates 2+ character keywords to native MATCH AGAINST Boolean Mode queries (preprocessed with + and * operators) and falls back to wildcard LIKE matching for single-character queries. Expanded unit testing and verified all backend tests compile and pass.
+
+- [x] Spatial Index & Spatial Query Optimization: Optimized nearby places API (GET /api/places/nearby) by introducing a location POINT Generated Column on places table and a MySQL SPATIAL INDEX. Refactored coordinate range queries to use native SQL functions ST_Distance_Sphere and ST_PointFromText at the database layer. Decoupled Hibernate entities from spatial types, preserving H2 testing compatibility. Updated and verified unit tests.
+- [x] Multi-Language UI (i18n): Implemented a custom lightweight localization infrastructure using React Context/Hooks for the React web frontend and a ChangeNotifier singleton for the Flutter mobile app. Created ko/en/ja localization map resources, integrated LanguageSwitcher select/dropdowns, and successfully translated core interfaces. Completed Vite build compiling, backend Gradle tests, and Flutter static analysis (`flutter analyze`), and corrected Japanese resource typos.
+
+- [x] AI-Based Place Tagging System: Designed and implemented an asynchronous AI tagging system for places. Added flyway database migration (V11) for `place_ai_tags`. Created modular service abstractions for a default rule-based `MockAiTaggingService` and a conditional `GeminiAiTaggingService`. Integrated Spring Boot asynchronous event listeners (`@Async` and `@EventListener`) to update tags on place registration and comment additions. Integrated tags presentation (custom M3 chips) inside the React 어드민 Places dashboard and Flutter mobile's Place Detail Screen. Verified 100% success across all backend unit tests, frontend build packaging, and Flutter static analysis.
+
+- [x] Region Change Concurrency Guard & UI/UX Detail Polishing: Implemented a Redis-based distributed lock (`SETNX` with a 10s TTL) inside `RegionService.changeMyRegion` integrated with transaction synchronization callbacks to prevent race conditions during regional change requests. Fixed potential layout and vertical/horizontal text overflow breaks under multilingual rendering (e.g. English/Japanese long titles) by wrapping critical title and name components with `Flexible`/`Expanded` and enabling ellipsis boundaries in `place_detail_screen.dart` and `ranking_screen.dart`. Verified builds across backend tests and `flutter analyze` successfully.
+
+- [x] Mobile Deployment Flavors & Dynamic Endpoint: Configured native product flavors (dev and prod) in Android Kotlin DSL Gradle script (`build.gradle.kts`) alongside enabling `buildFeatures.resValues` for Gradle 8.0+ compatibility. Mapped dynamic string resources (`app_name`) for localized app names ("허니통 (개발)" / "허니통") and package ID suffixes. Refactored Flutter API client endpoint mapping (`api_endpoints.dart`) to check `appFlavor` dynamically without extra packages. Added a one-click build automation script (`scripts/build-mobile-release.ps1`) and updated release manuals (`docs/mobile-release-guide.md`). Run and verified `flutter analyze` and clean flavor APK/AAB compilations successfully.
+
+- [x] Web Admin UI 빌드 결함 수정 & 사용자 복구 연동 완료: 다국어(ko/en/ja) 패치 중 `AdminShell.tsx`에서 변경된 `AdminNavItem` 타입의 `labelKey`와 `AdminDashboardPage.tsx`에서 구형으로 사용되고 있던 `label` 필드의 불일치를 해결하여 `tsc -b && vite build` 정적 체크 빌드를 정상적으로 통과시킴. 이전 'web to mobile' 커밋 시점에 삭제되었던 일반 사용자 페이지군(`HomePage.tsx`, `DetailPage.tsx` 등)의 복구 복원 후 충돌 없이 컴파일 됨을 검증 완료.
 
 Next task:
 
-Performance Optimization - Add caching for hot endpoints: Implement Redis-based caching layer for high-traffic endpoints (such as regional rankings, active missions list, and user profiles) to improve application throughput and reduce database load.
+카카오 지도 연결 상태에 대한 사용자 수동 테스트 피드백 확인 및 필요 시 도메인/API 키 설정 보완 작업 진행.
 
-- recommended reasoning level: medium
+- recommended reasoning level: low
 
 ---
 

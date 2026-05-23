@@ -33,3 +33,9 @@ auth,phone_verification_code_ttl_minutes,5,INTEGER,휴대폰 인증번호 유효
 auth,phone_verification_max_attempts,5,INTEGER,휴대폰 인증번호 최대 시도 횟수
 auth,jwt_access_token_minutes,15,INTEGER,JWT 액세스 토큰 만료 시간(분)
 auth,jwt_refresh_token_days,14,INTEGER,JWT 리프레시 토큰 만료 시간(일)
+ranking,recency_days,30,INTEGER,최근성 점수 계산 기준 기간(일)
+ranking,recency_recommend_weight,0.50,DECIMAL,최근 추천 활동 가중치
+ranking,recency_visit_weight,1.00,DECIMAL,최근 방문 활동 가중치
+ranking,recency_comment_weight,0.20,DECIMAL,최근 댓글 활동 가중치
+ranking,diversity_weight,5.00,DECIMAL,인구통계 다양성 점수 최대 가중치
+

@@ -6,6 +6,7 @@ import com.honeytong.comment.dto.CommentRequest;
 import com.honeytong.comment.dto.CommentResponse;
 import com.honeytong.comment.entity.Comment;
 import com.honeytong.comment.entity.CommentStatus;
+import com.honeytong.comment.event.CommentCreatedEvent;
 import com.honeytong.comment.repository.CommentRepository;
 import com.honeytong.common.error.ApiException;
 import com.honeytong.common.error.ErrorCode;
@@ -23,8 +24,12 @@ import com.honeytong.user.service.UserActionLogService;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.honeytong.fraud.service.FraudDetectionService;
 
 @Service
 public class CommentService {
@@ -42,6 +47,8 @@ public class CommentService {
     private final PolicyService policyService;
     private final UserActionLogService userActionLogService;
     private final MissionService missionService;
+    private final ApplicationEventPublisher eventPublisher;
+    private final FraudDetectionService fraudDetectionService;
 
     public CommentService(
             CommentRepository commentRepository,
@@ -50,7 +57,9 @@ public class CommentService {
             UserRepository userRepository,
             PolicyService policyService,
             UserActionLogService userActionLogService,
-            MissionService missionService
+            MissionService missionService,
+            ApplicationEventPublisher eventPublisher,
+            FraudDetectionService fraudDetectionService
     ) {
         this.commentRepository = commentRepository;
         this.placeRepository = placeRepository;
@@ -59,10 +68,12 @@ public class CommentService {
         this.policyService = policyService;
         this.userActionLogService = userActionLogService;
         this.missionService = missionService;
+        this.eventPublisher = eventPublisher;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     @Transactional
-    public CommentCreateResponse createComment(Long userId, Long placeId, CommentRequest request) {
+    public CommentCreateResponse createComment(Long userId, Long placeId, CommentRequest request, String clientIp) {
         User user = getActiveUser(userId);
         Place place = getVisiblePlace(placeId);
         String content = normalizeContent(request.content());
@@ -81,6 +92,27 @@ public class CommentService {
                 Map.of("placeId", place.getId())
         );
         missionService.trackProgress(userId, MissionTargetType.COMMENT);
+
+        eventPublisher.publishEvent(new CommentCreatedEvent(
+                comment.getId(),
+                place.getId(),
+                user.getId(),
+                place.getCreatedBy().getId(),
+                place.getName(),
+                comment.getContent()
+        ));
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_COMMENT_CREATE, clientIp, comment.getId());
+                }
+            });
+        } else {
+            fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_COMMENT_CREATE, clientIp, comment.getId());
+        }
+
         return new CommentCreateResponse(comment.getId());
     }
 

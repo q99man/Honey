@@ -5,6 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 import com.honeytong.policy.service.PolicyService;
+import com.honeytong.common.error.ApiException;
 import com.honeytong.region.dto.RegionChangeRequest;
 import com.honeytong.region.dto.RegionVerifyRequest;
 import com.honeytong.region.entity.RegionCity;
@@ -19,6 +20,7 @@ import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -55,6 +57,9 @@ class RegionServiceTest {
     @Mock
     private PolicyService policyService;
 
+    @Mock
+    private StringRedisTemplate redisTemplate;
+
     private RegionService regionService;
     private User user;
     private RegionCity city;
@@ -84,7 +89,8 @@ class RegionServiceTest {
                 userRepository,
                 userTrustRepository,
                 (latitude, longitude) -> new ResolvedRegion(dong),
-                policyService
+                policyService,
+                redisTemplate
         );
     }
 
@@ -147,6 +153,10 @@ class RegionServiceTest {
 
     @Test
     void changeMyRegion_deactivatesCurrentRegionAndSavesNewRegion() {
+        org.springframework.data.redis.core.ValueOperations<String, String> valueOps = org.mockito.Mockito.mock(org.springframework.data.redis.core.ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(any(), any(), any())).thenReturn(true);
+
         UserRegion currentRegion = new UserRegion(user, dong);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(any(), any()))
@@ -160,5 +170,29 @@ class RegionServiceTest {
         assertThat(currentRegion.isPrimaryRegion()).isFalse();
         assertThat(response.dongId()).isEqualTo(4L);
         assertThat(response.dongName()).isEqualTo("합정동");
+    }
+
+    @Test
+    @org.junit.jupiter.api.DisplayName("동시에 두 번의 지역 변경이 시도되면 두 번째 요청은 락 획득 실패로 예외가 발생해야 한다")
+    void changeMyRegion_failsOnConcurrency() {
+        org.springframework.data.redis.core.ValueOperations<String, String> valueOps = org.mockito.Mockito.mock(org.springframework.data.redis.core.ValueOperations.class);
+        when(redisTemplate.opsForValue()).thenReturn(valueOps);
+        when(valueOps.setIfAbsent(any(), any(), any())).thenReturn(true).thenReturn(false);
+
+        UserRegion currentRegion = new UserRegion(user, dong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(any(), any()))
+                .thenReturn(Optional.of(currentRegion));
+        when(regionDongRepository.findById(4L)).thenReturn(Optional.of(nextDong));
+        when(policyService.getRequiredInteger("region", "change_cooldown_day")).thenReturn(0);
+        when(userRegionRepository.save(any(UserRegion.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = regionService.changeMyRegion(USER_ID, new RegionChangeRequest(4L));
+        assertThat(response.dongId()).isEqualTo(4L);
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> 
+            regionService.changeMyRegion(USER_ID, new RegionChangeRequest(4L))
+        ).isInstanceOf(ApiException.class)
+         .hasMessageContaining("이미 지역 변경 처리가 진행 중입니다.");
     }
 }

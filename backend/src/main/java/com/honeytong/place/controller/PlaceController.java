@@ -44,9 +44,19 @@ public class PlaceController {
     @PostMapping
     public ApiResponse<PlaceCreateResponse> createPlace(
             @AuthenticationPrincipal Long userId,
-            @Valid @RequestBody PlaceCreateRequest request
+            @Valid @RequestBody PlaceCreateRequest request,
+            jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        return ApiResponse.success(placeService.createPlace(userId, request), "Place created");
+        String clientIp = getClientIp(servletRequest);
+        return ApiResponse.success(placeService.createPlace(userId, request, clientIp), "Place created");
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     @GetMapping

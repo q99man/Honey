@@ -82,19 +82,41 @@ class PlaceSearchDocumentServiceTest {
     }
 
     @Test
-    void searchVisiblePlaces_usesNormalizedKeywordAndReturnsPlaces() {
+    void searchVisiblePlaces_usesFtsForTwoOrMoreCharacters() {
         PlaceSearchDocument document = placeSearchDocumentService.buildDocument(place);
-        when(placeSearchDocumentRepository.searchVisible("김치", PlaceExposureStatus.VISIBLE, PageRequest.of(0, 50)))
+        when(placeSearchDocumentRepository.searchVisibleFts("+김치*", "VISIBLE", PageRequest.of(0, 50)))
                 .thenReturn(List.of(document));
 
         List<Place> result = placeSearchDocumentService.searchVisiblePlaces("  김치  ");
 
         assertThat(result).containsExactly(place);
-        verify(placeSearchDocumentRepository).searchVisible(
-                eq("김치"),
-                eq(PlaceExposureStatus.VISIBLE),
+        verify(placeSearchDocumentRepository).searchVisibleFts(
+                eq("+김치*"),
+                eq("VISIBLE"),
                 eq(PageRequest.of(0, 50))
         );
+    }
+
+    @Test
+    void searchVisiblePlaces_fallsBackToLikeSearchForSingleCharacterKeyword() {
+        PlaceSearchDocument document = placeSearchDocumentService.buildDocument(place);
+        when(placeSearchDocumentRepository.searchVisibleLike("닭", "VISIBLE", PageRequest.of(0, 50)))
+                .thenReturn(List.of(document));
+
+        List<Place> result = placeSearchDocumentService.searchVisiblePlaces("  닭  ");
+
+        assertThat(result).containsExactly(place);
+        verify(placeSearchDocumentRepository).searchVisibleLike(
+                eq("닭"),
+                eq("VISIBLE"),
+                eq(PageRequest.of(0, 50))
+        );
+    }
+
+    @Test
+    void searchVisiblePlaces_returnsEmptyListForEmptyKeyword() {
+        List<Place> result = placeSearchDocumentService.searchVisiblePlaces("   ");
+        assertThat(result).isEmpty();
     }
 
     @Test

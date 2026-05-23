@@ -1,7 +1,14 @@
+import 'package:flutter/services.dart';
+
 class ApiEndpoints {
   // Base URL (Change to your backend server host)
   // For Android Emulator, 10.0.2.2 points to localhost of the host machine
-  static const String baseUrl = 'http://10.0.2.2:8080';
+  static String get baseUrl {
+    if (appFlavor == 'prod') {
+      return 'https://api.honeytong.com';
+    }
+    return 'http://10.0.2.2:8080';
+  }
 
   // Auth Endpoints
   static const String signup = '/api/auth/signup';

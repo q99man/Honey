@@ -35,9 +35,19 @@ public class VisitController {
     public ApiResponse<VisitResponse> verifyVisit(
             @AuthenticationPrincipal Long userId,
             @PathVariable Long placeId,
-            @Valid @RequestBody VisitVerifyRequest request
+            @Valid @RequestBody VisitVerifyRequest request,
+            jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
-        return ApiResponse.success(visitService.verifyVisit(userId, placeId, request), "Visit verified");
+        String clientIp = getClientIp(servletRequest);
+        return ApiResponse.success(visitService.verifyVisit(userId, placeId, request, clientIp), "Visit verified");
+    }
+
+    private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
+        String ip = request.getHeader("X-Forwarded-For");
+        if (ip == null || ip.isEmpty() || "unknown".equalsIgnoreCase(ip)) {
+            ip = request.getRemoteAddr();
+        }
+        return ip;
     }
 
     @GetMapping("/places/{placeId}/visit-policy")

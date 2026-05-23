@@ -9,6 +9,8 @@ import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 import com.honeytong.auth.dto.OAuthLoginRequest;
+import com.honeytong.auth.dto.LoginRequest;
+import com.honeytong.auth.dto.SignupRequest;
 import com.honeytong.auth.entity.AuthProvider;
 import com.honeytong.auth.entity.UserAuth;
 import com.honeytong.auth.oauth.OAuthProviderClientRegistry;
@@ -16,8 +18,10 @@ import com.honeytong.auth.oauth.OAuthUserProfile;
 import com.honeytong.auth.repository.UserAuthRepository;
 import com.honeytong.auth.security.JwtTokenProvider;
 import com.honeytong.common.error.ApiException;
+import com.honeytong.common.error.ErrorCode;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserLevel;
+import com.honeytong.user.entity.UserStatus;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserLevelRepository;
 import com.honeytong.user.repository.UserRepository;
@@ -137,5 +141,54 @@ class AuthServiceTest {
                 .isInstanceOf(ApiException.class);
 
         verifyNoInteractions(oauthProviderClientRegistry);
+    }
+
+    @Test
+    void signup_failsWhenEmailAlreadyExists() {
+        when(userAuthRepository.existsByProviderAndProviderUserId(AuthProvider.LOCAL, "bee@example.com"))
+                .thenReturn(true);
+
+        assertThatThrownBy(() -> authService.signup(new SignupRequest("bee@example.com", "password", "nickname")))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.INVALID_REQUEST));
+
+        verify(userRepository, never()).save(any());
+    }
+
+    @Test
+    void login_failsWhenEmailOrPasswordIncorrect() {
+        // Case 1: Email not found
+        when(userAuthRepository.findByProviderAndProviderUserId(AuthProvider.LOCAL, "bee@example.com"))
+                .thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("bee@example.com", "password")))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+
+        // Case 2: Password incorrect
+        User user = new User("nickname", "bee@example.com");
+        UserAuth userAuth = new UserAuth(user, AuthProvider.LOCAL, "bee@example.com", "bee@example.com", "hashed_password");
+        when(userAuthRepository.findByProviderAndProviderUserId(AuthProvider.LOCAL, "bee@example.com"))
+                .thenReturn(Optional.of(userAuth));
+        when(passwordEncoder.matches("wrong_password", "hashed_password")).thenReturn(false);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("bee@example.com", "wrong_password")))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
+    }
+
+    @Test
+    void login_failsWhenUserInactive() {
+        User user = new User("nickname", "bee@example.com");
+        ReflectionTestUtils.setField(user, "status", UserStatus.SUSPENDED);
+        UserAuth userAuth = new UserAuth(user, AuthProvider.LOCAL, "bee@example.com", "bee@example.com", "hashed_password");
+
+        when(userAuthRepository.findByProviderAndProviderUserId(AuthProvider.LOCAL, "bee@example.com"))
+                .thenReturn(Optional.of(userAuth));
+        when(passwordEncoder.matches("password", "hashed_password")).thenReturn(true);
+
+        assertThatThrownBy(() -> authService.login(new LoginRequest("bee@example.com", "password")))
+                .isInstanceOfSatisfying(ApiException.class, exception ->
+                        assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
     }
 }

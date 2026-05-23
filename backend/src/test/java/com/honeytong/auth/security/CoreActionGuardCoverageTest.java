@@ -16,22 +16,22 @@ class CoreActionGuardCoverageTest {
 
     @Test
     void placeRegistrationRequiresPhoneVerificationAndNoActiveSanction() throws NoSuchMethodException {
-        assertCoreWriteGuarded(PlaceController.class, "createPlace", Long.class, PlaceCreateRequest.class);
+        assertCoreWriteGuarded(PlaceController.class, "createPlace", Long.class, PlaceCreateRequest.class, jakarta.servlet.http.HttpServletRequest.class);
     }
 
     @Test
     void recommendationCreationRequiresPhoneVerificationAndNoActiveSanction() throws NoSuchMethodException {
-        assertCoreWriteGuarded(RecommendationController.class, "recommend", Long.class, Long.class);
+        assertCoreWriteGuarded(RecommendationController.class, "recommend", Long.class, Long.class, jakarta.servlet.http.HttpServletRequest.class);
     }
 
     @Test
     void visitVerificationRequiresPhoneVerificationAndNoActiveSanction() throws NoSuchMethodException {
-        assertCoreWriteGuarded(VisitController.class, "verifyVisit", Long.class, Long.class, VisitVerifyRequest.class);
+        assertCoreWriteGuarded(VisitController.class, "verifyVisit", Long.class, Long.class, VisitVerifyRequest.class, jakarta.servlet.http.HttpServletRequest.class);
     }
 
     @Test
     void commentCreateAndUpdateRequirePhoneVerificationAndNoActiveSanction() throws NoSuchMethodException {
-        assertCoreWriteGuarded(CommentController.class, "createComment", Long.class, Long.class, CommentRequest.class);
+        assertCoreWriteGuarded(CommentController.class, "createComment", Long.class, Long.class, CommentRequest.class, jakarta.servlet.http.HttpServletRequest.class);
         assertCoreWriteGuarded(CommentController.class, "updateComment", Long.class, Long.class, CommentRequest.class);
     }
 

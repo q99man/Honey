@@ -3,6 +3,8 @@ package com.honeytong.ranking.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 
 import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceStats;
@@ -31,9 +33,12 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 class RankingRecalculationServiceTest {
 
     private static final long SEASON_ID = 10L;
@@ -54,6 +59,18 @@ class RankingRecalculationServiceTest {
     @Mock
     private RankingCache rankingCache;
 
+    @Mock
+    private com.honeytong.recommendation.repository.RecommendationRepository recommendationRepository;
+
+    @Mock
+    private com.honeytong.visit.repository.VisitRepository visitRepository;
+
+    @Mock
+    private com.honeytong.comment.repository.CommentRepository commentRepository;
+
+    @Mock
+    private com.honeytong.place.repository.PlaceAudienceStatsRepository placeAudienceStatsRepository;
+
     private RankingRecalculationService rankingRecalculationService;
     private Season season;
     private Place place;
@@ -66,7 +83,11 @@ class RankingRecalculationServiceTest {
                 placeStatsRepository,
                 placeSeasonScoreRepository,
                 policyService,
-                rankingCache
+                rankingCache,
+                recommendationRepository,
+                visitRepository,
+                commentRepository,
+                placeAudienceStatsRepository
         );
 
         season = new Season(
@@ -106,6 +127,7 @@ class RankingRecalculationServiceTest {
         ReflectionTestUtils.setField(place, "id", PLACE_ID);
 
         stats = new PlaceStats(place);
+        ReflectionTestUtils.setField(stats, "placeId", PLACE_ID);
         stats.addRecommendation(BigDecimal.ONE);
         stats.addVisit(BigDecimal.valueOf(2));
         stats.addComment(BigDecimal.valueOf(0.5));
@@ -117,6 +139,20 @@ class RankingRecalculationServiceTest {
         stats.adjustManualScore(BigDecimal.valueOf(1.25));
         stubActiveSeasonAndWeights();
         when(placeStatsRepository.findAll()).thenReturn(List.of(stats));
+
+        when(recommendationRepository.countByPlaceIdAndStatusAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any(), any())).thenReturn(2L);
+        when(visitRepository.countByPlaceIdAndValidTrueAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any())).thenReturn(3L);
+        when(commentRepository.countByPlaceIdAndStatusAndDeletedAtIsNullAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any(), any())).thenReturn(1L);
+
+        com.honeytong.place.entity.PlaceAudienceStats audienceStats = new com.honeytong.place.entity.PlaceAudienceStats(place);
+        audienceStats.setAge20Count(4);
+        audienceStats.setAge30Count(4);
+        audienceStats.setMaleCount(5);
+        audienceStats.setFemaleCount(5);
+        when(placeAudienceStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(audienceStats));
 
         RankingRecalculationResult result = rankingRecalculationService.recalculate(null);
 
@@ -135,7 +171,7 @@ class RankingRecalculationServiceTest {
                 .containsExactlyInAnyOrder(RankingRegionType.DONG, RankingRegionType.DISTRICT, RankingRegionType.CITY);
         assertThat(savedScores)
                 .extracting(PlaceSeasonScore::getTotalScore)
-                .allSatisfy(totalScore -> assertThat(totalScore).isEqualByComparingTo("8.25"));
+                .allSatisfy(totalScore -> assertThat(totalScore).isCloseTo(BigDecimal.valueOf(15.104), org.assertj.core.data.Offset.offset(BigDecimal.valueOf(0.002))));
         assertThat(place.getCurrentStarLevel()).isEqualTo(3);
         verify(rankingCache).evictAllPlaceRankings();
     }
@@ -161,11 +197,58 @@ class RankingRecalculationServiceTest {
         verify(rankingCache).evictAllPlaceRankings();
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void recalculate_updatesRecencyAndDiversityScoresBasedOnPolicies() {
+        stubActiveSeasonAndWeights();
+        when(placeStatsRepository.findAll()).thenReturn(List.of(stats));
+
+        // 30 days counts: recommendation=10, visit=5, comment=10
+        // Recency Score = 10 * 0.5 + 5 * 1.0 + 10 * 0.2 = 5.0 + 5.0 + 2.0 = 12.0
+        when(recommendationRepository.countByPlaceIdAndStatusAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any(), any())).thenReturn(10L);
+        when(visitRepository.countByPlaceIdAndValidTrueAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any())).thenReturn(5L);
+        when(commentRepository.countByPlaceIdAndStatusAndDeletedAtIsNullAndCreatedAtGreaterThanEqual(
+                eq(PLACE_ID), any(), any())).thenReturn(10L);
+
+        // Demographic diversity:
+        // Age group counts: 10s: 0, 20s: 10, 30s: 10, 40s: 0, 50s+: 0 (total 20)
+        // Gender group counts: Male: 10, Female: 10, Other: 0 (total 20)
+        // Age entropy: -(0.5 * ln(0.5) + 0.5 * ln(0.5)) = ln(2) = 0.693147
+        // Gender entropy: -(0.5 * ln(0.5) + 0.5 * ln(0.5)) = ln(2) = 0.693147
+        // Normalized age: ln(2)/ln(5) = 0.693147 / 1.609438 = 0.430676
+        // Normalized gender: ln(2)/ln(3) = 0.693147 / 1.098612 = 0.630930
+        // Average diversity ratio = (0.430676 + 0.630930) / 2 = 0.530803
+        // Diversity Score = 0.530803 * 5.0 = 2.654015
+        com.honeytong.place.entity.PlaceAudienceStats audienceStats = new com.honeytong.place.entity.PlaceAudienceStats(place);
+        audienceStats.setAge20Count(10);
+        audienceStats.setAge30Count(10);
+        audienceStats.setMaleCount(10);
+        audienceStats.setFemaleCount(10);
+        when(placeAudienceStatsRepository.findById(PLACE_ID)).thenReturn(Optional.of(audienceStats));
+
+        RankingRecalculationResult result = rankingRecalculationService.recalculate(null);
+
+        // Verify place stats update call
+        verify(placeStatsRepository).save(stats);
+        
+        // Assert recentScore is roughly 12.0 and diversityScore is roughly 2.65
+        assertThat(stats.getRecentScore()).isEqualByComparingTo("12.0");
+        assertThat(stats.getDiversityScore()).isCloseTo(BigDecimal.valueOf(2.654015), org.assertj.core.data.Offset.offset(BigDecimal.valueOf(0.001)));
+    }
+
     private void stubActiveSeasonAndWeights() {
         when(seasonRepository.findFirstByStatusOrderByStartAtDesc(SeasonStatus.ACTIVE))
                 .thenReturn(Optional.of(season));
         when(policyService.getRequiredDecimal("ranking", "recommend_weight")).thenReturn(BigDecimal.ONE);
         when(policyService.getRequiredDecimal("ranking", "visit_weight")).thenReturn(BigDecimal.valueOf(2));
         when(policyService.getRequiredDecimal("ranking", "comment_weight")).thenReturn(BigDecimal.valueOf(0.5));
+
+        when(policyService.getRequiredInteger("ranking", "recency_days")).thenReturn(30);
+        when(policyService.getRequiredDecimal("ranking", "recency_recommend_weight")).thenReturn(BigDecimal.valueOf(0.5));
+        when(policyService.getRequiredDecimal("ranking", "recency_visit_weight")).thenReturn(BigDecimal.ONE);
+        when(policyService.getRequiredDecimal("ranking", "recency_comment_weight")).thenReturn(BigDecimal.valueOf(0.2));
+        when(policyService.getRequiredDecimal("ranking", "diversity_weight")).thenReturn(BigDecimal.valueOf(5));
     }
 }

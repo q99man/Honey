@@ -14,8 +14,14 @@ import 'features/wishlist/views/wishlist_screen.dart';
 import 'features/community/services/community_service.dart';
 import 'features/community/views/community_screen.dart';
 
-void main() {
+import 'utils/localization.dart';
+
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize Localization singleton.
+  final localization = Localization();
+  await localization.init();
 
   // Initialize Kakao SDK.
   // Using try-catch to avoid crashes on startup if native app keys are blank or unconfigured in Android/iOS builds
@@ -35,6 +41,10 @@ class HoneytongApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
+        // Inject Localization
+        ChangeNotifierProvider<Localization>.value(
+          value: Localization(),
+        ),
         // Inject ApiClient
         Provider<ApiClient>(
           create: (_) => ApiClient(),
@@ -66,20 +76,24 @@ class HoneytongApp extends StatelessWidget {
           ),
         ),
       ],
-      child: MaterialApp(
-        title: '허니통 (Honeytong)',
-        theme: ThemeData(
-          useMaterial3: true,
-          colorScheme: ColorScheme.fromSeed(
-            seedColor: const Color(0xFFFFB300), // Honey/Amber brand color
-            primary: const Color(0xFFFFB300),
-            secondary: const Color(0xFFFF8F00),
-            surface: const Color(0xFFFAFAFA),
-          ),
-          fontFamily: 'NanumSquare',
-        ),
-        home: const MainNavigationScreen(),
-        debugShowCheckedModeBanner: false,
+      child: Consumer<Localization>(
+        builder: (context, localization, child) {
+          return MaterialApp(
+            title: '허니통 (Honeytong)',
+            theme: ThemeData(
+              useMaterial3: true,
+              colorScheme: ColorScheme.fromSeed(
+                seedColor: const Color(0xFFFFB300), // Honey/Amber brand color
+                primary: const Color(0xFFFFB300),
+                secondary: const Color(0xFFFF8F00),
+                surface: const Color(0xFFFAFAFA),
+              ),
+              fontFamily: 'NanumSquare',
+            ),
+            home: const MainNavigationScreen(),
+            debugShowCheckedModeBanner: false,
+          );
+        },
       ),
     );
   }
@@ -147,31 +161,31 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
         unselectedItemColor: Colors.grey,
         backgroundColor: Colors.white,
         elevation: 8,
-        items: const [
+        items: [
           BottomNavigationBarItem(
-            icon: Icon(Icons.map_outlined),
-            activeIcon: Icon(Icons.map),
-            label: '홈',
+            icon: const Icon(Icons.map_outlined),
+            activeIcon: const Icon(Icons.map),
+            label: 'nav.home'.tr,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.leaderboard_outlined),
-            activeIcon: Icon(Icons.leaderboard),
-            label: '랭킹',
+            icon: const Icon(Icons.leaderboard_outlined),
+            activeIcon: const Icon(Icons.leaderboard),
+            label: 'nav.ranking'.tr,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.bookmark_outline),
-            activeIcon: Icon(Icons.bookmark),
-            label: '저장',
+            icon: const Icon(Icons.bookmark_outline),
+            activeIcon: const Icon(Icons.bookmark),
+            label: 'nav.save'.tr,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.forum_outlined),
-            activeIcon: Icon(Icons.forum),
-            label: '커뮤니티',
+            icon: const Icon(Icons.forum_outlined),
+            activeIcon: const Icon(Icons.forum),
+            label: 'nav.community'.tr,
           ),
           BottomNavigationBarItem(
-            icon: Icon(Icons.person_outline),
-            activeIcon: Icon(Icons.person),
-            label: '마이',
+            icon: const Icon(Icons.person_outline),
+            activeIcon: const Icon(Icons.person),
+            label: 'nav.my'.tr,
           ),
         ],
       ),

@@ -29,6 +29,9 @@ import java.util.List;
 import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
+import com.honeytong.fraud.service.FraudDetectionService;
 
 @Service
 public class RecommendationService {
@@ -46,6 +49,7 @@ public class RecommendationService {
     private final UserActionLogService userActionLogService;
     private final PlaceAudienceStatsService placeAudienceStatsService;
     private final MissionService missionService;
+    private final FraudDetectionService fraudDetectionService;
 
     public RecommendationService(
             RecommendationRepository recommendationRepository,
@@ -57,7 +61,8 @@ public class RecommendationService {
             RecommendationDailyCounter recommendationDailyCounter,
             UserActionLogService userActionLogService,
             PlaceAudienceStatsService placeAudienceStatsService,
-            MissionService missionService
+            MissionService missionService,
+            FraudDetectionService fraudDetectionService
     ) {
         this.recommendationRepository = recommendationRepository;
         this.placeRepository = placeRepository;
@@ -69,10 +74,11 @@ public class RecommendationService {
         this.userActionLogService = userActionLogService;
         this.placeAudienceStatsService = placeAudienceStatsService;
         this.missionService = missionService;
+        this.fraudDetectionService = fraudDetectionService;
     }
 
     @Transactional
-    public RecommendationResponse recommend(Long userId, Long placeId) {
+    public RecommendationResponse recommend(Long userId, Long placeId, String clientIp) {
         User user = getActiveUser(userId);
         Place place = getVisiblePlace(placeId);
         RecommendationPolicyResponse policy = getRecommendationPolicy(userId, placeId);
@@ -103,6 +109,18 @@ public class RecommendationService {
                 )
         );
         missionService.trackProgress(userId, MissionTargetType.RECOMMEND);
+
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_RECOMMENDATION_CREATE, clientIp, placeId);
+                }
+            });
+        } else {
+            fraudDetectionService.auditUserAction(userId, UserActionLogService.ACTION_RECOMMENDATION_CREATE, clientIp, placeId);
+        }
+
         return new RecommendationResponse(true, stats.getRecommendCount(), recommendation.getRecommendWeight());
     }
 
