@@ -332,6 +332,11 @@ Use Kakao Map and Kakao Local API as the MVP map provider.
 - When the frontend map key is missing, map surfaces show Korean configuration states instead of a fixed placeholder map
 - Kakao Developers JavaScript SDK domains must include the actual frontend origins that load the SDK, such as `http://localhost:5173` and `http://127.0.0.1:5173`; add any additional deployed, staging, LAN, or alternate dev-server origins before using them
 - After changing `.env` values for Vite, restart `npm run dev` because Vite only exposes environment variables from the dev-server process environment at startup
+- Flutter mobile initializes both Kakao Maps and Kakao Login when `KAKAO_NATIVE_APP_KEY` is supplied by dart define; placeholder native app keys must not be committed.
+- Flutter mobile Home uses `kakao_maps_flutter` for the actual Kakao native map when the native app key is configured, and falls back to a Korean configuration state when the key is missing.
+- The map renders current-location and place markers from API coordinates. Marker clicks route to the existing place detail flow.
+- Android native map setup includes the Kakao Maps Maven repository in Gradle, but each runtime environment still needs Kakao platform registration, native app key, and key hash registration.
+- Development-only mock Kakao login is disabled by default and can only be enabled explicitly with `--dart-define=HONEY_ALLOW_MOCK_KAKAO_LOGIN=true`.
 
 ### Reason
 - Kakao Local API directly supports coordinate-to-region-code conversion
@@ -371,6 +376,8 @@ Region change cooldown must be read from `system_policies`.
 - `GET /api/regions/me/change-policy` returns cooldown availability
 - the required policy key is `region.change_cooldown_day`
 - if the policy is missing or invalid, the server rejects region change
+- GPS verification through `POST /api/regions/verify` must also respect the same cooldown when the resolved dong differs from the user's current primary dong.
+- Redis locking is used only as a concurrency guard; if Redis is unavailable, region changes continue through DB-backed policy checks instead of failing solely because the lock store is down.
 
 ### Reason
 - region change is a business policy and must remain admin-adjustable
@@ -2005,12 +2012,29 @@ Implement a Fraud Detection System to detect abnormal recommendation or visit ac
 - Defined `FraudAlertType` with rules: `RAPID_PARTICIPATION` (actions within a short interval), `GPS_TELEPORTATION` (physically impossible movement between consecutive visits), and `IP_SPAM` (multiple accounts operating under the same IP address).
 - Implemented `FraudDetectionService` to perform abnormal pattern scans.
 - Configured real-time detection via `@Async` and `TransactionalEventListener` to isolate the scan from core business transactions, preventing delays or rollback propagation.
-- Automatically subtracts 5 points from the user's trust score upon alert generation, triggering a recalculation of their trust grade and recommendation weight.
+- Automatically subtracts a policy-driven trust penalty from the user's trust score upon alert generation, triggering a recalculation of their trust grade and recommendation weight.
+- Rapid participation windows and thresholds, IP spam windows and thresholds, GPS teleportation thresholds, fraud risk scores, and the trust penalty are loaded from `system_policies.fraud.*`.
 - Implemented admin endpoints: `GET /api/admin/fraud/alerts` (list of all alerts) and `GET /api/admin/fraud/suspicious-users` (users with highest alert counts).
 
 ### Reason
 - **Transaction Safety**: To prevent potential lock contention or transaction rollbacks from affecting normal user operations, the detection logic is processed asynchronously only after the parent business transaction successfully commits.
-- **Automatic Penalization with Manual Sanctions**: While trust scores are automatically penalized by 5 points to limit immediate ranking manipulation, full account suspension (Sanction) is kept as a manual admin-only action to prevent false-positive automated bans.
+- **Automatic Penalization with Manual Sanctions**: While trust scores are automatically penalized by a policy-driven amount to limit immediate ranking manipulation, full account suspension (Sanction) is kept as a manual admin-only action to prevent false-positive automated bans.
+
+---
+
+## 46.1 Audience Tag Policy Thresholds
+
+### Decision
+Audience tag generation thresholds are system policies, not code constants.
+
+### Current Implementation
+- `audience.minimum_participants` controls the minimum aggregate count before tags are generated.
+- `audience.foreigner_ratio_threshold`, `audience.gender_ratio_threshold`, and `audience.age_ratio_threshold` control demographic tag thresholds.
+- Missing or invalid audience policies raise `POLICY_VIOLATION` rather than silently using embedded defaults.
+
+### Reason
+- Audience tags affect discovery and ranking perception, so operators must be able to tune thresholds without redeploying.
+- Keeping the values in `system_policies` satisfies the rule that business policy values are not hardcoded in services.
 
 ---
 
@@ -2052,11 +2076,13 @@ Optimize the nearby places API (`GET /api/places/nearby`) by introducing a nativ
 - **Database Indexing**: Define a `location` point column on `places` as a `STORED` Generated Column derived from `longitude` and `latitude`. Create a `SPATIAL INDEX` on this column. This ensures no third-party Java geometry dependencies (e.g. `hibernate-spatial`) are introduced to the core JPA mapping.
 - **Query Optimization**: Implement a native SQL query `findNearbyPlaces` utilizing native spatial functions `ST_Distance_Sphere` and `ST_PointFromText` to filter, sort by proximity, and limit (50 items) inside MySQL.
 - **Hybrid Distance Representation**: JVM computes the precise Haversine distance in memory *only* for the returned 50 places to populate the DTO response, completely bypassing full table Haversine scans.
+- **MySQL Axis Order**: All WKT point parsing for SRID 4326 must pass `axis-order=long-lat`, and the generated `location` column must be `NOT NULL`, because MySQL 8 otherwise interprets 4326 coordinates as latitude/longitude and rejects Korean longitudes as invalid latitudes before creating the spatial index.
 
 ### Reason
 - **Platform Scale**: Fetching the entire places table into JVM memory to calculate distance is highly inefficient and creates CPU and memory exhaustion risks. DB-side spatial indexing ensures sub-millisecond range scans even with large datasets.
 - **Code Decoupling**: Generated columns allow the JPA application code to insert and update normal `latitude`/`longitude` columns without mapping JTS or Geolatte geometry types in Java.
 - **H2 Test Compatibility**: Because Java entities remain decoupled from spatial column mappings, H2 database schemas in the test profile are auto-created without spatial generated column features, preventing test context startup crashes.
+- **Runtime Correctness**: Explicit axis order keeps Kakao-style longitude/latitude coordinates compatible with MySQL spatial functions across local development and production migration runs.
 
 ---
 
@@ -2087,6 +2113,23 @@ Implement a Redis-based distributed lock (`SETNX`) on `changeMyRegion` inside `R
 ### Reason
 - **Cooldown Policy Integrity**: Without lock enforcement, concurrent regional requests can execute parallel check-queries, bypassing the 7-day cooldown threshold and creating duplicate primary regions.
 - **Race Condition Prevention**: Relies on Redis atomic set-if-absent capabilities to immediately reject concurrent write attempts and preserve data consistency across instances.
+
+---
+
+## 52. Address-Resolved Place Coordinates
+
+### Decision
+When creating or updating a place with a road or jibun address, the backend resolves the address through Kakao Local address search before persistence.
+- The resolved Kakao `y` value is stored as latitude and `x` as longitude.
+- The resolved coordinate is also passed through the existing coordinate-to-region resolver, and that administrative dong is used for registration-scope validation and place persistence.
+- Client-supplied latitude/longitude remain fallback values only for requests without an address.
+- On place update, address-derived coordinates and administrative dong take precedence over a client-provided `dongId` whenever a next address is present.
+
+### Reason
+- **Location Correctness**: Mobile registration initially populated coordinates from the user's current GPS position, which could place a restaurant marker next to the user even when the typed address was elsewhere.
+- **Edit Consistency**: The same mistake must not reappear when an owner edits a restaurant address.
+- **Server-Side Validation**: Address-to-coordinate and coordinate-to-region decisions must be enforced server-side rather than trusting mobile clients.
+- **Region-Aware Rules**: Registration scope must be evaluated against the actual address location, not only the user's currently verified dong or a client-provided `dongId`.
 
 ---
 

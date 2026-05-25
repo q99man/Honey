@@ -7,8 +7,10 @@ import com.honeytong.place.entity.PlaceAudienceStats;
 import com.honeytong.place.event.PlaceDemographicsRecalculateEvent;
 import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.repository.UserRepository;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -23,6 +25,7 @@ public class PlaceAudienceStatsService {
     private final PlaceAudienceStatsRepository placeAudienceStatsRepository;
     private final PlaceRepository placeRepository;
     private final UserRepository userRepository;
+    private final PolicyService policyService;
 
     @Autowired(required = false)
     private ApplicationEventPublisher eventPublisher;
@@ -30,11 +33,13 @@ public class PlaceAudienceStatsService {
     public PlaceAudienceStatsService(
             PlaceAudienceStatsRepository placeAudienceStatsRepository,
             PlaceRepository placeRepository,
-            UserRepository userRepository
+            UserRepository userRepository,
+            PolicyService policyService
     ) {
         this.placeAudienceStatsRepository = placeAudienceStatsRepository;
         this.placeRepository = placeRepository;
         this.userRepository = userRepository;
+        this.policyService = policyService;
     }
 
     public void recalculateStats(Long placeId) {
@@ -136,7 +141,7 @@ public class PlaceAudienceStatsService {
         int nNat = stats.getKoreanCount() + stats.getForeignerCount();
 
         int totalParticipants = Math.max(nAge, Math.max(nGender, nNat));
-        if (totalParticipants < 1) {
+        if (totalParticipants < getMinimumParticipants()) {
             return List.of();
         }
 
@@ -145,7 +150,7 @@ public class PlaceAudienceStatsService {
         // 1. Foreigner Tag (Foreigners / nNat >= 30%)
         if (nNat >= 1) {
             double foreignerRatio = (double) stats.getForeignerCount() / nNat;
-            if (foreignerRatio >= 0.3) {
+            if (foreignerRatio >= getRatioThreshold("foreigner_ratio_threshold")) {
                 tags.add("외국인 인기");
             }
         }
@@ -155,9 +160,10 @@ public class PlaceAudienceStatsService {
         if (nGender >= 1) {
             double maleRatio = (double) stats.getMaleCount() / nGender;
             double femaleRatio = (double) stats.getFemaleCount() / nGender;
-            if (maleRatio >= 0.6) {
+            double genderRatioThreshold = getRatioThreshold("gender_ratio_threshold");
+            if (maleRatio >= genderRatioThreshold) {
                 dominantGender = "남성";
-            } else if (femaleRatio >= 0.6) {
+            } else if (femaleRatio >= genderRatioThreshold) {
                 dominantGender = "여성";
             }
         }
@@ -182,7 +188,7 @@ public class PlaceAudienceStatsService {
                 }
             }
 
-            if (maxRatio < 0.4) {
+            if (maxRatio < getRatioThreshold("age_ratio_threshold")) {
                 dominantAge = null;
             }
         }
@@ -197,5 +203,21 @@ public class PlaceAudienceStatsService {
         }
 
         return tags;
+    }
+
+    private int getMinimumParticipants() {
+        int value = policyService.getRequiredInteger("audience", "minimum_participants");
+        if (value < 1) {
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "청중 태그 최소 참여자 정책은 1 이상이어야 합니다.");
+        }
+        return value;
+    }
+
+    private double getRatioThreshold(String policyKey) {
+        BigDecimal value = policyService.getRequiredDecimal("audience", policyKey);
+        if (value.compareTo(BigDecimal.ZERO) < 0 || value.compareTo(BigDecimal.ONE) > 0) {
+            throw new ApiException(ErrorCode.POLICY_VIOLATION, "청중 태그 비율 정책은 0 이상 1 이하여야 합니다.");
+        }
+        return value.doubleValue();
     }
 }

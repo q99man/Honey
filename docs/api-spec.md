@@ -345,6 +345,7 @@ POST /api/regions/verify
 
 This API requires a valid access token.
 The GPS-to-administrative-dong resolver is an implementation boundary and requires region mapping data.
+If the resolved dong differs from the user's current primary region, the same `region.change_cooldown_day` policy used by `PATCH /api/regions/me` is enforced server-side.
 
 Request:
 
@@ -452,6 +453,7 @@ Requires:
 - short recommendation length within `system_policies.place.short_recommendation_max_length`
 - feature text length within `system_policies.place.feature_text_max_length`
 - each image URL length within `system_policies.place.image_url_max_length`
+- when a road or jibun address is present, the server resolves coordinates through Kakao Local address search and uses the resolved coordinate/administrative dong for persistence and registration-scope validation. Client-supplied latitude/longitude are fallback values only when no address is present.
 
 Request:
 
@@ -480,7 +482,7 @@ Response:
     "placeId": 1001,
     "approvalStatus": "APPROVED"
   },
-  "message": "Place created"
+  "message": "맛집이 등록되었습니다."
 }
 6.2 Get Place Detail
 GET /api/places/{placeId}
@@ -513,6 +515,7 @@ Purpose:
 Returns nearby flowers for map-based exploration.
 
 Response items include `distanceMeter` when distance is calculated.
+Place list-shaped responses include `regionName`, `address`, `starLevel`, top-level aggregate counts, and `representativeImageUrl`; mobile clients should map these fields directly instead of relying on detail-only fields such as `addressRoad`, `currentStarLevel`, nested `stats`, or `imageUrls`.
 
 6.4 Get Places by Region
 GET /api/places?cityId={cityId}&districtId={districtId}&dongId={dongId}
@@ -602,6 +605,8 @@ Response:
 Notes:
 - request fields are partial; omitted fields keep the current value
 - if `dongId` changes for a normal owner, the server validates `system_policies.region.registration_scope`
+- if `addressRoad` or `addressJibun` is present, the server resolves the next address through Kakao Local address search and stores the address-derived coordinate instead of trusting client-supplied latitude/longitude
+- address-derived coordinates are converted back to an administrative dong and validated against `system_policies.region.registration_scope` for normal owners
 - `latitude` and `longitude` must be updated together
 - when `imageUrls` is present, existing place images are replaced by the provided list
 - admin updates through this endpoint write `PLACE_UPDATE` to `admin_action_logs` only when state changes
@@ -2187,6 +2192,20 @@ trust.recommend_weight_by_grade
 ranking.recommend_weight
 ranking.visit_weight
 ranking.comment_weight
+fraud.rapid_participation_window_minutes
+fraud.rapid_participation_threshold
+fraud.rapid_participation_risk_score
+fraud.ip_spam_window_minutes
+fraud.ip_spam_distinct_user_threshold
+fraud.ip_spam_risk_score
+fraud.gps_teleport_speed_kmh
+fraud.gps_teleport_zero_second_distance_km
+fraud.gps_teleport_risk_score
+fraud.alert_trust_penalty
+audience.minimum_participants
+audience.foreigner_ratio_threshold
+audience.gender_ratio_threshold
+audience.age_ratio_threshold
 admin.sanction_reason_max_length
 admin.action_memo_max_length
 place.image_url_max_length

@@ -6,4 +6,6 @@ import java.util.List;
 public interface KakaoLocalClient {
 
     List<KakaoRegionDocument> findRegionCodes(BigDecimal latitude, BigDecimal longitude);
+
+    List<KakaoAddressDocument> findAddressCoordinates(String address);
 }

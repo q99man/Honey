@@ -48,7 +48,7 @@ public class PlaceController {
             jakarta.servlet.http.HttpServletRequest servletRequest
     ) {
         String clientIp = getClientIp(servletRequest);
-        return ApiResponse.success(placeService.createPlace(userId, request, clientIp), "Place created");
+        return ApiResponse.success(placeService.createPlace(userId, request, clientIp), "맛집이 등록되었습니다.");
     }
 
     private String getClientIp(jakarta.servlet.http.HttpServletRequest request) {
@@ -72,9 +72,9 @@ public class PlaceController {
     public ApiResponse<List<PlaceListItemResponse>> getNearbyPlaces(
             @RequestParam double lat,
             @RequestParam double lng,
-            @RequestParam(defaultValue = "1000") int radius
+            @RequestParam(defaultValue = "1000") double radius
     ) {
-        return ApiResponse.success(placeService.getNearbyPlaces(lat, lng, radius), "OK");
+        return ApiResponse.success(placeService.getNearbyPlaces(lat, lng, (int) Math.round(radius)), "OK");
     }
 
     @GetMapping("/search")

@@ -107,6 +107,33 @@ if ($gitHome) {
     }
 }
 
+$androidSdkHome = Find-FirstExistingPath @(
+    $env:ANDROID_HOME,
+    $env:ANDROID_SDK_ROOT,
+    (Join-Path $env:LOCALAPPDATA "Android\Sdk")
+)
+
+if ($androidSdkHome) {
+    $env:ANDROID_HOME = $androidSdkHome
+    $env:ANDROID_SDK_ROOT = $androidSdkHome
+    $androidAvdHome = Join-Path $env:USERPROFILE ".android\avd"
+    if (Test-Path $androidAvdHome) {
+        $env:ANDROID_AVD_HOME = $androidAvdHome
+    }
+    Add-PathEntry (Join-Path $androidSdkHome "platform-tools")
+    Add-PathEntry (Join-Path $androidSdkHome "emulator")
+    $adbExe = Join-Path $androidSdkHome "platform-tools\adb.exe"
+    if (Test-Path $adbExe) {
+        Set-Alias -Name adb -Value $adbExe -Scope Global -Force
+        $env:HONEY_ADB_EXE = $adbExe
+    }
+    $emulatorExe = Join-Path $androidSdkHome "emulator\emulator.exe"
+    if (Test-Path $emulatorExe) {
+        Set-Alias -Name emulator -Value $emulatorExe -Scope Global -Force
+        $env:HONEY_EMULATOR_EXE = $emulatorExe
+    }
+}
+
 $javaHome = Find-FirstExistingPath @(
     $env:HONEY_JAVA_HOME,
     $env:JAVA_HOME,
@@ -136,6 +163,9 @@ if (-not $Quiet) {
     Write-Host "[dev-env] node: $($env:HONEY_NODE_EXE)"
     Write-Host "[dev-env] npm:  $($env:HONEY_NPM_CMD)"
     Write-Host "[dev-env] git:  $($env:HONEY_GIT_EXE)"
+    Write-Host "[dev-env] adb:  $($env:HONEY_ADB_EXE)"
+    Write-Host "[dev-env] emulator: $($env:HONEY_EMULATOR_EXE)"
+    Write-Host "[dev-env] ANDROID_AVD_HOME: $($env:ANDROID_AVD_HOME)"
     Write-Host "[dev-env] JAVA_HOME: $($env:JAVA_HOME)"
     Write-Host "[dev-env] GRADLE_USER_HOME: $($env:GRADLE_USER_HOME)"
 }

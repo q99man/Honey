@@ -1,40 +1,38 @@
 class UserProfile {
-  final int id;
-  final String username;
-  final String nickname;
-  final String phone;
-  final bool phoneVerified;
-  final String? role;
-
   UserProfile({
     required this.id,
-    required this.username,
     required this.nickname,
-    required this.phone,
     required this.phoneVerified,
-    this.role,
+    this.languagePreference,
+    this.birthYear,
+    this.gender,
+    this.nationalityCode,
   });
+
+  final int id;
+  final String nickname;
+  final bool phoneVerified;
+  final String? languagePreference;
+  final int? birthYear;
+  final String? gender;
+  final String? nationalityCode;
+
+  String get displayName => nickname;
 
   factory UserProfile.fromJson(Map<String, dynamic> json) {
     return UserProfile(
-      id: json['id'],
-      username: json['username'],
-      nickname: json['nickname'],
-      phone: json['phone'] ?? '',
+      id: json['id'] ?? 0,
+      nickname: json['nickname'] ?? '',
       phoneVerified: json['phoneVerified'] ?? false,
-      role: json['role'],
+      languagePreference: json['languagePreference'],
+      birthYear: json['birthYear'],
+      gender: json['gender'],
+      nationalityCode: json['nationalityCode'],
     );
   }
 }
 
 class UserStatus {
-  final int level;
-  final int exp;
-  final int totalExp;
-  final int nextLevelExp;
-  final String trustGrade;
-  final double recommendWeight;
-
   UserStatus({
     required this.level,
     required this.exp,
@@ -42,7 +40,18 @@ class UserStatus {
     required this.nextLevelExp,
     required this.trustGrade,
     required this.recommendWeight,
+    required this.phoneVerified,
+    required this.regionVerified,
   });
+
+  final int level;
+  final int exp;
+  final int totalExp;
+  final int nextLevelExp;
+  final String trustGrade;
+  final double recommendWeight;
+  final bool phoneVerified;
+  final bool regionVerified;
 
   factory UserStatus.fromJson(Map<String, dynamic> json) {
     return UserStatus(
@@ -52,16 +61,13 @@ class UserStatus {
       nextLevelExp: json['nextLevelExp'] ?? 0,
       trustGrade: json['trustGrade'] ?? 'NORMAL',
       recommendWeight: (json['recommendWeight'] ?? 1.0).toDouble(),
+      phoneVerified: json['phoneVerified'] ?? false,
+      regionVerified: json['regionVerified'] ?? false,
     );
   }
 }
 
 class UserActivitySummary {
-  final int recommendationCount;
-  final int visitCount;
-  final int commentCount;
-  final int placeCount;
-
   UserActivitySummary({
     required this.recommendationCount,
     required this.visitCount,
@@ -69,12 +75,18 @@ class UserActivitySummary {
     required this.placeCount,
   });
 
+  final int recommendationCount;
+  final int visitCount;
+  final int commentCount;
+  final int placeCount;
+
   factory UserActivitySummary.fromJson(Map<String, dynamic> json) {
     return UserActivitySummary(
-      recommendationCount: json['recommendationCount'] ?? 0,
+      recommendationCount:
+          json['recommendationCount'] ?? json['recommendedCount'] ?? 0,
       visitCount: json['visitCount'] ?? 0,
       commentCount: json['commentCount'] ?? 0,
-      placeCount: json['placeCount'] ?? 0,
+      placeCount: json['placeCount'] ?? json['registeredPlaceCount'] ?? 0,
     );
   }
 }

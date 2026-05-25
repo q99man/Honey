@@ -30,6 +30,9 @@ dependencies:
   # Kakao Login SDK for native OAuth authentication
   kakao_flutter_sdk_user: ^1.9.0
 
+  # Kakao Maps SDK v2 native map widget
+  kakao_maps_flutter: ^0.1.2
+
   # Cupertino icons
   cupertino_icons: ^1.0.5
 

@@ -49,6 +49,33 @@ public class KakaoLocalRestClient implements KakaoLocalClient {
         }
     }
 
+    @Override
+    public List<KakaoAddressDocument> findAddressCoordinates(String address) {
+        validateConfiguration();
+        if (!StringUtils.hasText(address)) {
+            return List.of();
+        }
+
+        try {
+            KakaoAddressSearchResponse response = restClient()
+                    .get()
+                    .uri(uriBuilder -> uriBuilder
+                            .path("/v2/local/search/address.json")
+                            .queryParam("query", address.trim())
+                            .build()
+                    )
+                    .retrieve()
+                    .body(KakaoAddressSearchResponse.class);
+
+            if (response == null || response.documents() == null) {
+                return List.of();
+            }
+            return response.documents();
+        } catch (RestClientException ex) {
+            throw new ApiException(ErrorCode.EXTERNAL_SERVICE_ERROR, "카카오 주소 좌표 조회에 실패했습니다.");
+        }
+    }
+
     private RestClient restClient() {
         return RestClient.builder()
                 .baseUrl(mapProperties.kakao().localBaseUrl())

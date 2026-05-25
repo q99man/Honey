@@ -1,20 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
+
 import '../../../core/api/api_client.dart';
 import '../services/place_service.dart';
 
 class PlaceRegisterScreen extends StatefulWidget {
-  const PlaceRegisterScreen({super.key});
+  const PlaceRegisterScreen({super.key, this.placeId});
+
+  final int? placeId;
 
   @override
   State<PlaceRegisterScreen> createState() => _PlaceRegisterScreenState();
 }
 
 class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
-  late PlaceService _placeService;
   final _formKey = GlobalKey<FormState>();
-
   final _nameController = TextEditingController();
   final _menuController = TextEditingController();
   final _reasonController = TextEditingController();
@@ -24,15 +25,20 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   final _lngController = TextEditingController();
   final _featureController = TextEditingController();
 
+  late final PlaceService _placeService;
+
   String _selectedCategory = 'KOREAN';
   bool _isFranchise = false;
   bool _isLoading = false;
   bool _isLocating = false;
-
-  Map<String, dynamic>? _myRegion;
   bool _isLoadingRegion = true;
+  bool _isLoadingPlace = false;
+  Map<String, dynamic>? _myRegion;
+  Map<String, dynamic>? _editingPlace;
 
-  final Map<String, String> _categoryMap = {
+  bool get _isEditMode => widget.placeId != null;
+
+  final Map<String, String> _categoryMap = const {
     'KOREAN': '한식',
     'CHINESE': '중식',
     'JAPANESE': '일식',
@@ -44,9 +50,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   @override
   void initState() {
     super.initState();
-    _placeService = PlaceService(Provider.of<ApiClient>(context, listen: false));
+    _placeService =
+        PlaceService(Provider.of<ApiClient>(context, listen: false));
     _loadUserRegion();
-    _autoDetectLocation();
+    if (_isEditMode) {
+      _loadPlaceForEdit();
+    } else {
+      _autoDetectLocation();
+    }
   }
 
   @override
@@ -75,34 +86,83 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   Future<void> _autoDetectLocation() async {
     setState(() => _isLocating = true);
     try {
-      Position position = await Geolocator.getCurrentPosition(
+      final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
       if (!mounted) return;
       setState(() {
         _latController.text = position.latitude.toStringAsFixed(6);
         _lngController.text = position.longitude.toStringAsFixed(6);
-        _isLocating = false;
       });
     } catch (e) {
       debugPrint('Location error: $e');
-      if (!mounted) return;
-      setState(() {
-        // Fallback default coordinates
-        _latController.text = '37.556456';
-        _lngController.text = '126.924456';
-        _isLocating = false;
-      });
+    } finally {
+      if (mounted) {
+        setState(() => _isLocating = false);
+      }
     }
   }
 
-  void _submit() async {
-    if (!_formKey.currentState!.validate()) return;
+  Future<void> _loadPlaceForEdit() async {
+    final placeId = widget.placeId;
+    if (placeId == null) return;
 
-    if (_myRegion == null || _myRegion!['dongId'] == null) {
+    setState(() => _isLoadingPlace = true);
+    final details = await _placeService.getPlace(placeId);
+    if (!mounted) return;
+
+    if (details == null) {
+      setState(() => _isLoadingPlace = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('활동 지역 설정 및 인증이 완료되어야 맛집 등록이 가능합니다.'),
+          content: Text('수정할 맛집 정보를 불러오지 못했습니다.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    _editingPlace = details;
+    _nameController.text = (details['name'] ?? '').toString();
+    _menuController.text = (details['recommendedMenu'] ?? '').toString();
+    _reasonController.text = (details['shortRecommendation'] ?? '').toString();
+    _roadAddressController.text = (details['addressRoad'] ?? '').toString();
+    _jibunAddressController.text = (details['addressJibun'] ?? '').toString();
+    _featureController.text = (details['featureText'] ?? '').toString();
+    _latController.text = (details['latitude'] ?? '').toString();
+    _lngController.text = (details['longitude'] ?? '').toString();
+
+    final categoryCode = details['categoryCode']?.toString();
+    setState(() {
+      if (categoryCode != null && _categoryMap.containsKey(categoryCode)) {
+        _selectedCategory = categoryCode;
+      }
+      _isFranchise = details['franchise'] == true;
+      _isLoadingPlace = false;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    final hasEditableDong = _isEditMode && _editingPlace?['dongId'] != null;
+    final hasVerifiedDong = _myRegion != null && _myRegion!['dongId'] != null;
+    if (!hasEditableDong && !hasVerifiedDong) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('맛집 등록은 휴대폰 인증과 동네 인증을 완료한 뒤 이용할 수 있습니다.'),
+          backgroundColor: Colors.redAccent,
+        ),
+      );
+      return;
+    }
+
+    final latitude = double.tryParse(_latController.text.trim());
+    final longitude = double.tryParse(_lngController.text.trim());
+    if (latitude == null || longitude == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('현재 위치를 다시 잡거나 위도/경도를 숫자로 입력해주세요.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -111,49 +171,49 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
 
     setState(() => _isLoading = true);
 
+    final dongId = _isEditMode
+        ? (_editingPlace?['dongId'] ?? _myRegion!['dongId'])
+        : _myRegion!['dongId'];
+
     final placeData = {
       'name': _nameController.text.trim(),
       'categoryCode': _selectedCategory,
-      'dongId': _myRegion!['dongId'],
-      'addressRoad': _roadAddressController.text.trim().isNotEmpty 
-          ? _roadAddressController.text.trim() 
-          : '주소 미입력',
-      'addressJibun': _jibunAddressController.text.trim().isNotEmpty
-          ? _jibunAddressController.text.trim()
-          : '주소 미입력',
-      'latitude': double.parse(_latController.text),
-      'longitude': double.parse(_lngController.text),
+      'dongId': dongId,
+      'addressRoad': _nullableText(_roadAddressController),
+      'addressJibun': _nullableText(_jibunAddressController),
+      'latitude': latitude,
+      'longitude': longitude,
       'priceRangeCode': 'MID',
       'recommendedMenu': _menuController.text.trim(),
       'shortRecommendation': _reasonController.text.trim(),
-      'featureText': _featureController.text.trim().isNotEmpty 
-          ? _featureController.text.trim() 
-          : '특징 없음',
+      'featureText': _nullableText(_featureController),
       'franchise': _isFranchise,
       'imageUrls': <String>[],
     };
 
-    final result = await _placeService.createPlace(placeData);
+    final result = _isEditMode
+        ? await _placeService.updatePlace(widget.placeId!, placeData)
+        : await _placeService.createPlace(placeData);
     if (!mounted) return;
 
     setState(() => _isLoading = false);
 
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(result['message'] ?? '처리 결과를 확인할 수 없습니다.'),
+        backgroundColor:
+            result['success'] == true ? Colors.green : Colors.redAccent,
+      ),
+    );
+
     if (result['success'] == true) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('꽃(맛집)이 성공적으로 피어났습니다! 🌸'),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.of(context).pop(true); // Return true to indicate reload needed
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(result['message']),
-          backgroundColor: Colors.redAccent,
-        ),
-      );
+      Navigator.of(context).pop(true);
     }
+  }
+
+  String? _nullableText(TextEditingController controller) {
+    final value = controller.text.trim();
+    return value.isEmpty ? null : value;
   }
 
   @override
@@ -161,36 +221,37 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
-        title: const Text(
-          '신규 맛집 등록',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+        title: Text(
+          _isEditMode ? '맛집 수정' : '새 맛집 등록',
+          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
         iconTheme: const IconThemeData(color: Colors.black87),
       ),
-      body: _isLoadingRegion
-          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300))))
+      body: _isLoadingRegion || _isLoadingPlace
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+              ),
+            )
           : SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.all(16),
               child: Form(
                 key: _formKey,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Region Info Card
                     _buildRegionInfoCard(),
                     const SizedBox(height: 20),
-
-                    // Inputs Section
                     _buildSectionTitle('기본 정보'),
                     const SizedBox(height: 8),
                     _buildTextField(
                       controller: _nameController,
-                      label: '맛집(식당) 이름',
-                      hint: '예: 허니통 마포점',
+                      label: '맛집 이름',
+                      hint: '예: 허니분식',
                       icon: Icons.store,
-                      validator: (v) => v!.isEmpty ? '이름을 입력해주세요.' : null,
+                      validator: _required('맛집 이름을 입력해주세요.'),
                     ),
                     const SizedBox(height: 12),
                     _buildCategoryDropdown(),
@@ -198,30 +259,28 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                     _buildTextField(
                       controller: _menuController,
                       label: '대표 추천 메뉴',
-                      hint: '예: 벌꿀 와플, 크림 파스타',
+                      hint: '예: 김치찌개',
                       icon: Icons.restaurant_menu,
-                      validator: (v) => v!.isEmpty ? '대표 추천 메뉴를 입력해주세요.' : null,
+                      validator: _required('대표 추천 메뉴를 입력해주세요.'),
                     ),
-
                     const SizedBox(height: 20),
                     _buildSectionTitle('추천 정보'),
                     const SizedBox(height: 8),
                     _buildTextField(
                       controller: _reasonController,
-                      label: '이 장소를 추천하는 한 줄 평',
-                      hint: '예: 부드러운 와플 크림과 아늑한 조명이 최고인 곳입니다.',
+                      label: '추천하는 이유',
+                      hint: '동네 사람들에게 추천하고 싶은 이유를 적어주세요.',
                       icon: Icons.thumb_up,
                       maxLines: 2,
-                      validator: (v) => v!.isEmpty ? '추천사/한 줄 평을 입력해주세요.' : null,
+                      validator: _required('추천 이유를 입력해주세요.'),
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       controller: _featureController,
-                      label: '추가 특징 (선택)',
-                      hint: '예: 주차 가능, 반려동물 동반 가능',
+                      label: '추가 특징',
+                      hint: '예: 혼밥 가능, 주차 가능',
                       icon: Icons.info_outline,
                     ),
-
                     const SizedBox(height: 20),
                     _buildSectionTitle('위치 정보'),
                     const SizedBox(height: 8),
@@ -230,22 +289,25 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                     _buildTextField(
                       controller: _roadAddressController,
                       label: '도로명 주소',
-                      hint: '예: 서울특별시 마포구 와우산로 23길 9',
+                      hint: '예: 서울특별시 마포구 와우산로 1',
                       icon: Icons.map,
-                      validator: (v) => v!.isEmpty ? '도로명 주소를 입력해주세요.' : null,
+                      validator: (_) => _addressValidationMessage(),
                     ),
                     const SizedBox(height: 12),
                     _buildTextField(
                       controller: _jibunAddressController,
                       label: '지번 주소',
-                      hint: '예: 서울특별시 마포구 서교동 345-12',
+                      hint: '예: 서울특별시 마포구 서교동 1-1',
                       icon: Icons.location_city,
-                      validator: (v) => v!.isEmpty ? '지번 주소를 입력해주세요.' : null,
+                      validator: (_) => _addressValidationMessage(),
                     ),
-
+                    const SizedBox(height: 6),
+                    const Text(
+                      '도로명 주소와 지번 주소 중 하나만 입력해도 됩니다.',
+                      style: TextStyle(fontSize: 12, color: Colors.black45),
+                    ),
                     const SizedBox(height: 20),
                     _buildFranchiseSwitch(),
-
                     const SizedBox(height: 32),
                     _buildSubmitButton(),
                   ],
@@ -253,6 +315,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               ),
             ),
     );
+  }
+
+  String? _addressValidationMessage() {
+    if (_roadAddressController.text.trim().isNotEmpty ||
+        _jibunAddressController.text.trim().isNotEmpty) {
+      return null;
+    }
+    return '도로명 주소와 지번 주소 중 하나를 입력해주세요.';
   }
 
   Widget _buildSectionTitle(String title) {
@@ -267,14 +337,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   }
 
   Widget _buildRegionInfoCard() {
-    final bool hasRegion = _myRegion != null && _myRegion!['dongId'] != null;
+    final hasRegion = _myRegion != null && _myRegion!['dongId'] != null;
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: hasRegion ? const Color(0xFFFFFDE7) : const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(
           color: hasRegion ? const Color(0xFFFFF59D) : const Color(0xFFFFCDD2),
         ),
@@ -292,17 +362,18 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasRegion ? '등록 가능 지역 정보' : '활동 지역 미인증',
+                  hasRegion ? '등록 가능 지역' : '동네 인증 필요',
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color: hasRegion ? const Color(0xFFE65100) : Colors.red[900],
+                    color:
+                        hasRegion ? const Color(0xFFE65100) : Colors.red[900],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
                   hasRegion
-                      ? '인증된 활동 지역: ${_myRegion!['cityName']} ${_myRegion!['districtName']} ${_myRegion!['dongName']}'
-                      : '맛집 등록을 위해 마이페이지에서 본인인증과 동네인증을 먼저 완료해주세요.',
+                      ? '${_myRegion!['cityName']} ${_myRegion!['districtName']} ${_myRegion!['dongName']}'
+                      : '마이페이지에서 휴대폰 인증과 동네 인증을 먼저 완료해주세요.',
                   style: TextStyle(
                     fontSize: 12,
                     color: hasRegion ? Colors.black87 : Colors.red[800],
@@ -328,6 +399,12 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       controller: controller,
       maxLines: maxLines,
       validator: validator,
+      onChanged: (_) {
+        if (controller == _roadAddressController ||
+            controller == _jibunAddressController) {
+          _formKey.currentState?.validate();
+        }
+      },
       decoration: InputDecoration(
         labelText: label,
         labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
@@ -336,10 +413,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
         prefixIcon: Icon(icon, color: const Color(0xFFFFB300), size: 20),
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Colors.black12),
@@ -348,15 +422,8 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
           borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
         ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent),
-        ),
-        focusedErrorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
-        ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       ),
     );
   }
@@ -366,22 +433,11 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       initialValue: _selectedCategory,
       decoration: InputDecoration(
         labelText: '카테고리',
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
-        prefixIcon: const Icon(Icons.category, color: Color(0xFFFFB300), size: 20),
+        prefixIcon:
+            const Icon(Icons.category, color: Color(0xFFFFB300), size: 20),
         filled: true,
         fillColor: Colors.white,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-        ),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
       ),
       items: _categoryMap.entries.map((entry) {
         return DropdownMenuItem<String>(
@@ -389,9 +445,9 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
           child: Text(entry.value),
         );
       }).toList(),
-      onChanged: (val) {
-        if (val != null) {
-          setState(() => _selectedCategory = val);
+      onChanged: (value) {
+        if (value != null) {
+          setState(() => _selectedCategory = value);
         }
       },
     );
@@ -411,7 +467,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
             children: [
               const Expanded(
                 child: Text(
-                  '위도/경도 좌표 수집',
+                  '위도/경도 좌표',
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
@@ -421,14 +477,17 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               ),
               IconButton(
                 onPressed: _isLocating ? null : _autoDetectLocation,
+                tooltip: '현재 위치로 좌표 갱신',
                 icon: _isLocating
                     ? const SizedBox(
                         width: 16,
                         height: 16,
-                        child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300))),
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                        ),
                       )
                     : const Icon(Icons.gps_fixed, color: Color(0xFFFFB300)),
-                tooltip: '현재 위치로 좌표 갱신',
               ),
             ],
           ),
@@ -438,12 +497,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _latController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) => v!.isEmpty ? '필수' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: _required('위도는 필수입니다.'),
                   decoration: const InputDecoration(
-                    labelText: '위도 (Latitude)',
+                    labelText: '위도',
                     labelStyle: TextStyle(fontSize: 11),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ),
@@ -451,12 +512,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               Expanded(
                 child: TextFormField(
                   controller: _lngController,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                  validator: (v) => v!.isEmpty ? '필수' : null,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  validator: _required('경도는 필수입니다.'),
                   decoration: const InputDecoration(
-                    labelText: '경도 (Longitude)',
+                    labelText: '경도',
                     labelStyle: TextStyle(fontSize: 11),
-                    contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    contentPadding:
+                        EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   ),
                 ),
               ),
@@ -478,26 +541,26 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          const Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                '프랜차이즈 여부',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-              ),
-              SizedBox(height: 2),
-              Text(
-                '대형 체인점/프랜차이즈 식당인 경우 체크해주세요.',
-                style: TextStyle(fontSize: 11, color: Colors.black45),
-              ),
-            ],
+          const Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '프랜차이즈 여부',
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                ),
+                SizedBox(height: 2),
+                Text(
+                  '대형 체인 또는 프랜차이즈 매장이라면 체크해주세요.',
+                  style: TextStyle(fontSize: 11, color: Colors.black45),
+                ),
+              ],
+            ),
           ),
           Switch(
             value: _isFranchise,
             activeThumbColor: const Color(0xFFFFB300),
-            onChanged: (val) {
-              setState(() => _isFranchise = val);
-            },
+            onChanged: (value) => setState(() => _isFranchise = value),
           ),
         ],
       ),
@@ -519,12 +582,26 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
           ),
         ),
         child: _isLoading
-            ? const CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Colors.white))
-            : const Text(
-                '맛집 등록하기',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+            ? const CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation(Colors.white),
+              )
+            : Text(
+                _isEditMode ? '맛집 수정하기' : '맛집 등록하기',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
       ),
     );
+  }
+
+  String? Function(String?) _required(String message) {
+    return (value) {
+      if (value == null || value.trim().isEmpty) {
+        return message;
+      }
+      return null;
+    };
   }
 }

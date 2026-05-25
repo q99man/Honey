@@ -9,12 +9,12 @@ class AuthService {
   AuthService(this._apiClient);
 
   // Local login
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String email, String password) async {
     try {
       final response = await _apiClient.dio.post(
         ApiEndpoints.login,
         data: {
-          'username': username,
+          'email': email,
           'password': password,
         },
       );
@@ -34,15 +34,19 @@ class AuthService {
   }
 
   // Local signup
-  Future<bool> signup(String username, String password, String nickname, String phone) async {
+  Future<bool> signup(
+    String email,
+    String password,
+    String nickname,
+    String phone,
+  ) async {
     try {
       final response = await _apiClient.dio.post(
         ApiEndpoints.signup,
         data: {
-          'username': username,
+          'email': email,
           'password': password,
           'nickname': nickname,
-          'phone': phone,
         },
       );
       return response.statusCode == 200;
@@ -114,7 +118,8 @@ class AuthService {
         },
       );
       if (response.statusCode == 200 && response.data != null) {
-        return response.data['data']['verified'] == true;
+        final data = response.data['data'];
+        return data['phoneVerified'] == true || data['verified'] == true;
       }
       return false;
     } catch (e) {
@@ -126,6 +131,29 @@ class AuthService {
   Future<bool> getPhoneVerificationStatus() async {
     try {
       final response = await _apiClient.dio.get(ApiEndpoints.phoneStatus);
+      if (response.statusCode == 200 && response.data != null) {
+        final data = response.data['data'];
+        return data['phoneVerified'] == true || data['verified'] == true;
+      }
+      return false;
+    } catch (e) {
+      return false;
+    }
+  }
+
+  // Verify Region With Current GPS Coordinate
+  Future<bool> verifyRegion({
+    required double latitude,
+    required double longitude,
+  }) async {
+    try {
+      final response = await _apiClient.dio.post(
+        ApiEndpoints.verifyRegion,
+        data: {
+          'latitude': latitude,
+          'longitude': longitude,
+        },
+      );
       if (response.statusCode == 200 && response.data != null) {
         return response.data['data']['verified'] == true;
       }

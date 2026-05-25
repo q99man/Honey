@@ -13,6 +13,7 @@ for dir in "${TARGET_DIRS[@]}"; do
       --exclude-dir=node_modules \
       --exclude-dir=dist \
       --exclude-dir=build \
+      --exclude='en.json' \
       -E '>(Confirm|Cancel|Submit|Save|Delete|Edit|Next|Back|Login|Sign Up|Search|Filter|Nearby|Ranking|Profile)<|"(Confirm|Cancel|Submit|Save|Delete|Edit|Next|Back|Login|Sign Up|Search|Filter|Nearby|Ranking|Profile)"' "$dir"; then
       FOUND=1
     fi

@@ -29,6 +29,7 @@ import com.honeytong.region.entity.UserRegion;
 import com.honeytong.region.entity.UserRegionStatus;
 import com.honeytong.region.repository.RegionDongRepository;
 import com.honeytong.region.repository.UserRegionRepository;
+import com.honeytong.region.service.RegionCoordinateResolver;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.entity.UserSanctionStatus;
@@ -95,6 +96,8 @@ public class PlaceService {
     private final FraudDetectionService fraudDetectionService;
     private final ApplicationEventPublisher eventPublisher;
     private final PlaceAiTagService placeAiTagService;
+    private final PlaceAddressCoordinateResolver placeAddressCoordinateResolver;
+    private final RegionCoordinateResolver regionCoordinateResolver;
 
     public PlaceService(
             PlaceRepository placeRepository,
@@ -114,7 +117,9 @@ public class PlaceService {
             MissionService missionService,
             FraudDetectionService fraudDetectionService,
             ApplicationEventPublisher eventPublisher,
-            PlaceAiTagService placeAiTagService
+            PlaceAiTagService placeAiTagService,
+            PlaceAddressCoordinateResolver placeAddressCoordinateResolver,
+            RegionCoordinateResolver regionCoordinateResolver
     ) {
         this.placeRepository = placeRepository;
         this.placeImageRepository = placeImageRepository;
@@ -134,17 +139,18 @@ public class PlaceService {
         this.fraudDetectionService = fraudDetectionService;
         this.eventPublisher = eventPublisher;
         this.placeAiTagService = placeAiTagService;
+        this.placeAddressCoordinateResolver = placeAddressCoordinateResolver;
+        this.regionCoordinateResolver = regionCoordinateResolver;
     }
 
     @Transactional
     public PlaceCreateResponse createPlace(Long userId, PlaceCreateRequest request, String clientIp) {
         User user = getActiveUser(userId);
         UserRegion userRegion = getPrimaryRegion(userId);
-        RegionDong placeDong = regionDongRepository.findById(request.dongId())
+        RegionDong requestedPlaceDong = regionDongRepository.findById(request.dongId())
                 .orElseThrow(() -> new ApiException(ErrorCode.RESOURCE_NOT_FOUND, "등록 지역을 찾을 수 없습니다."));
 
         validateRegistrationLimit(userId);
-        validateRegistrationScope(userRegion, placeDong);
 
         String recommendedMenu = optionalTextWithinPolicy(
                 request.recommendedMenu(),
@@ -168,25 +174,41 @@ public class PlaceService {
 
         validateImageUrls(request.imageUrls());
 
+        String addressRoad = optionalTextWithinPolicy(
+                request.addressRoad(),
+                ADDRESS_MAX_LENGTH_KEY,
+                ADDRESS_COLUMN_LIMIT,
+                "장소 주소 길이가 정책 허용치를 초과했습니다."
+        );
+        String addressJibun = optionalTextWithinPolicy(
+                request.addressJibun(),
+                ADDRESS_MAX_LENGTH_KEY,
+                ADDRESS_COLUMN_LIMIT,
+                "장소 주소 길이가 정책 허용치를 초과했습니다."
+        );
+        PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate coordinate = resolveCreateCoordinate(
+                addressRoad,
+                addressJibun,
+                request.latitude(),
+                request.longitude()
+        );
+        RegionDong placeDong = resolveCreateRegionDong(
+                requestedPlaceDong,
+                addressRoad,
+                addressJibun,
+                coordinate
+        );
+        validateRegistrationScope(userRegion, placeDong);
+
         Place place = placeRepository.save(new Place(
                 user,
                 placeDong,
                 request.name(),
                 request.categoryCode(),
-                optionalTextWithinPolicy(
-                        request.addressRoad(),
-                        ADDRESS_MAX_LENGTH_KEY,
-                        ADDRESS_COLUMN_LIMIT,
-                        "장소 주소 길이가 정책 허용치를 초과했습니다."
-                ),
-                optionalTextWithinPolicy(
-                        request.addressJibun(),
-                        ADDRESS_MAX_LENGTH_KEY,
-                        ADDRESS_COLUMN_LIMIT,
-                        "장소 주소 길이가 정책 허용치를 초과했습니다."
-                ),
-                request.latitude(),
-                request.longitude(),
+                addressRoad,
+                addressJibun,
+                coordinate.latitude(),
+                coordinate.longitude(),
                 request.priceRangeCode(),
                 recommendedMenu,
                 shortRecommendation,
@@ -335,7 +357,38 @@ public class PlaceService {
         }
 
         String beforeValue = adminActor ? serializePlaceMutationState(place, currentImageUrls(place.getId())) : null;
-        RegionDong nextDong = resolveDongForUpdate(actor, place, request.dongId(), adminActor);
+        validateCoordinatePair(request.latitude(), request.longitude());
+        String nextAddressRoad = optionalTextWithinPolicyOrCurrent(
+                request.addressRoad(),
+                place.getAddressRoad(),
+                ADDRESS_MAX_LENGTH_KEY,
+                ADDRESS_COLUMN_LIMIT,
+                "장소 주소 길이가 정책 허용치를 초과했습니다."
+        );
+        String nextAddressJibun = optionalTextWithinPolicyOrCurrent(
+                request.addressJibun(),
+                place.getAddressJibun(),
+                ADDRESS_MAX_LENGTH_KEY,
+                ADDRESS_COLUMN_LIMIT,
+                "장소 주소 길이가 정책 허용치를 초과했습니다."
+        );
+        boolean addressRequested = request.addressRoad() != null || request.addressJibun() != null;
+        PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate nextCoordinate = resolveUpdateCoordinate(
+                nextAddressRoad,
+                nextAddressJibun,
+                request.latitude(),
+                request.longitude(),
+                place,
+                addressRequested
+        );
+        RegionDong nextDong = resolveDongForUpdate(
+                actor,
+                place,
+                request.dongId(),
+                adminActor,
+                nextCoordinate,
+                addressRequested && (nextAddressRoad != null || nextAddressJibun != null)
+        );
         if (request.shortRecommendation() != null) {
             validatePolicyTextLength(
                     requiredTextOrCurrent(
@@ -366,8 +419,8 @@ public class PlaceService {
                         ADDRESS_COLUMN_LIMIT,
                         "장소 주소 길이가 정책 허용치를 초과했습니다."
                 ),
-                coordinateOrCurrent(request.latitude(), request.longitude(), place.getLatitude(), true),
-                coordinateOrCurrent(request.latitude(), request.longitude(), place.getLongitude(), false),
+                nextCoordinate.latitude(),
+                nextCoordinate.longitude(),
                 optionalTextOrCurrent(request.priceRangeCode(), place.getPriceRangeCode()),
                 optionalTextWithinPolicyOrCurrent(
                         request.recommendedMenu(),
@@ -509,7 +562,21 @@ public class PlaceService {
                 .orElseThrow(() -> new ApiException(ErrorCode.REGION_VERIFICATION_REQUIRED));
     }
 
-    private RegionDong resolveDongForUpdate(User actor, Place place, Long dongId, boolean adminActor) {
+    private RegionDong resolveDongForUpdate(
+            User actor,
+            Place place,
+            Long dongId,
+            boolean adminActor,
+            PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate coordinate,
+            boolean addressCoordinateRequested
+    ) {
+        if (addressCoordinateRequested) {
+            RegionDong nextDong = regionCoordinateResolver.resolve(coordinate.latitude(), coordinate.longitude()).dong();
+            if (!adminActor) {
+                validateRegistrationScope(getPrimaryRegion(actor.getId()), nextDong);
+            }
+            return nextDong;
+        }
         if (dongId == null) {
             return place.getRegionDong();
         }
@@ -723,6 +790,55 @@ public class PlaceService {
             return currentValue;
         }
         return optionalTextWithinPolicy(value, policyKey, columnLimit, tooLongMessage);
+    }
+
+    private PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate resolveCreateCoordinate(
+            String addressRoad,
+            String addressJibun,
+            BigDecimal requestLatitude,
+            BigDecimal requestLongitude
+    ) {
+        String address = addressRoad != null ? addressRoad : addressJibun;
+        if (address == null) {
+            return new PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate(requestLatitude, requestLongitude);
+        }
+        return placeAddressCoordinateResolver.resolve(address);
+    }
+
+    private RegionDong resolveCreateRegionDong(
+            RegionDong requestedPlaceDong,
+            String addressRoad,
+            String addressJibun,
+            PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate coordinate
+    ) {
+        if (addressRoad == null && addressJibun == null) {
+            return requestedPlaceDong;
+        }
+        return regionCoordinateResolver.resolve(coordinate.latitude(), coordinate.longitude()).dong();
+    }
+
+    private PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate resolveUpdateCoordinate(
+            String addressRoad,
+            String addressJibun,
+            BigDecimal requestLatitude,
+            BigDecimal requestLongitude,
+            Place place,
+            boolean addressRequested
+    ) {
+        String address = addressRoad != null ? addressRoad : addressJibun;
+        if (addressRequested && address != null) {
+            return placeAddressCoordinateResolver.resolve(address);
+        }
+        return new PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate(
+                coordinateOrCurrent(requestLatitude, requestLongitude, place.getLatitude(), true),
+                coordinateOrCurrent(requestLatitude, requestLongitude, place.getLongitude(), false)
+        );
+    }
+
+    private void validateCoordinatePair(BigDecimal latitude, BigDecimal longitude) {
+        if ((latitude == null) != (longitude == null)) {
+            throw new ApiException(ErrorCode.INVALID_REQUEST, "위도와 경도는 함께 수정해야 합니다.");
+        }
     }
 
     private void validatePolicyTextLength(

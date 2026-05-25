@@ -38,4 +38,18 @@ ranking,recency_recommend_weight,0.50,DECIMAL,최근 추천 활동 가중치
 ranking,recency_visit_weight,1.00,DECIMAL,최근 방문 활동 가중치
 ranking,recency_comment_weight,0.20,DECIMAL,최근 댓글 활동 가중치
 ranking,diversity_weight,5.00,DECIMAL,인구통계 다양성 점수 최대 가중치
+fraud,rapid_participation_window_minutes,1,INTEGER,단시간 다중 행동 감지 기준 시간(분)
+fraud,rapid_participation_threshold,5,INTEGER,단시간 다중 행동 감지 기준 횟수
+fraud,rapid_participation_risk_score,0.70,DECIMAL,단시간 다중 행동 위험 점수
+fraud,ip_spam_window_minutes,10,INTEGER,동일 IP 다중 계정 감지 기준 시간(분)
+fraud,ip_spam_distinct_user_threshold,3,INTEGER,동일 IP 다중 계정 감지 기준 계정 수
+fraud,ip_spam_risk_score,0.80,DECIMAL,동일 IP 다중 계정 위험 점수
+fraud,gps_teleport_speed_kmh,150.00,DECIMAL,GPS 텔레포팅 감지 기준 속도(km/h)
+fraud,gps_teleport_zero_second_distance_km,0.01,DECIMAL,GPS 동일 시각 이동 감지 기준 거리(km)
+fraud,gps_teleport_risk_score,0.90,DECIMAL,GPS 텔레포팅 위험 점수
+fraud,alert_trust_penalty,5,INTEGER,부정행위 알림 생성 시 신뢰 점수 차감량
+audience,minimum_participants,1,INTEGER,청중 태그 생성을 위한 최소 참여자 수
+audience,foreigner_ratio_threshold,0.30,DECIMAL,외국인 인기 태그 생성 비율 기준
+audience,gender_ratio_threshold,0.60,DECIMAL,성별 선호 태그 생성 비율 기준
+audience,age_ratio_threshold,0.40,DECIMAL,연령대 선호 태그 생성 비율 기준
 

@@ -34,26 +34,68 @@ class Place {
   });
 
   factory Place.fromJson(Map<String, dynamic> json) {
-    var imagesJson = json['imageUrls'] as List?;
-    List<String> images = imagesJson != null ? List<String>.from(imagesJson) : [];
+    final images = _parseImageUrls(json);
 
     return Place(
-      id: json['id'],
+      id: _asInt(json['id']),
       name: json['name'] ?? '',
       categoryCode: json['categoryCode'] ?? '',
       recommendedMenu: json['recommendedMenu'] ?? '',
       shortRecommendation: json['shortRecommendation'] ?? '',
       featureText: json['featureText'],
-      addressRoad: json['addressRoad'] ?? '',
+      addressRoad: json['addressRoad'] ?? json['address'] ?? '',
       addressJibun: json['addressJibun'] ?? '',
-      latitude: (json['latitude'] ?? 0.0).toDouble(),
-      longitude: (json['longitude'] ?? 0.0).toDouble(),
+      latitude: _asDouble(json['latitude']),
+      longitude: _asDouble(json['longitude']),
       creatorNickname: json['creatorNickname'],
-      regionDongName: json['regionDongName'],
+      regionDongName: json['regionDongName'] ?? json['dongName'] ?? json['regionName'],
       imageUrls: images,
-      stats: json['stats'] != null ? PlaceStats.fromJson(json['stats']) : null,
-      currentStarLevel: json['currentStarLevel'] ?? 0,
+      stats: _parseStats(json),
+      currentStarLevel: _asInt(json['currentStarLevel'] ?? json['starLevel']),
     );
+  }
+
+  static List<String> _parseImageUrls(Map<String, dynamic> json) {
+    final imagesJson = json['imageUrls'];
+    if (imagesJson is List) {
+      return imagesJson.whereType<String>().toList();
+    }
+
+    final representativeImageUrl = json['representativeImageUrl'];
+    if (representativeImageUrl is String && representativeImageUrl.isNotEmpty) {
+      return [representativeImageUrl];
+    }
+
+    return [];
+  }
+
+  static PlaceStats? _parseStats(Map<String, dynamic> json) {
+    final statsJson = json['stats'];
+    if (statsJson is Map<String, dynamic>) {
+      return PlaceStats.fromJson(statsJson);
+    }
+
+    final hasTopLevelStats = json.containsKey('recommendCount') ||
+        json.containsKey('visitCount') ||
+        json.containsKey('commentCount');
+    if (!hasTopLevelStats) {
+      return null;
+    }
+
+    return PlaceStats.fromJson(json);
+  }
+
+  static int _asInt(dynamic value) {
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value) ?? 0;
+    return 0;
+  }
+
+  static double _asDouble(dynamic value) {
+    if (value is num) return value.toDouble();
+    if (value is String) return double.tryParse(value) ?? 0.0;
+    return 0.0;
   }
 }
 
@@ -74,11 +116,11 @@ class PlaceStats {
 
   factory PlaceStats.fromJson(Map<String, dynamic> json) {
     return PlaceStats(
-      recommendCount: json['recommendCount'] ?? 0,
-      visitCount: json['visitCount'] ?? 0,
-      commentCount: json['commentCount'] ?? 0,
-      scoreTotal: (json['scoreTotal'] ?? 0.0).toDouble(),
-      trustWeightedScore: (json['trustWeightedScore'] ?? 0.0).toDouble(),
+      recommendCount: Place._asInt(json['recommendCount']),
+      visitCount: Place._asInt(json['visitCount']),
+      commentCount: Place._asInt(json['commentCount']),
+      scoreTotal: Place._asDouble(json['scoreTotal']),
+      trustWeightedScore: Place._asDouble(json['trustWeightedScore']),
     );
   }
 }

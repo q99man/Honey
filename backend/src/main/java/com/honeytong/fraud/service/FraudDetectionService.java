@@ -3,6 +3,7 @@ package com.honeytong.fraud.service;
 import com.honeytong.fraud.entity.FraudAlert;
 import com.honeytong.fraud.entity.FraudAlertType;
 import com.honeytong.fraud.repository.FraudAlertRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
 import com.honeytong.user.repository.UserRepository;
@@ -22,6 +23,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.math.BigDecimal;
 
 @Service
 public class FraudDetectionService {
@@ -34,6 +36,7 @@ public class FraudDetectionService {
     private final UserRepository userRepository;
     private final UserTrustRepository userTrustRepository;
     private final UserGrowthPolicyService userGrowthPolicyService;
+    private final PolicyService policyService;
 
     public FraudDetectionService(
             FraudAlertRepository fraudAlertRepository,
@@ -41,7 +44,8 @@ public class FraudDetectionService {
             VisitRepository visitRepository,
             UserRepository userRepository,
             UserTrustRepository userTrustRepository,
-            UserGrowthPolicyService userGrowthPolicyService
+            UserGrowthPolicyService userGrowthPolicyService,
+            PolicyService policyService
     ) {
         this.fraudAlertRepository = fraudAlertRepository;
         this.userActionLogRepository = userActionLogRepository;
@@ -49,6 +53,7 @@ public class FraudDetectionService {
         this.userRepository = userRepository;
         this.userTrustRepository = userTrustRepository;
         this.userGrowthPolicyService = userGrowthPolicyService;
+        this.policyService = policyService;
     }
 
     @Async("taskExecutor")
@@ -63,20 +68,24 @@ public class FraudDetectionService {
 
         // 1. RAPID_PARTICIPATION Check
         // 1분 이내 동일 유저의 행동 수 확인
-        LocalDateTime oneMinuteAgo = LocalDateTime.now().minusMinutes(1);
-        long rapidCount = userActionLogRepository.countByUserIdAndCreatedAtAfter(userId, oneMinuteAgo);
-        if (rapidCount > 5) {
-            String desc = String.format("단시간 다중 행동 감지 (1분 내 %d회 참여)", rapidCount);
-            createAlert(user, FraudAlertType.RAPID_PARTICIPATION, 0.7, desc, clientIp, targetId);
+        int rapidWindowMinutes = getPositiveInteger("rapid_participation_window_minutes");
+        int rapidThreshold = getPositiveInteger("rapid_participation_threshold");
+        LocalDateTime rapidWindowStart = LocalDateTime.now().minusMinutes(rapidWindowMinutes);
+        long rapidCount = userActionLogRepository.countByUserIdAndCreatedAtAfter(userId, rapidWindowStart);
+        if (rapidCount > rapidThreshold) {
+            String desc = String.format("단시간 다중 행동 감지 (%d분 내 %d회 참여)", rapidWindowMinutes, rapidCount);
+            createAlert(user, FraudAlertType.RAPID_PARTICIPATION, getRiskScore("rapid_participation_risk_score"), desc, clientIp, targetId);
         }
 
         // 2. IP_SPAM Check
         if (clientIp != null && !clientIp.isBlank()) {
-            LocalDateTime tenMinutesAgo = LocalDateTime.now().minusMinutes(10);
-            long distinctUsers = userActionLogRepository.countDistinctUsersByIpAddressAndCreatedAtAfter(clientIp, tenMinutesAgo);
-            if (distinctUsers >= 3) {
-                String desc = String.format("동일 IP 다중 계정 스팸 감지 (10분 내 %d개 계정)", distinctUsers);
-                createAlert(user, FraudAlertType.IP_SPAM, 0.8, desc, clientIp, targetId);
+            int ipSpamWindowMinutes = getPositiveInteger("ip_spam_window_minutes");
+            int distinctUserThreshold = getPositiveInteger("ip_spam_distinct_user_threshold");
+            LocalDateTime ipSpamWindowStart = LocalDateTime.now().minusMinutes(ipSpamWindowMinutes);
+            long distinctUsers = userActionLogRepository.countDistinctUsersByIpAddressAndCreatedAtAfter(clientIp, ipSpamWindowStart);
+            if (distinctUsers >= distinctUserThreshold) {
+                String desc = String.format("동일 IP 다중 계정 스팸 감지 (%d분 내 %d개 계정)", ipSpamWindowMinutes, distinctUsers);
+                createAlert(user, FraudAlertType.IP_SPAM, getRiskScore("ip_spam_risk_score"), desc, clientIp, targetId);
             }
         }
     }
@@ -113,12 +122,12 @@ public class FraudDetectionService {
         double speed = 0;
 
         if (timeDiffInSeconds <= 0) {
-            if (distance > 0.01) { // 10m 이상 이동
+            if (distance > getPositiveDecimal("gps_teleport_zero_second_distance_km").doubleValue()) {
                 isTeleport = true;
             }
         } else {
             speed = distance / (timeDiffInSeconds / 3600.0);
-            if (speed > 150.0) {
+            if (speed > getPositiveDecimal("gps_teleport_speed_kmh").doubleValue()) {
                 isTeleport = true;
             }
         }
@@ -126,7 +135,7 @@ public class FraudDetectionService {
         if (isTeleport) {
             String desc = String.format("GPS 조작 텔레포팅 감지 (이동 거리: %.2f km, 시간차: %d초, 속도: %.2f km/h)",
                     distance, (int) timeDiffInSeconds, speed);
-            createAlert(user, FraudAlertType.GPS_TELEPORTATION, 0.9, desc, clientIp, currentVisit.getId());
+            createAlert(user, FraudAlertType.GPS_TELEPORTATION, getRiskScore("gps_teleport_risk_score"), desc, clientIp, currentVisit.getId());
         }
     }
 
@@ -138,12 +147,33 @@ public class FraudDetectionService {
         // 신뢰 점수 차감 (-5점) 및 재평가
         UserTrust trust = userTrustRepository.findById(user.getId()).orElse(null);
         if (trust != null) {
-            trust.addTrustScore(-5);
+            int trustPenalty = getPositiveInteger("alert_trust_penalty");
+            trust.addTrustScore(-trustPenalty);
             TrustEvaluationResult result = userGrowthPolicyService.evaluateTrust(trust.getTrustScore());
             trust.applyTrustEvaluation(result.trustGrade(), result.recommendWeight());
             userTrustRepository.save(trust);
-            log.info("User {} trust score reduced by 5 due to fraud alert. New score: {}", user.getId(), trust.getTrustScore());
+            log.info("User {} trust score reduced by {} due to fraud alert. New score: {}", user.getId(), trustPenalty, trust.getTrustScore());
         }
+    }
+
+    private int getPositiveInteger(String policyKey) {
+        int value = policyService.getRequiredInteger("fraud", policyKey);
+        if (value <= 0) {
+            throw new IllegalStateException("Fraud policy must be positive: " + policyKey);
+        }
+        return value;
+    }
+
+    private BigDecimal getPositiveDecimal(String policyKey) {
+        BigDecimal value = policyService.getRequiredDecimal("fraud", policyKey);
+        if (value.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalStateException("Fraud policy must be positive: " + policyKey);
+        }
+        return value;
+    }
+
+    private double getRiskScore(String policyKey) {
+        return getPositiveDecimal(policyKey).doubleValue();
     }
 
     private double calculateDistance(double lat1, double lon1, double lat2, double lon2) {

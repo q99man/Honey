@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
+
 import '../../../core/api/token_manager.dart';
+import '../../../core/config/app_config.dart';
 import '../../../models/user.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
+  AuthProvider(this._authService) {
+    initialize();
+  }
+
   final AuthService _authService;
 
   bool _isAuthenticated = false;
@@ -15,11 +21,6 @@ class AuthProvider extends ChangeNotifier {
   UserStatus? _userStatus;
   UserActivitySummary? _userSummary;
 
-  AuthProvider(this._authService) {
-    initialize();
-  }
-
-  // Getters
   bool get isAuthenticated => _isAuthenticated;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -27,7 +28,6 @@ class AuthProvider extends ChangeNotifier {
   UserStatus? get userStatus => _userStatus;
   UserActivitySummary? get userSummary => _userSummary;
 
-  // Initialize: Check auto-login status
   Future<void> initialize() async {
     _setLoading(true);
     final hasToken = await TokenManager.isLoggedIn();
@@ -36,7 +36,6 @@ class AuthProvider extends ChangeNotifier {
       if (success) {
         _isAuthenticated = true;
       } else {
-        // Stale or invalid token, clean up
         await _authService.logout();
         _isAuthenticated = false;
       }
@@ -47,11 +46,10 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Local login
-  Future<bool> login(String username, String password) async {
+  Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
-    final success = await _authService.login(username, password);
+    final success = await _authService.login(email, password);
     if (success) {
       final fetched = await _fetchUserData();
       if (fetched) {
@@ -61,43 +59,49 @@ class AuthProvider extends ChangeNotifier {
         return true;
       }
     }
-    _setError('로그인에 실패했습니다. 아이디와 비밀번호를 확인해주세요.');
+    _setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
     _setLoading(false);
     return false;
   }
 
-  // Local signup
-  Future<bool> signup(String username, String password, String nickname, String phone) async {
+  Future<bool> signup(
+    String email,
+    String password,
+    String nickname,
+    String phone,
+  ) async {
     _setLoading(true);
     _clearError();
-    final success = await _authService.signup(username, password, nickname, phone);
+    final success = await _authService.signup(email, password, nickname, phone);
     _setLoading(false);
     if (success) {
       return true;
     }
-    _setError('회원가입에 실패했습니다. 이미 사용 중인 이메일일 수 있습니다.');
+    _setError('회원가입에 실패했습니다. 이미 사용 중인 이메일이거나 입력값이 올바르지 않습니다.');
     return false;
   }
 
-  // Kakao Login
   Future<bool> loginWithKakao() async {
     _setLoading(true);
     _clearError();
     try {
       String? accessToken;
-      
-      // Native Kakao Login SDK attempt
+
       try {
-        bool isInstalled = await kakao.isKakaoTalkInstalled();
-        kakao.OAuthToken token = isInstalled
+        final isInstalled = await kakao.isKakaoTalkInstalled();
+        final token = isInstalled
             ? await kakao.UserApi.instance.loginWithKakaoTalk()
             : await kakao.UserApi.instance.loginWithKakaoAccount();
         accessToken = token.accessToken;
       } catch (e) {
-        debugPrint("Kakao Native SDK failed or not configured: $e");
-        debugPrint("Falling back to simulated/mock Kakao login for development");
-        // For testing/development, use a mock token so it runs on unconfigured emulators
-        accessToken = "mock_kakao_access_token_for_development";
+        debugPrint('Kakao native SDK failed or is not configured: $e');
+        if (!AppConfig.allowMockKakaoLogin) {
+          _setError('카카오 로그인 설정을 확인해주세요.');
+          _setLoading(false);
+          return false;
+        }
+        debugPrint('Falling back to mock Kakao login for development.');
+        accessToken = 'mock_kakao_access_token_for_development';
       }
 
       final success = await _authService.oauthLogin('kakao', accessToken);
@@ -120,7 +124,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Logout
   Future<void> logout() async {
     _setLoading(true);
     await _authService.logout();
@@ -132,36 +135,53 @@ class AuthProvider extends ChangeNotifier {
     notifyListeners();
   }
 
-  // Send Phone Verification Code
   Future<bool> sendPhoneVerification(String phone) async {
     _setLoading(true);
     _clearError();
     final success = await _authService.sendPhoneVerificationCode(phone);
     _setLoading(false);
     if (!success) {
-      _setError('인증 번호 전송에 실패했습니다.');
+      _setError('인증번호 전송에 실패했습니다.');
     }
     return success;
   }
 
-  // Verify Phone Verification Code
   Future<bool> verifyPhoneCode(String phone, String code) async {
     _setLoading(true);
     _clearError();
     final success = await _authService.verifyPhoneCode(phone, code);
     if (success) {
-      // Refresh profile data to reflect verification
       await _fetchUserData();
       _setLoading(false);
       notifyListeners();
       return true;
     }
-    _setError('인증 코드가 일치하지 않거나 만료되었습니다.');
+    _setError('인증번호가 일치하지 않거나 만료되었습니다.');
     _setLoading(false);
     return false;
   }
 
-  // Refresh user data manually
+  Future<bool> verifyRegion({
+    required double latitude,
+    required double longitude,
+  }) async {
+    _setLoading(true);
+    _clearError();
+    final success = await _authService.verifyRegion(
+      latitude: latitude,
+      longitude: longitude,
+    );
+    if (success) {
+      await _fetchUserData();
+      _setLoading(false);
+      notifyListeners();
+      return true;
+    }
+    _setError('현재 위치로 동네 인증에 실패했습니다.');
+    _setLoading(false);
+    return false;
+  }
+
   Future<void> refreshUserProfile() async {
     if (_isAuthenticated) {
       await _fetchUserData();
@@ -169,7 +189,6 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  // Private helpers
   Future<bool> _fetchUserData() async {
     final profile = await _authService.getMyProfile();
     if (profile == null) return false;

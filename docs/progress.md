@@ -12,8 +12,8 @@ It is used to:
 
 ## 1. Current Phase
 
-Phase: BACKEND MVP DEVELOPMENT
-Status: Core auth, user, region, policy, admin policy, and place foundation in progress
+Phase: FLUTTER REFACTOR STABILIZATION
+Status: Backend policy and region guards are passing regression; Flutter data contract and Kakao map readiness issues are being stabilized.
 
 The system design, API structure, database schema, and rules are defined.
 Backend MVP implementation is progressing in small API increments.
@@ -548,11 +548,63 @@ Recent update:
 
 - [x] Web Admin UI 빌드 결함 수정 & 사용자 복구 연동 완료: 다국어(ko/en/ja) 패치 중 `AdminShell.tsx`에서 변경된 `AdminNavItem` 타입의 `labelKey`와 `AdminDashboardPage.tsx`에서 구형으로 사용되고 있던 `label` 필드의 불일치를 해결하여 `tsc -b && vite build` 정적 체크 빌드를 정상적으로 통과시킴. 이전 'web to mobile' 커밋 시점에 삭제되었던 일반 사용자 페이지군(`HomePage.tsx`, `DetailPage.tsx` 등)의 복구 복원 후 충돌 없이 컴파일 됨을 검증 완료.
 
+- [x] Codex stabilization pass after Flutter refactor review: Added backend regression coverage for GPS region verification respecting region-change cooldown and for region changes continuing safely when Redis lock access is unavailable. Updated `RegionService` so GPS verification cannot bypass cooldown when moving to a different dong, and Redis lock failures fall back to DB policy enforcement instead of failing the user flow. Verified full backend tests pass.
+
+- [x] Policy hardcoded-value audit continued with fraud detection and audience tags: Added default `fraud.*` and `audience.*` policies, moved rapid participation, IP spam, GPS teleportation, fraud trust penalty, and audience tag thresholds from code constants into `PolicyService`, and verified with focused service tests plus full backend regression.
+
+- [x] Flutter mobile place contract stabilization: Added `Place.fromJson` coverage for backend place list and detail DTO shapes, mapped list fields (`regionName`, `address`, `starLevel`, `representativeImageUrl`, top-level aggregate counts) correctly, removed Home map/search mock-place fallback so empty API responses render as empty states instead of fake data, and moved API/Kakao key configuration to dart-define-backed `AppConfig`. Flutter CLI and Dart CLI were unavailable in the local session, so mobile tests could not be executed.
+
+- [x] React frontend localization lint stabilization: Split `LocaleContext` runtime context from the provider component and removed translation `setState` inside an effect. Verified `npm run lint` and `npm run build` pass.
+
+- [x] Kakao map integration diagnosis: Confirmed Flutter Home currently uses a simulated `CustomPaint` map and only has the Kakao login SDK, not a Kakao map SDK. Actual native map integration requires adding a Flutter Kakao map package, Kakao native app key/platform registration/key hash, and Android Kakao Maven repository setup before replacing the simulated map widget.
+
+- [x] Flutter Kakao map native integration foundation: Added `kakao_maps_flutter`, configured the Kakao Maps Maven repository for Android, initialized Kakao Maps and Kakao Login from `KAKAO_NATIVE_APP_KEY`, replaced the simulated Home map with a `KakaoPlaceMap` wrapper, renders current-position and place markers from API coordinates, and keeps a Korean configuration state when the native app key is missing. Updated `.env.example`, mobile release guide, and build script so Spring/Web Kakao keys and Flutter native map keys can be managed from the same root `.env`. Verified `flutter pub get`, focused mobile tests, `flutter analyze`, and Android dev debug APK build.
+
+- [x] Mobile Kakao runtime verification prep: Added `scripts/check-mobile-kakao.ps1` and Android SDK/ADB discovery in `scripts/dev-env.ps1`. The check confirms current `.env` has Spring/Web Kakao keys, shows `KAKAO_NATIVE_APP_KEY` is still needed for Flutter native maps, prints debug key hashes for Kakao Console registration, and reports ADB device availability without exposing secret key values.
+
+- [x] Mobile Kakao smoke runner: Added `scripts/run-mobile-kakao-smoke.ps1` and `docs/mobile-kakao-smoke.md` so the dev Flutter app can be built with `KAKAO_NATIVE_APP_KEY`, installed on a selected ADB device, launched, and checked with filtered Kakao/Honeytong/Flutter logs. The script has a no-side-effect `-CheckOnly` mode, can start an Android Studio AVD with `-StartEmulator`, and does not print secret key values.
+
+- [x] Mobile Kakao ABI diagnosis: Ran the dev APK on the local `Pixel_10_Pro` AVD and confirmed the app launches far enough to initialize Flutter, then crashes because Kakao Maps native `libK3fAndroid.so` is packaged for ARM (`arm64-v8a`/`armeabi-v7a`) while the current emulator is `x86_64`. Updated the smoke script to fail before build/install on x86/x86_64 devices and documented that real Kakao native map verification needs an ARM64 Android device or compatible ARM emulator image.
+
+- [x] Mobile Kakao ARM emulator attempt: Installed `system-images;android-35;google_apis;arm64-v8a`, created `Pixel_Arm64_API35`, and attempted to boot it. The Android emulator exits immediately on this x86_64 Windows host with `Avd's CPU Architecture 'arm64' is not supported by the QEMU2 emulator on x86_64 host`, confirming local ARM64 emulator validation is not available on this machine.
+
+- [x] Mobile Kakao native map live device smoke: Connected a Galaxy S24+ (`SM-S926N`, `arm64-v8a`) through ADB, built and installed the dev APK, launched `com.honeytong.app.dev`, granted location permission, and confirmed Kakao native map tile rendering on the device with Korean POI labels and Kakao watermark visible. This verifies the native app key, Android package/signing registration, ARM native library loading, and map view creation path. Backend-driven place markers/detail navigation still need a follow-up run with the backend listening on a LAN-reachable URL because physical Android devices cannot use the emulator-only `10.0.2.2` host alias.
+
+- [x] Skill usage audit: Reviewed local `/skills` overlap with the Superpowers plugin and documented the recommended operating model in `docs/skill-usage-audit.md`: use Superpowers for workflow, keep `agent-workflow` as the Honeytong-specific supplemental guide, and treat the smaller domain skills as reference-only unless explicitly needed.
+
+- [x] Mobile backend discovery API stabilization: Diagnosed the LAN mobile smoke empty-place state to local MySQL schema drift and MySQL 8 SRID axis-order behavior. Updated the spatial migration/query to force `axis-order=long-lat`, require the generated `places.location` column to be `NOT NULL` for SPATIAL indexing, added security regression coverage for public map discovery reads, and repaired the local search/spatial indexes without deleting data. The running 8080 backend still needs a restart to load the corrected nearby-place query before rerunning the phone smoke.
+
+- [x] Flutter Kakao map recenter stabilization: Fixed the Home map current-location button so repeated taps recenter the Kakao map even when the resolved GPS coordinates are unchanged. Confirmed the physical device's current coordinates return an empty nearby-place result from the backend even at a 10km radius, while the public place list still has Hongdae/Seogyo test data; this means the current home-location empty marker state is data coverage, not a map rendering failure.
+
+- [x] Physical-device backend connectivity diagnosis: Confirmed the Galaxy S24+ cannot reach the PC backend through `192.168.50.5:8080` from the device network, which explains failed signup/login and empty mobile API flows. Added `-UseAdbReverse` to the mobile Kakao smoke script so USB-connected physical devices can call `http://127.0.0.1:8080` on-device and have ADB forward it to the PC backend.
+
+- [x] Flutter Kakao map controller readiness stabilization: Diagnosed a physical-device crash where `kakao_maps_flutter` exposed `onMapCreated` before the native `onMapReady` method-channel state accepted marker and camera commands. Updated the Home Kakao map wrapper to schedule marker/camera synchronization and retry briefly until the native controller is ready, preventing the early `moveCamera` assertion while preserving current-location recenter behavior.
+
+- [x] Flutter Kakao map marker layer stabilization: Matched the `kakao_maps_flutter` example/runtime contract by creating the default `LabelLayer` with `addMarkerLayer` before adding or removing Home map markers. This addresses the physical-device `LabelManager or its layer is null` marker failure observed after the controller readiness fix.
+
+- [x] Flutter mobile auth contract stabilization: Fixed mobile local signup/login to send the backend DTO field `email` instead of the obsolete `username`, aligned signup password validation with the backend 8-character minimum, restored Korean text in the login/signup and place registration flows, and kept backend auth validation messages Korean/UTF-8. Verified focused Dart analysis and `AuthServiceTest`.
+
+- [x] Flutter mobile login profile parsing stabilization: Fixed the mobile `UserProfile` model to match the current backend `/api/users/me` response, which no longer includes the obsolete `username` field. The login flow now treats a successful token response plus profile fetch as authenticated instead of failing during profile parsing. Added user model coverage for profile and activity summary response field names, and verified signup-login-profile API flow locally.
+
+- [x] Flutter My Page verification stabilization: Fixed the mobile phone verification response parsing to accept the backend `phoneVerified` field, removed the misleading fake `123456` code hint, restored Korean text in the My Page verification UI, and connected GPS-based region verification from My Page to `/api/regions/verify`. Verified backend region verification with the current Kakao REST configuration, ran focused Flutter analysis/tests, and rebuilt/installed the dev APK on the connected Android device with `adb reverse`.
+
+- [x] Place registration failure fix: Reproduced the backend `POST /api/places` failure and traced it to `PlaceSearchDocumentService.syncPlace`, where a new `place_search_documents` row with an assigned `@MapsId` id was being saved through repository merge and raising `ObjectOptimisticLockingFailureException`. New search documents now use `EntityManager.persist`, existing documents still use repository save, and the focused backend regression test passes. Also restored Korean text in the Flutter place registration/service UI and clarified that road and jibun addresses do not both need full input; one address is enough.
+
+- [x] Nearby refresh compatibility fix: Confirmed a newly registered place is saved as `APPROVED`/`VISIBLE`, but the installed pre-fix Android APK still calls nearby discovery with `radius=1000.0`, which Spring rejected because the controller expected an integer. Updated the backend nearby endpoint to accept decimal radius values and round them for the service layer, and changed the place-create success message to Korean.
+
+- [x] Home map marker/card UX fix: Updated the Flutter home map so the bottom place card no longer opens automatically for every nearby result. The card now appears only after a Kakao map marker is selected, can be dismissed, and the floating action buttons move only when that card is visible. Restored Korean home-map UI text, changed category filtering to use backend category codes, and registered explicit Kakao marker styles with rank/text on a dedicated clickable marker layer so place and current-location markers are more visible. Cleared stale Flutter SDK lock files that were blocking local commands, then verified `flutter analyze`, rebuilt the dev APK, installed it on `R3CX306ZWGW`, captured the map screen showing visible current/place markers without the old bottom card covering the map, and confirmed on-device marker tap opens the selected-place card.
+
+- [x] Place registration address coordinate fix: Reproduced the root cause that Flutter registration filled latitude/longitude from current GPS and the backend persisted those client coordinates without using the typed address. Added backend address coordinate resolution through Kakao Local address search on place create, then resolves the administrative dong from the resolved coordinate and uses that dong for registration-scope validation and persistence. Added regression coverage for address-resolved coordinates and address-resolved region usage. Verified `PlaceServiceTest` plus recommendation, visit, and comment service QA tests.
+
+- [x] Place update address coordinate parity fix: Extended the same server-side Kakao Local address resolution rule to `PATCH /api/places/{placeId}` so edited road/jibun addresses update the stored marker coordinate and administrative dong from the address, then validate the resolved dong against the owner's registration scope. Added focused regression coverage for address-derived update coordinates and out-of-scope address rejection.
+
+- [x] Flutter mobile owner place management wiring: Added a My Page entry for `내 등록 맛집 관리`, a mobile owner list for places returned by `/api/users/me/places`, and edit/delete actions backed by `PATCH /api/places/{placeId}` and `DELETE /api/places/{placeId}`. The edit action reuses the registration form in edit mode and loads the current backend detail before submission. Static diff checks pass; `flutter analyze` could not complete in this session because the Flutter SDK lock cleanup required an escalated operation that was rejected by the current session usage limit.
+
 Next task:
 
-카카오 지도 연결 상태에 대한 사용자 수동 테스트 피드백 확인 및 필요 시 도메인/API 키 설정 보완 작업 진행.
+Run `flutter analyze` after clearing the stale Flutter SDK lock, rebuild/install the dev APK, then manually verify My Page -> 내 등록 맛집 관리 -> 수정/삭제 on the connected Android device.
 
-- recommended reasoning level: low
+- recommended reasoning level: medium
 
 ---
 

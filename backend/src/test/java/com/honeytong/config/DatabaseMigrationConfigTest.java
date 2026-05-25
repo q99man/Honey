@@ -69,6 +69,21 @@ class DatabaseMigrationConfigTest {
         assertThat(sql).contains("idx_place_ranking_history_season_region_rank");
     }
 
+    @Test
+    void spatialIndexMigration_usesLongitudeLatitudeAxisOrder() throws IOException {
+        ClassPathResource migration = new ClassPathResource(
+                "db/migration/V10__add_place_location_spatial_index.sql"
+        );
+
+        assertThat(migration.exists()).isTrue();
+
+        String sql = migration.getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(sql).contains("axis-order=long-lat");
+        assertThat(sql).contains("STORED NOT NULL");
+        assertThat(sql).contains("idx_places_location");
+    }
+
     private Map<String, String> loadYaml(String resourceName) {
         YamlPropertiesFactoryBean factory = new YamlPropertiesFactoryBean();
         factory.setResources(new ClassPathResource(resourceName));

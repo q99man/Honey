@@ -1,7 +1,7 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
 import { useTranslation } from "../hooks/useTranslation";
-import { type LocaleType } from "../context/LocaleContext";
+import { type LocaleType } from "../context/locale";
 
 type AdminNavItem = {
   to: string;

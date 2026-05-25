@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../providers/auth_provider.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -27,37 +28,40 @@ class _SignupScreenState extends State<SignupScreen> {
     super.dispose();
   }
 
-  void _submitSignup() async {
-    if (_formKey.currentState!.validate()) {
-      final authProvider = Provider.of<AuthProvider>(context, listen: false);
-      final success = await authProvider.signup(
-        _emailController.text.trim(),
-        _passwordController.text,
-        _nicknameController.text.trim(),
-        _phoneController.text.trim(),
-      );
-
-      if (success) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('회원가입이 완료되었습니다. 로그인해주세요!'),
-              backgroundColor: Colors.green,
-            ),
-          );
-          Navigator.of(context).pop(); // Back to login screen
-        }
-      } else {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(authProvider.errorMessage ?? '회원가입에 실패했습니다.'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
-        }
-      }
+  Future<void> _submitSignup() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
     }
+
+    final authProvider = Provider.of<AuthProvider>(context, listen: false);
+    final success = await authProvider.signup(
+      _emailController.text.trim(),
+      _passwordController.text,
+      _nicknameController.text.trim(),
+      _phoneController.text.trim(),
+    );
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('회원가입이 완료되었습니다. 로그인해주세요.'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.of(context).pop();
+      return;
+    }
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(authProvider.errorMessage ?? '회원가입에 실패했습니다.'),
+        backgroundColor: Colors.redAccent,
+      ),
+    );
   }
 
   @override
@@ -80,14 +84,14 @@ class _SignupScreenState extends State<SignupScreen> {
       ),
       body: SafeArea(
         child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
+          padding: const EdgeInsets.all(24),
           child: Form(
             key: _formKey,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const Text(
-                  '꿀벌 회원 정보 입력',
+                  '허니통 회원 정보 입력',
                   style: TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
@@ -96,132 +100,20 @@ class _SignupScreenState extends State<SignupScreen> {
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  '허니통 가입을 위해 필수 정보를 입력해주세요.',
+                  '서비스 이용을 위해 필요한 정보를 입력해주세요.',
                   style: TextStyle(fontSize: 14, color: Colors.black54),
                 ),
                 const SizedBox(height: 24),
-
-                // Email Field
-                TextFormField(
-                  controller: _emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  enabled: !isLoading,
-                  decoration: InputDecoration(
-                    labelText: '이메일 주소 (아이디)',
-                    prefixIcon: const Icon(Icons.email_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '이메일을 입력해주세요.';
-                    }
-                    if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value.trim())) {
-                      return '올바른 이메일 형식이 아닙니다.';
-                    }
-                    return null;
-                  },
-                ),
+                _buildEmailField(isLoading),
                 const SizedBox(height: 16),
-
-                // Nickname Field
-                TextFormField(
-                  controller: _nicknameController,
-                  enabled: !isLoading,
-                  decoration: InputDecoration(
-                    labelText: '닉네임',
-                    prefixIcon: const Icon(Icons.person_outline),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '닉네임을 입력해주세요.';
-                    }
-                    if (value.trim().length < 2) {
-                      return '닉네임은 2자 이상이어야 합니다.';
-                    }
-                    return null;
-                  },
-                ),
+                _buildNicknameField(isLoading),
                 const SizedBox(height: 16),
-
-                // Phone Field
-                TextFormField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  enabled: !isLoading,
-                  decoration: InputDecoration(
-                    labelText: '휴대폰 번호',
-                    hintText: '01012345678',
-                    prefixIcon: const Icon(Icons.phone_iphone_outlined),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return '휴대폰 번호를 입력해주세요.';
-                    }
-                    if (!RegExp(r'^010[0-9]{7,8}$').hasMatch(value.trim())) {
-                      return '올바른 휴대폰 번호 형식이 아닙니다 (예: 01012345678).';
-                    }
-                    return null;
-                  },
-                ),
+                _buildPhoneField(isLoading),
                 const SizedBox(height: 16),
-
-                // Password Field
-                TextFormField(
-                  controller: _passwordController,
-                  obscureText: true,
-                  enabled: !isLoading,
-                  decoration: InputDecoration(
-                    labelText: '비밀번호',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '비밀번호를 입력해주세요.';
-                    }
-                    if (value.length < 4) {
-                      return '비밀번호는 4자리 이상이어야 합니다.';
-                    }
-                    return null;
-                  },
-                ),
+                _buildPasswordField(isLoading),
                 const SizedBox(height: 16),
-
-                // Confirm Password Field
-                TextFormField(
-                  controller: _confirmPasswordController,
-                  obscureText: true,
-                  enabled: !isLoading,
-                  decoration: InputDecoration(
-                    labelText: '비밀번호 확인',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    filled: true,
-                    fillColor: Colors.white,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return '비밀번호 확인을 입력해주세요.';
-                    }
-                    if (value != _passwordController.text) {
-                      return '비밀번호가 일치하지 않습니다.';
-                    }
-                    return null;
-                  },
-                ),
+                _buildConfirmPasswordField(isLoading),
                 const SizedBox(height: 32),
-
-                // Submit Button
                 ElevatedButton(
                   onPressed: isLoading ? null : _submitSignup,
                   style: ElevatedButton.styleFrom(
@@ -239,7 +131,8 @@ class _SignupScreenState extends State<SignupScreen> {
                           width: 20,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : const Text(
@@ -255,6 +148,118 @@ class _SignupScreenState extends State<SignupScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildEmailField(bool isLoading) {
+    return TextFormField(
+      controller: _emailController,
+      keyboardType: TextInputType.emailAddress,
+      enabled: !isLoading,
+      decoration: _inputDecoration('이메일 주소', Icons.email_outlined),
+      validator: (value) {
+        final text = value?.trim() ?? '';
+        if (text.isEmpty) {
+          return '이메일을 입력해주세요.';
+        }
+        if (!RegExp(r'^[\w-.]+@([\w-]+\.)+[\w-]{2,}$').hasMatch(text)) {
+          return '올바른 이메일 형식이 아닙니다.';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildNicknameField(bool isLoading) {
+    return TextFormField(
+      controller: _nicknameController,
+      enabled: !isLoading,
+      decoration: _inputDecoration('닉네임', Icons.person_outline),
+      validator: (value) {
+        final text = value?.trim() ?? '';
+        if (text.isEmpty) {
+          return '닉네임을 입력해주세요.';
+        }
+        if (text.length < 2) {
+          return '닉네임은 2자 이상이어야 합니다.';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPhoneField(bool isLoading) {
+    return TextFormField(
+      controller: _phoneController,
+      keyboardType: TextInputType.phone,
+      enabled: !isLoading,
+      decoration: _inputDecoration(
+        '휴대폰 번호',
+        Icons.phone_iphone_outlined,
+        hintText: '01012345678',
+      ),
+      validator: (value) {
+        final text = value?.trim() ?? '';
+        if (text.isEmpty) {
+          return '휴대폰 번호를 입력해주세요.';
+        }
+        if (!RegExp(r'^010[0-9]{7,8}$').hasMatch(text)) {
+          return '올바른 휴대폰 번호 형식이 아닙니다. 예: 01012345678';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildPasswordField(bool isLoading) {
+    return TextFormField(
+      controller: _passwordController,
+      obscureText: true,
+      enabled: !isLoading,
+      decoration: _inputDecoration('비밀번호', Icons.lock_outline),
+      validator: (value) {
+        final text = value ?? '';
+        if (text.isEmpty) {
+          return '비밀번호를 입력해주세요.';
+        }
+        if (text.length < 8) {
+          return '비밀번호는 8자 이상이어야 합니다.';
+        }
+        return null;
+      },
+    );
+  }
+
+  Widget _buildConfirmPasswordField(bool isLoading) {
+    return TextFormField(
+      controller: _confirmPasswordController,
+      obscureText: true,
+      enabled: !isLoading,
+      decoration: _inputDecoration('비밀번호 확인', Icons.lock_outline),
+      validator: (value) {
+        if (value == null || value.isEmpty) {
+          return '비밀번호 확인을 입력해주세요.';
+        }
+        if (value != _passwordController.text) {
+          return '비밀번호가 일치하지 않습니다.';
+        }
+        return null;
+      },
+    );
+  }
+
+  InputDecoration _inputDecoration(
+    String label,
+    IconData icon, {
+    String? hintText,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hintText,
+      prefixIcon: Icon(icon),
+      filled: true,
+      fillColor: Colors.white,
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
     );
   }
 }

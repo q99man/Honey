@@ -373,7 +373,7 @@ CREATE TABLE places (
   created_at DATETIME NOT NULL,
   updated_at DATETIME NOT NULL,
   deleted_at DATETIME NULL,
-  location POINT AS (ST_PointFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'), 4326)) STORED,
+  location POINT AS (ST_PointFromText(CONCAT('POINT(', longitude, ' ', latitude, ')'), 4326, 'axis-order=long-lat')) STORED NOT NULL,
   CONSTRAINT fk_places_user
     FOREIGN KEY (created_by) REFERENCES users(id),
   CONSTRAINT fk_places_city
@@ -881,6 +881,20 @@ trust.recommend_weight_by_grade = SEED_BEE:1.00;VERIFIED_BEE:1.05;LOCAL_BEE:1.10
 ranking.recommend_weight = 1.0
 ranking.visit_weight = 2.0
 ranking.comment_weight = 0.5
+fraud.rapid_participation_window_minutes = 1
+fraud.rapid_participation_threshold = 5
+fraud.rapid_participation_risk_score = 0.70
+fraud.ip_spam_window_minutes = 10
+fraud.ip_spam_distinct_user_threshold = 3
+fraud.ip_spam_risk_score = 0.80
+fraud.gps_teleport_speed_kmh = 150.00
+fraud.gps_teleport_zero_second_distance_km = 0.01
+fraud.gps_teleport_risk_score = 0.90
+fraud.alert_trust_penalty = 5
+audience.minimum_participants = 1
+audience.foreigner_ratio_threshold = 0.30
+audience.gender_ratio_threshold = 0.60
+audience.age_ratio_threshold = 0.40
 comment.max_length = 300
 community.post_title_max_length = 120
 community.post_content_max_length = 2000
@@ -908,6 +922,8 @@ the level-up flow requires `policy_group = growth` and `policy_key = level_exp_t
 the trust evaluation flow requires `policy_group = trust` keys `grade_thresholds` and `recommend_weight_by_grade`
 community post create/update requires `policy_group = community` keys `post_title_max_length` and `post_content_max_length`
 visit verification image URLs require `policy_group = visit` and `policy_key = image_url_max_length`
+fraud detection requires `policy_group = fraud` keys for participation windows, IP spam windows, GPS thresholds, risk scores, and alert trust penalty
+audience tag generation requires `policy_group = audience` keys for minimum participants and demographic ratio thresholds
 
 9.2 Policy Seed Import
 

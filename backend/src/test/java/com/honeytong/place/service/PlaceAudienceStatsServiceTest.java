@@ -2,6 +2,7 @@ package com.honeytong.place.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -10,6 +11,7 @@ import com.honeytong.place.event.PlaceDemographicsRecalculateEvent;
 import com.honeytong.place.entity.PlaceAudienceStats;
 import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.region.entity.RegionCity;
 import com.honeytong.region.entity.RegionDistrict;
 import com.honeytong.region.entity.RegionDong;
@@ -42,6 +44,9 @@ class PlaceAudienceStatsServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private PolicyService policyService;
+
     private PlaceAudienceStatsService placeAudienceStatsService;
     private Place place;
 
@@ -50,8 +55,13 @@ class PlaceAudienceStatsServiceTest {
         placeAudienceStatsService = new PlaceAudienceStatsService(
                 placeAudienceStatsRepository,
                 placeRepository,
-                userRepository
+                userRepository,
+                policyService
         );
+        lenient().when(policyService.getRequiredInteger("audience", "minimum_participants")).thenReturn(1);
+        lenient().when(policyService.getRequiredDecimal("audience", "foreigner_ratio_threshold")).thenReturn(BigDecimal.valueOf(0.30));
+        lenient().when(policyService.getRequiredDecimal("audience", "gender_ratio_threshold")).thenReturn(BigDecimal.valueOf(0.60));
+        lenient().when(policyService.getRequiredDecimal("audience", "age_ratio_threshold")).thenReturn(BigDecimal.valueOf(0.40));
 
         User creator = new User("creator", "creator@example.com");
         RegionCity city = new RegionCity("Seoul", "Seoul", null, "11");

@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as kakao_map;
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
+import 'core/config/app_config.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/home/views/home_map_screen.dart';
@@ -23,12 +25,20 @@ void main() async {
   final localization = Localization();
   await localization.init();
 
-  // Initialize Kakao SDK.
-  // Using try-catch to avoid crashes on startup if native app keys are blank or unconfigured in Android/iOS builds
-  try {
-    kakao.KakaoSdk.init(nativeAppKey: 'a123bc456def789ghi012jkl345mno67'); // Placeholder native app key
-  } catch (e) {
-    debugPrint("Kakao SDK Initialization failed (harmless in local dev/emulators): $e");
+  if (AppConfig.kakaoNativeAppKey.isNotEmpty) {
+    try {
+      await kakao_map.KakaoMapsFlutter.init(AppConfig.kakaoNativeAppKey);
+    } catch (e) {
+      debugPrint('카카오맵 SDK 초기화 실패: $e');
+    }
+
+    try {
+      kakao.KakaoSdk.init(nativeAppKey: AppConfig.kakaoNativeAppKey);
+    } catch (e) {
+      debugPrint('카카오 로그인 SDK 초기화 실패: $e');
+    }
+  } else {
+    debugPrint('KAKAO_NATIVE_APP_KEY가 없어 카카오 SDK 초기화를 건너뜁니다.');
   }
 
   runApp(const HoneytongApp());

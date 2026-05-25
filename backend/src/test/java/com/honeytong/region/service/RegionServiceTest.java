@@ -1,6 +1,7 @@
 package com.honeytong.region.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
@@ -137,6 +138,33 @@ class RegionServiceTest {
     }
 
     @Test
+    void verifyRegion_rejectsDifferentDongWhenChangeCooldownIsActive() {
+        RegionCoordinateResolver resolver = (latitude, longitude) -> new ResolvedRegion(nextDong);
+        regionService = new RegionService(
+                regionCityRepository,
+                regionDistrictRepository,
+                regionDongRepository,
+                userRegionRepository,
+                userRepository,
+                userTrustRepository,
+                resolver,
+                policyService,
+                redisTemplate
+        );
+        UserRegion currentRegion = new UserRegion(user, dong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(any(), any()))
+                .thenReturn(Optional.of(currentRegion));
+        when(policyService.getRequiredInteger("region", "change_cooldown_day")).thenReturn(7);
+
+        assertThatThrownBy(() -> regionService.verifyRegion(
+                USER_ID,
+                new RegionVerifyRequest(BigDecimal.valueOf(37.555), BigDecimal.valueOf(126.923))
+        )).isInstanceOf(ApiException.class)
+                .hasMessageContaining("아직 지역을 변경할 수 없습니다.");
+    }
+
+    @Test
     void getRegionChangePolicy_allowsChangeWhenCooldownIsZero() {
         UserRegion currentRegion = new UserRegion(user, dong);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -173,6 +201,24 @@ class RegionServiceTest {
     }
 
     @Test
+    void changeMyRegion_continuesWhenRedisLockIsUnavailable() {
+        when(redisTemplate.opsForValue()).thenThrow(new RuntimeException("redis unavailable"));
+
+        UserRegion currentRegion = new UserRegion(user, dong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(any(), any()))
+                .thenReturn(Optional.of(currentRegion));
+        when(regionDongRepository.findById(4L)).thenReturn(Optional.of(nextDong));
+        when(policyService.getRequiredInteger("region", "change_cooldown_day")).thenReturn(0);
+        when(userRegionRepository.save(any(UserRegion.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+        var response = regionService.changeMyRegion(USER_ID, new RegionChangeRequest(4L));
+
+        assertThat(response.dongId()).isEqualTo(4L);
+        assertThat(currentRegion.isPrimaryRegion()).isFalse();
+    }
+
+    @Test
     @org.junit.jupiter.api.DisplayName("동시에 두 번의 지역 변경이 시도되면 두 번째 요청은 락 획득 실패로 예외가 발생해야 한다")
     void changeMyRegion_failsOnConcurrency() {
         org.springframework.data.redis.core.ValueOperations<String, String> valueOps = org.mockito.Mockito.mock(org.springframework.data.redis.core.ValueOperations.class);
@@ -190,7 +236,7 @@ class RegionServiceTest {
         var response = regionService.changeMyRegion(USER_ID, new RegionChangeRequest(4L));
         assertThat(response.dongId()).isEqualTo(4L);
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> 
+        assertThatThrownBy(() ->
             regionService.changeMyRegion(USER_ID, new RegionChangeRequest(4L))
         ).isInstanceOf(ApiException.class)
          .hasMessageContaining("이미 지역 변경 처리가 진행 중입니다.");

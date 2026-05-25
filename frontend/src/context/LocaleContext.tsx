@@ -1,17 +1,10 @@
-import React, { createContext, useState, useEffect, type ReactNode } from 'react';
+import React, { useCallback, useMemo, useState, useEffect, type ReactNode } from 'react';
 import ko from '../locales/ko.json';
 import en from '../locales/en.json';
 import ja from '../locales/ja.json';
+import { LocaleContext, type LocaleType } from './locale';
 
-export type LocaleType = 'ko' | 'en' | 'ja';
-
-interface LocaleContextProps {
-  locale: LocaleType;
-  changeLanguage: (locale: LocaleType) => void;
-  translations: Record<string, string>;
-}
-
-export const LocaleContext = createContext<LocaleContextProps | undefined>(undefined);
+const translationByLocale: Record<LocaleType, Record<string, string>> = { ko, en, ja };
 
 export const LocaleProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [locale, setLocale] = useState<LocaleType>(() => {
@@ -22,25 +15,23 @@ export const LocaleProvider: React.FC<{ children: ReactNode }> = ({ children }) 
     return 'ko';
   });
 
-  const [translations, setTranslations] = useState<Record<string, string>>(ko);
-
   useEffect(() => {
     localStorage.setItem('honeytong_locale', locale);
-    if (locale === 'en') {
-      setTranslations(en);
-    } else if (locale === 'ja') {
-      setTranslations(ja);
-    } else {
-      setTranslations(ko);
-    }
   }, [locale]);
 
-  const changeLanguage = (newLocale: LocaleType) => {
+  const translations = translationByLocale[locale];
+
+  const changeLanguage = useCallback((newLocale: LocaleType) => {
     setLocale(newLocale);
-  };
+  }, []);
+
+  const value = useMemo(
+    () => ({ locale, changeLanguage, translations }),
+    [changeLanguage, locale, translations],
+  );
 
   return (
-    <LocaleContext.Provider value={{ locale, changeLanguage, translations }}>
+    <LocaleContext.Provider value={value}>
       {children}
     </LocaleContext.Provider>
   );

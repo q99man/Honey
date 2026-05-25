@@ -9,6 +9,7 @@ import static org.mockito.Mockito.*;
 import com.honeytong.fraud.entity.FraudAlert;
 import com.honeytong.fraud.entity.FraudAlertType;
 import com.honeytong.fraud.repository.FraudAlertRepository;
+import com.honeytong.policy.service.PolicyService;
 import com.honeytong.user.entity.TrustGrade;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserTrust;
@@ -56,6 +57,9 @@ class FraudDetectionServiceTest {
     @Mock
     private UserGrowthPolicyService userGrowthPolicyService;
 
+    @Mock
+    private PolicyService policyService;
+
     private FraudDetectionService fraudDetectionService;
     private User user;
     private UserTrust userTrust;
@@ -68,7 +72,8 @@ class FraudDetectionServiceTest {
                 visitRepository,
                 userRepository,
                 userTrustRepository,
-                userGrowthPolicyService
+                userGrowthPolicyService,
+                policyService
         );
         user = new User("tester", "tester@example.com");
         ReflectionTestUtils.setField(user, "id", USER_ID);
@@ -78,6 +83,7 @@ class FraudDetectionServiceTest {
 
     @Test
     void auditUserAction_flagsRapidParticipation_whenCountExceedsFive() {
+        stubFraudPolicies();
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userActionLogRepository.countByUserIdAndCreatedAtAfter(eq(USER_ID), any(LocalDateTime.class)))
                 .thenReturn(6L); // 6 actions in 1 minute
@@ -99,6 +105,7 @@ class FraudDetectionServiceTest {
 
     @Test
     void auditUserAction_flagsIpSpam_whenDistinctUsersExceedTwo() {
+        stubFraudPolicies();
         String testIp = "192.168.1.10";
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
         when(userActionLogRepository.countByUserIdAndCreatedAtAfter(eq(USER_ID), any(LocalDateTime.class)))
@@ -122,6 +129,7 @@ class FraudDetectionServiceTest {
 
     @Test
     void auditVisitVerification_flagsGpsTeleportation_whenSpeedExceeds150() {
+        stubFraudPolicies();
         Place place1 = mock(Place.class);
         Place place2 = mock(Place.class);
         
@@ -150,5 +158,18 @@ class FraudDetectionServiceTest {
         assertThat(alert.getAlertType()).isEqualTo(FraudAlertType.GPS_TELEPORTATION);
         assertThat(alert.getRiskScore()).isEqualTo(0.9);
         assertThat(userTrust.getTrustScore()).isEqualTo(5);
+    }
+
+    private void stubFraudPolicies() {
+        lenient().when(policyService.getRequiredInteger("fraud", "rapid_participation_window_minutes")).thenReturn(1);
+        lenient().when(policyService.getRequiredInteger("fraud", "rapid_participation_threshold")).thenReturn(5);
+        lenient().when(policyService.getRequiredDecimal("fraud", "rapid_participation_risk_score")).thenReturn(BigDecimal.valueOf(0.7));
+        lenient().when(policyService.getRequiredInteger("fraud", "ip_spam_window_minutes")).thenReturn(10);
+        lenient().when(policyService.getRequiredInteger("fraud", "ip_spam_distinct_user_threshold")).thenReturn(3);
+        lenient().when(policyService.getRequiredDecimal("fraud", "ip_spam_risk_score")).thenReturn(BigDecimal.valueOf(0.8));
+        lenient().when(policyService.getRequiredDecimal("fraud", "gps_teleport_speed_kmh")).thenReturn(BigDecimal.valueOf(150.0));
+        lenient().when(policyService.getRequiredDecimal("fraud", "gps_teleport_zero_second_distance_km")).thenReturn(BigDecimal.valueOf(0.01));
+        lenient().when(policyService.getRequiredDecimal("fraud", "gps_teleport_risk_score")).thenReturn(BigDecimal.valueOf(0.9));
+        lenient().when(policyService.getRequiredInteger("fraud", "alert_trust_penalty")).thenReturn(5);
     }
 }

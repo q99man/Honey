@@ -4,6 +4,7 @@ import com.honeytong.place.entity.Place;
 import com.honeytong.place.entity.PlaceExposureStatus;
 import com.honeytong.place.entity.PlaceSearchDocument;
 import com.honeytong.place.repository.PlaceSearchDocumentRepository;
+import jakarta.persistence.EntityManager;
 import java.util.List;
 import java.util.Locale;
 import java.util.stream.Stream;
@@ -15,14 +16,24 @@ import org.springframework.transaction.annotation.Transactional;
 public class PlaceSearchDocumentService {
 
     private final PlaceSearchDocumentRepository placeSearchDocumentRepository;
+    private final EntityManager entityManager;
 
-    public PlaceSearchDocumentService(PlaceSearchDocumentRepository placeSearchDocumentRepository) {
+    public PlaceSearchDocumentService(
+            PlaceSearchDocumentRepository placeSearchDocumentRepository,
+            EntityManager entityManager
+    ) {
         this.placeSearchDocumentRepository = placeSearchDocumentRepository;
+        this.entityManager = entityManager;
     }
 
     @Transactional
     public void syncPlace(Place place) {
-        placeSearchDocumentRepository.save(buildDocument(place));
+        PlaceSearchDocument document = buildDocument(place);
+        if (placeSearchDocumentRepository.existsById(place.getId())) {
+            placeSearchDocumentRepository.save(document);
+            return;
+        }
+        entityManager.persist(document);
     }
 
     @Transactional

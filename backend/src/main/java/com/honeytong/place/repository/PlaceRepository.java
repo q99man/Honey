@@ -48,8 +48,8 @@ public interface PlaceRepository extends JpaRepository<Place, Long> {
             FROM places p
             WHERE p.deleted_at IS NULL
               AND p.exposure_status = :exposureStatus
-              AND ST_Distance_Sphere(p.location, ST_PointFromText(:pointText, 4326)) <= :radiusMeter
-            ORDER BY ST_Distance_Sphere(p.location, ST_PointFromText(:pointText, 4326)) ASC
+              AND ST_Distance_Sphere(p.location, ST_PointFromText(:pointText, 4326, 'axis-order=long-lat')) <= :radiusMeter
+            ORDER BY ST_Distance_Sphere(p.location, ST_PointFromText(:pointText, 4326, 'axis-order=long-lat')) ASC
             LIMIT 50
             """, nativeQuery = true)
     List<Place> findNearbyPlaces(

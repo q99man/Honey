@@ -25,6 +25,7 @@ import com.honeytong.place.repository.PlaceAudienceStatsRepository;
 import com.honeytong.place.repository.PlaceImageRepository;
 import com.honeytong.place.repository.PlaceRepository;
 import com.honeytong.place.repository.PlaceStatsRepository;
+import com.honeytong.place.service.PlaceAddressCoordinateResolver.ResolvedPlaceCoordinate;
 import com.honeytong.policy.service.PolicyService;
 import com.honeytong.region.entity.RegionCity;
 import com.honeytong.region.entity.RegionDistrict;
@@ -33,6 +34,8 @@ import com.honeytong.region.entity.UserRegion;
 import com.honeytong.region.entity.UserRegionStatus;
 import com.honeytong.region.repository.RegionDongRepository;
 import com.honeytong.region.repository.UserRegionRepository;
+import com.honeytong.region.service.RegionCoordinateResolver;
+import com.honeytong.region.service.ResolvedRegion;
 import com.honeytong.user.entity.User;
 import com.honeytong.user.entity.UserRole;
 import com.honeytong.user.repository.UserRepository;
@@ -106,6 +109,12 @@ class PlaceServiceTest {
     @Mock
     private PlaceAiTagService placeAiTagService;
 
+    @Mock
+    private PlaceAddressCoordinateResolver placeAddressCoordinateResolver;
+
+    @Mock
+    private RegionCoordinateResolver regionCoordinateResolver;
+
     private PlaceService placeService;
     private User user;
     private RegionCity city;
@@ -133,7 +142,9 @@ class PlaceServiceTest {
                 missionService,
                 fraudDetectionService,
                 eventPublisher,
-                placeAiTagService
+                placeAiTagService,
+                placeAddressCoordinateResolver,
+                regionCoordinateResolver
         );
 
         user = new User("tester", "tester@example.com");
@@ -154,6 +165,15 @@ class PlaceServiceTest {
         org.mockito.Mockito.lenient()
                 .when(policyService.getRequiredInteger("place", "address_max_length"))
                 .thenReturn(255);
+        org.mockito.Mockito.lenient()
+                .when(placeAddressCoordinateResolver.resolve(any()))
+                .thenReturn(new ResolvedPlaceCoordinate(
+                        BigDecimal.valueOf(37.5500000),
+                        BigDecimal.valueOf(126.9100000)
+                ));
+        org.mockito.Mockito.lenient()
+                .when(regionCoordinateResolver.resolve(any(), any()))
+                .thenReturn(new ResolvedRegion(targetDong));
     }
 
     @Test
@@ -164,7 +184,9 @@ class PlaceServiceTest {
                 .thenReturn(Optional.of(userRegion));
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
         stubPlaceTextPolicies(255, 255, 500);
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
         when(placeRepository.save(any(Place.class))).thenAnswer(invocation -> {
@@ -190,6 +212,83 @@ class PlaceServiceTest {
     }
 
     @Test
+    void createPlace_usesAddressResolvedCoordinatesWhenAddressIsPresent() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+        when(placeAddressCoordinateResolver.resolve("서울특별시 마포구 와우산로 23길 9"))
+                .thenReturn(new ResolvedPlaceCoordinate(
+                        BigDecimal.valueOf(37.5564560),
+                        BigDecimal.valueOf(126.9244560)
+                ));
+        when(placeRepository.save(any(Place.class))).thenAnswer(invocation -> {
+            Place place = invocation.getArgument(0);
+            ReflectionTestUtils.setField(place, "id", 100L);
+            return place;
+        });
+
+        placeService.createPlace(
+                USER_ID,
+                createRequestWithAddress("서울특별시 마포구 와우산로 23길 9", null),
+                "127.0.0.1"
+        );
+
+        org.mockito.ArgumentCaptor<Place> placeCaptor = org.mockito.ArgumentCaptor.forClass(Place.class);
+        verify(placeRepository).save(placeCaptor.capture());
+        assertThat(placeCaptor.getValue().getLatitude()).isEqualByComparingTo("37.5564560");
+        assertThat(placeCaptor.getValue().getLongitude()).isEqualByComparingTo("126.9244560");
+    }
+
+    @Test
+    void createPlace_usesAddressResolvedRegionWhenAddressIsPresent() {
+        RegionDong addressDong = new RegionDong(city, district, "Sangsu-dong", "Sangsu-dong", null, "1144065500");
+        ReflectionTestUtils.setField(addressDong, "id", 32L);
+        UserRegion userRegion = new UserRegion(user, userDong);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+        when(placeAddressCoordinateResolver.resolve("서울특별시 마포구 와우산로 23길 9"))
+                .thenReturn(new ResolvedPlaceCoordinate(
+                        BigDecimal.valueOf(37.5564560),
+                        BigDecimal.valueOf(126.9244560)
+                ));
+        when(regionCoordinateResolver.resolve(
+                BigDecimal.valueOf(37.5564560),
+                BigDecimal.valueOf(126.9244560)
+        )).thenReturn(new ResolvedRegion(addressDong));
+        when(placeRepository.save(any(Place.class))).thenAnswer(invocation -> {
+            Place place = invocation.getArgument(0);
+            ReflectionTestUtils.setField(place, "id", 100L);
+            return place;
+        });
+
+        placeService.createPlace(
+                USER_ID,
+                createRequestWithAddress("서울특별시 마포구 와우산로 23길 9", null),
+                "127.0.0.1"
+        );
+
+        org.mockito.ArgumentCaptor<Place> placeCaptor = org.mockito.ArgumentCaptor.forClass(Place.class);
+        verify(placeRepository).save(placeCaptor.capture());
+        assertThat(placeCaptor.getValue().getRegionDong()).isEqualTo(addressDong);
+    }
+
+    @Test
     void createPlace_rejectsShortRecommendationLongerThanPolicyLimit() {
         UserRegion userRegion = new UserRegion(user, userDong);
         when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
@@ -197,7 +296,9 @@ class PlaceServiceTest {
                 .thenReturn(Optional.of(userRegion));
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
         when(policyService.getRequiredInteger("place", "recommended_menu_max_length")).thenReturn(255);
         when(policyService.getRequiredInteger("place", "short_recommendation_max_length")).thenReturn(5);
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
@@ -221,7 +322,9 @@ class PlaceServiceTest {
                 .thenReturn(Optional.of(userRegion));
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
         stubPlaceTextPolicies(255, 255, 500);
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
 
@@ -245,7 +348,9 @@ class PlaceServiceTest {
                 .thenReturn(Optional.of(userRegion));
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
         stubPlaceTextPolicies(255, 255, 500);
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
 
@@ -274,7 +379,9 @@ class PlaceServiceTest {
                 .thenReturn(Optional.of(userRegion));
         when(regionDongRepository.findById(31L)).thenReturn(Optional.of(otherDong));
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
         when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
 
         assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest(), "127.0.0.1"))
@@ -374,6 +481,79 @@ class PlaceServiceTest {
         verify(placeImageRepository).deleteByPlaceId(100L);
         verify(placeImageRepository).save(any(PlaceImage.class));
         verify(placeSearchDocumentService).syncPlace(place);
+    }
+
+    @Test
+    void updatePlace_usesAddressResolvedCoordinatesWhenAddressIsPresent() {
+        RegionDong addressDong = new RegionDong(city, district, "Sangsu-dong", "Sangsu-dong", null, "1144065500");
+        ReflectionTestUtils.setField(addressDong, "id", 32L);
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(placeAddressCoordinateResolver.resolve("Seoul Mapo Test Address 9"))
+                .thenReturn(new ResolvedPlaceCoordinate(
+                        BigDecimal.valueOf(37.5564560),
+                        BigDecimal.valueOf(126.9244560)
+                ));
+        when(regionCoordinateResolver.resolve(
+                BigDecimal.valueOf(37.5564560),
+                BigDecimal.valueOf(126.9244560)
+        )).thenReturn(new ResolvedRegion(addressDong));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(new UserRegion(user, userDong)));
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+
+        var response = placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateAddressRequest("Seoul Mapo Test Address 9", null)
+        );
+
+        assertThat(response.latitude()).isEqualByComparingTo("37.5564560");
+        assertThat(response.longitude()).isEqualByComparingTo("126.9244560");
+        assertThat(response.dongId()).isEqualTo(32L);
+        assertThat(place.getLatitude()).isEqualByComparingTo("37.5564560");
+        assertThat(place.getLongitude()).isEqualByComparingTo("126.9244560");
+        assertThat(place.getRegionDong()).isEqualTo(addressDong);
+        verify(placeSearchDocumentService).syncPlace(place);
+    }
+
+    @Test
+    void updatePlace_rejectsAddressResolvedRegionOutsideRegistrationScope() {
+        RegionCity otherCity = new RegionCity("Busan", "Busan", null, "26");
+        ReflectionTestUtils.setField(otherCity, "id", 11L);
+        RegionDistrict otherDistrict = new RegionDistrict(otherCity, "Haeundae-gu", "Haeundae-gu", null, "26350");
+        ReflectionTestUtils.setField(otherDistrict, "id", 21L);
+        RegionDong otherDong = new RegionDong(otherCity, otherDistrict, "U-dong", "U-dong", null, "2635065100");
+        ReflectionTestUtils.setField(otherDong, "id", 33L);
+        Place place = createPlaceEntity(targetDong);
+        ReflectionTestUtils.setField(place, "id", 100L);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(placeRepository.findByIdAndDeletedAtIsNull(100L)).thenReturn(Optional.of(place));
+        when(placeAddressCoordinateResolver.resolve("Busan Haeundae Test Address"))
+                .thenReturn(new ResolvedPlaceCoordinate(
+                        BigDecimal.valueOf(35.1631130),
+                        BigDecimal.valueOf(129.1635500)
+                ));
+        when(regionCoordinateResolver.resolve(
+                BigDecimal.valueOf(35.1631130),
+                BigDecimal.valueOf(129.1635500)
+        )).thenReturn(new ResolvedRegion(otherDong));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(new UserRegion(user, userDong)));
+        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("DISTRICT");
+
+        assertThatThrownBy(() -> placeService.updatePlace(
+                USER_ID,
+                100L,
+                updateAddressRequest("Busan Haeundae Test Address", null)
+        )).isInstanceOfSatisfying(ApiException.class, exception ->
+                assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_VIOLATION));
+        assertThat(place.getLatitude()).isEqualByComparingTo("37.5500000");
+        assertThat(place.getLongitude()).isEqualByComparingTo("126.9100000");
+        assertThat(place.getRegionDong()).isEqualTo(targetDong);
+        verify(placeSearchDocumentService, never()).syncPlace(place);
     }
 
     @Test
@@ -776,7 +956,9 @@ class PlaceServiceTest {
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_VIOLATION));
 
         when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
-        when(policyService.getRequiredString("region", "registration_scope")).thenReturn("INVALID_SCOPE");
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("INVALID_SCOPE");
         assertThatThrownBy(() -> placeService.createPlace(USER_ID, createRequest(), "127.0.0.1"))
                 .isInstanceOfSatisfying(ApiException.class, exception ->
                         assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.POLICY_VIOLATION));

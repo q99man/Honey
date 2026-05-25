@@ -375,6 +375,8 @@ The goal is:
 - [x] Configure Flutter mobile release configuration & packaging (internet permission, package namespace, MainActivity, keystore dynamic loading)
 - [x] Create build script `scripts/build-mobile-release.ps1` and release guide `docs/mobile-release-guide.md`
 - [x] Run release build script and verify output release APK and App Bundle (AAB)
+- [x] Replace Flutter Home simulated map with Kakao native map integration foundation and dart-define-driven `KAKAO_NATIVE_APP_KEY` setup
+- [x] Add repeatable Flutter Kakao native map device smoke script and checklist
 
 
 ---

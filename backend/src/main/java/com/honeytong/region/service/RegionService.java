@@ -26,6 +26,8 @@ import com.honeytong.user.repository.UserRepository;
 import com.honeytong.user.repository.UserTrustRepository;
 import java.time.LocalDateTime;
 import java.util.List;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
@@ -36,6 +38,7 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 @Service
 public class RegionService {
 
+    private static final Logger log = LoggerFactory.getLogger(RegionService.class);
     private static final String REGION_POLICY_GROUP = "region";
     private static final String CHANGE_COOLDOWN_POLICY_KEY = "change_cooldown_day";
 
@@ -99,10 +102,10 @@ public class RegionService {
         User user = getActiveUser(userId);
         RegionDong dong = regionCoordinateResolver.resolve(request.latitude(), request.longitude()).dong();
 
-        userRegionRepository
+        UserRegion userRegion = userRegionRepository
                 .findByUserIdAndPrimaryRegionTrueAndStatus(userId, UserRegionStatus.ACTIVE)
-                .ifPresent(UserRegion::deactivate);
-        UserRegion userRegion = userRegionRepository.save(new UserRegion(user, dong));
+                .map(currentRegion -> changeRegionByVerificationIfAllowed(user, currentRegion, dong))
+                .orElseGet(() -> userRegionRepository.save(new UserRegion(user, dong)));
         userTrustRepository.findById(userId).ifPresent(UserTrust::markRegionVerified);
 
         return toVerificationResponse(userRegion);
@@ -120,8 +123,7 @@ public class RegionService {
     @Transactional
     public MyRegionResponse changeMyRegion(Long userId, RegionChangeRequest request) {
         String lockKey = "lock:region:change:user:" + userId;
-        Boolean acquired = redisTemplate.opsForValue().setIfAbsent(lockKey, "locked", java.time.Duration.ofSeconds(10));
-        if (acquired == null || !acquired) {
+        if (!acquireRegionChangeLock(lockKey)) {
             throw new ApiException(ErrorCode.INVALID_REGION_CHANGE, "이미 지역 변경 처리가 진행 중입니다.");
         }
 
@@ -130,12 +132,12 @@ public class RegionService {
                 new TransactionSynchronization() {
                     @Override
                     public void afterCompletion(int status) {
-                        redisTemplate.delete(lockKey);
+                        releaseRegionChangeLock(lockKey);
                     }
                 }
             );
         } else {
-            redisTemplate.delete(lockKey);
+            releaseRegionChangeLock(lockKey);
         }
 
         User user = getActiveUser(userId);
@@ -155,6 +157,37 @@ public class RegionService {
         currentRegion.deactivate();
         UserRegion changedRegion = userRegionRepository.save(new UserRegion(user, nextDong));
         return toMyRegionResponse(changedRegion);
+    }
+
+    private UserRegion changeRegionByVerificationIfAllowed(User user, UserRegion currentRegion, RegionDong verifiedDong) {
+        if (currentRegion.getDong().getId().equals(verifiedDong.getId())) {
+            return currentRegion;
+        }
+        RegionChangePolicyResponse policy = getRegionChangePolicy(currentRegion);
+        if (!policy.changeAllowed()) {
+            throw new ApiException(ErrorCode.INVALID_REGION_CHANGE, "아직 지역을 변경할 수 없습니다.");
+        }
+        currentRegion.deactivate();
+        return userRegionRepository.save(new UserRegion(user, verifiedDong));
+    }
+
+    private boolean acquireRegionChangeLock(String lockKey) {
+        try {
+            Boolean acquired = redisTemplate.opsForValue()
+                    .setIfAbsent(lockKey, "locked", java.time.Duration.ofSeconds(10));
+            return acquired == null || acquired;
+        } catch (RuntimeException exception) {
+            log.warn("Region change Redis lock unavailable; continuing with database policy checks. key={}", lockKey);
+            return true;
+        }
+    }
+
+    private void releaseRegionChangeLock(String lockKey) {
+        try {
+            redisTemplate.delete(lockKey);
+        } catch (RuntimeException exception) {
+            log.warn("Region change Redis lock release failed. key={}", lockKey);
+        }
     }
 
     @Transactional(readOnly = true)
