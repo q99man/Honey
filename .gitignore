@@ -21,6 +21,7 @@ pnpm-debug.log*
 .env.*
 !.env.example
 *.local
+backend/local.properties
 
 # IDE / OS
 .idea/

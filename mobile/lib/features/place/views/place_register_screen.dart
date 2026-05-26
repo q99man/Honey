@@ -3,6 +3,8 @@ import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../auth/providers/auth_provider.dart';
+import '../models/place_registration_eligibility.dart';
 import '../services/place_service.dart';
 
 class PlaceRegisterScreen extends StatefulWidget {
@@ -145,12 +147,19 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
 
+    final authProvider = context.read<AuthProvider>();
+    final phoneVerified = authProvider.userProfile?.phoneVerified == true;
     final hasEditableDong = _isEditMode && _editingPlace?['dongId'] != null;
     final hasVerifiedDong = _myRegion != null && _myRegion!['dongId'] != null;
-    if (!hasEditableDong && !hasVerifiedDong) {
+    final eligibility = PlaceRegistrationEligibility.evaluate(
+      phoneVerified: phoneVerified,
+      hasVerifiedRegion: hasEditableDong || hasVerifiedDong,
+    );
+
+    if (!eligibility.allowed) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('맛집 등록은 휴대폰 인증과 동네 인증을 완료한 뒤 이용할 수 있습니다.'),
+        SnackBar(
+          content: Text(eligibility.message!),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -223,7 +232,8 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       appBar: AppBar(
         title: Text(
           _isEditMode ? '맛집 수정' : '새 맛집 등록',
-          style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          style: const TextStyle(
+              fontWeight: FontWeight.bold, color: Colors.black87),
         ),
         backgroundColor: Colors.white,
         elevation: 0.5,
@@ -249,7 +259,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                     _buildTextField(
                       controller: _nameController,
                       label: '맛집 이름',
-                      hint: '예: 허니분식',
+                      hint: '예: 언니분식',
                       icon: Icons.store,
                       validator: _required('맛집 이름을 입력해주세요.'),
                     ),
@@ -337,23 +347,40 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   }
 
   Widget _buildRegionInfoCard() {
+    final authProvider = context.watch<AuthProvider>();
+    final phoneVerified = authProvider.userProfile?.phoneVerified == true;
     final hasRegion = _myRegion != null && _myRegion!['dongId'] != null;
+    final ready = phoneVerified && hasRegion;
+
+    String title;
+    String description;
+    if (ready) {
+      title = '등록 가능 지역';
+      description =
+          '${_myRegion!['cityName']} ${_myRegion!['districtName']} ${_myRegion!['dongName']}';
+    } else if (!phoneVerified) {
+      title = '휴대폰 인증 필요';
+      description = '마이페이지에서 휴대폰 인증을 먼저 완료해주세요.';
+    } else {
+      title = '동네 인증 필요';
+      description = '마이페이지에서 동네 인증을 먼저 완료해주세요.';
+    }
 
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: hasRegion ? const Color(0xFFFFFDE7) : const Color(0xFFFFEBEE),
+        color: ready ? const Color(0xFFFFFDE7) : const Color(0xFFFFEBEE),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(
-          color: hasRegion ? const Color(0xFFFFF59D) : const Color(0xFFFFCDD2),
+          color: ready ? const Color(0xFFFFF59D) : const Color(0xFFFFCDD2),
         ),
       ),
       child: Row(
         children: [
           Icon(
-            hasRegion ? Icons.verified_user : Icons.warning_amber_rounded,
-            color: hasRegion ? const Color(0xFFFF8F00) : Colors.red,
+            ready ? Icons.verified_user : Icons.warning_amber_rounded,
+            color: ready ? const Color(0xFFFF8F00) : Colors.red,
             size: 28,
           ),
           const SizedBox(width: 12),
@@ -362,21 +389,18 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  hasRegion ? '등록 가능 지역' : '동네 인증 필요',
+                  title,
                   style: TextStyle(
                     fontWeight: FontWeight.bold,
-                    color:
-                        hasRegion ? const Color(0xFFE65100) : Colors.red[900],
+                    color: ready ? const Color(0xFFE65100) : Colors.red[900],
                   ),
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  hasRegion
-                      ? '${_myRegion!['cityName']} ${_myRegion!['districtName']} ${_myRegion!['dongName']}'
-                      : '마이페이지에서 휴대폰 인증과 동네 인증을 먼저 완료해주세요.',
+                  description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: hasRegion ? Colors.black87 : Colors.red[800],
+                    color: ready ? Colors.black87 : Colors.red[800],
                   ),
                 ),
               ],

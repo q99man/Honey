@@ -72,6 +72,9 @@ function Find-FirstExistingPath {
 
 Normalize-ProcessEnvironmentKeys
 
+Add-PathEntry (Join-Path $env:WINDIR "System32")
+Add-PathEntry $env:WINDIR
+
 $nodeHome = Find-FirstExistingPath @(
     $env:HONEY_NODE_HOME,
     "C:\Program Files\nodejs",
@@ -104,6 +107,30 @@ if ($gitHome) {
     if (Test-Path $gitExe) {
         Set-Alias -Name git -Value $gitExe -Scope Global -Force
         $env:HONEY_GIT_EXE = $gitExe
+    }
+}
+
+$flutterHome = Find-FirstExistingPath @(
+    $env:HONEY_FLUTTER_HOME,
+    "C:\flutter"
+)
+
+if ($flutterHome) {
+    $flutterBin = Join-Path $flutterHome "bin"
+    Add-PathEntry $flutterBin
+    $flutterGitPath = $flutterHome -replace '\\', '/'
+    $env:GIT_CONFIG_COUNT = "1"
+    $env:GIT_CONFIG_KEY_0 = "safe.directory"
+    $env:GIT_CONFIG_VALUE_0 = $flutterGitPath
+    $flutterCmd = Join-Path $flutterBin "flutter.bat"
+    $dartCmd = Join-Path $flutterBin "dart.bat"
+    if (Test-Path $flutterCmd) {
+        Set-Alias -Name flutter -Value $flutterCmd -Scope Global -Force
+        $env:HONEY_FLUTTER_CMD = $flutterCmd
+    }
+    if (Test-Path $dartCmd) {
+        Set-Alias -Name dart -Value $dartCmd -Scope Global -Force
+        $env:HONEY_DART_CMD = $dartCmd
     }
 }
 
@@ -163,6 +190,7 @@ if (-not $Quiet) {
     Write-Host "[dev-env] node: $($env:HONEY_NODE_EXE)"
     Write-Host "[dev-env] npm:  $($env:HONEY_NPM_CMD)"
     Write-Host "[dev-env] git:  $($env:HONEY_GIT_EXE)"
+    Write-Host "[dev-env] flutter: $($env:HONEY_FLUTTER_CMD)"
     Write-Host "[dev-env] adb:  $($env:HONEY_ADB_EXE)"
     Write-Host "[dev-env] emulator: $($env:HONEY_EMULATOR_EXE)"
     Write-Host "[dev-env] ANDROID_AVD_HOME: $($env:ANDROID_AVD_HOME)"

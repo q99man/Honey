@@ -5,6 +5,7 @@ import '../../../core/api/api_client.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
 import '../../visit/services/visit_service.dart';
+import '../models/place_detail_address.dart';
 import '../services/place_service.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
@@ -115,6 +116,29 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     return _recommendationPolicy!['reason'] == 'ALREADY_RECOMMENDED';
   }
 
+  List<Widget> _buildAddressTexts(Map<String, dynamic> placeDetails) {
+    final address = PlaceDetailAddress.fromJson(placeDetails);
+    final widgets = <Widget>[
+      Text(
+        address.primary,
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+      ),
+    ];
+
+    final jibunLabel = address.jibunLabel;
+    if (jibunLabel != null) {
+      widgets.add(const SizedBox(height: 2));
+      widgets.add(
+        Text(
+          jibunLabel,
+          style: const TextStyle(fontSize: 11, color: Colors.black45),
+        ),
+      );
+    }
+
+    return widgets;
+  }
+
   void _handleRecommendation() async {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
     if (!authProvider.isAuthenticated) {
@@ -154,7 +178,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       if (!mounted) return;
       if (success) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('이 맛집을 추천했습니다! 👍')),
+          const SnackBar(content: Text('맛집을 추천했습니다!')),
         );
       }
     }
@@ -184,7 +208,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (authProvider.userProfile?.phoneVerified != true) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('방문 인증을 위해서는 휴대폰 번호 인증이 필요합니다.'),
+          content: Text('방문 인증을 위해서는 휴대폰 인증이 필요합니다.'),
           backgroundColor: Colors.orangeAccent,
         ),
       );
@@ -266,7 +290,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       setState(() => _isLoadingComments = false);
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(result['message'] ?? '댓글 등록 실패'),
+          content: Text(result['message'] ?? '평가 등록 실패'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -277,8 +301,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('댓글 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('이 댓글을 정말 삭제하시겠습니까?'),
+        title: const Text('평가 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+        content: const Text('이 평가를 정말 삭제하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -312,7 +336,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       setState(() => _isLoadingComments = false);
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text('댓글 삭제에 실패했습니다.'),
+          content: Text('평가 삭제에 실패했습니다.'),
           backgroundColor: Colors.redAccent,
         ),
       );
@@ -337,9 +361,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           children: [
             const Text('현재 위치가 매장과 가까운 것으로 인증되었습니다.'),
             const SizedBox(height: 12),
-            Text('📍 오차 거리: ${data['distanceMeter']}m'),
-            Text('✨ 획득 경험치: +${data['expGained']} EXP'),
-            Text('🔥 누적 방문 횟수: ${data['visitCount']}회'),
+            Text('실제 거리: ${data['distanceMeter']}m'),
+            Text('획득 경험치: +${data['expGained']} EXP'),
+            Text('누적 방문 횟수: ${data['visitCount']}회'),
           ],
         ),
         actions: [
@@ -366,7 +390,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('로그인 필요', style: TextStyle(fontWeight: FontWeight.bold)),
-        content: const Text('이 기능은 로그인 후 사용하실 수 있습니다.\n로그인 화면으로 이동할까요?'),
+        content: const Text('이 기능은 로그인 후 사용할 수 있습니다.\n로그인 화면으로 이동할까요?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -530,7 +554,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                             const Icon(Icons.star, color: Color(0xFFFFB300), size: 18),
                             const SizedBox(width: 4),
                             Text(
-                              '레벨 ${_placeDetails!['starLevel'] ?? 0} 꽃',
+                              '별점 ${_placeDetails!['starLevel'] ?? 0}개',
                               style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             const SizedBox(width: 14),
@@ -584,7 +608,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                   Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFB300), size: 20),
                                   SizedBox(width: 8),
                                   Text(
-                                    '등록인 한 줄 추천',
+                                    '등록인이 준 추천',
                                     style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                                   ),
                                 ],
@@ -621,17 +645,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                                   Expanded(
                                     child: Column(
                                       crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          _placeDetails!['addressRoad'],
-                                          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          '[지번] ${_placeDetails!['addressJibun']}',
-                                          style: const TextStyle(fontSize: 11, color: Colors.black45),
-                                        ),
-                                      ],
+                                      children:
+                                          _buildAddressTexts(_placeDetails!),
                                     ),
                                   ),
                                 ],
@@ -645,7 +660,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildSectionHeader('실시간 피드백 및 댓글 (${_comments.length})'),
+                            _buildSectionHeader('실시간 피드백 및 평가 (${_comments.length})'),
                             IconButton(
                               icon: const Icon(Icons.refresh, size: 20, color: Colors.black54),
                               onPressed: _refreshComments,
@@ -707,7 +722,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
             child: TextField(
               controller: _commentController,
               decoration: const InputDecoration(
-                hintText: '맛집에 대한 생생한 피드백을 남겨주세요...',
+                hintText: '맛집에 대한 생생한 피드백을 남겨주세요.',
                 hintStyle: TextStyle(fontSize: 12, color: Colors.black38),
                 contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: InputBorder.none,
@@ -746,7 +761,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           children: [
             Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Colors.black26),
             SizedBox(height: 8),
-            Text('첫 피드백(댓글)을 남겨보세요!', style: TextStyle(color: Colors.black38, fontSize: 12)),
+            Text('첫 피드백과 평가를 남겨보세요.', style: TextStyle(color: Colors.black38, fontSize: 12)),
           ],
         ),
       );
