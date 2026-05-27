@@ -76,7 +76,14 @@ class UserServiceTest {
     void updateMyProfile_updatesNicknameAndDemographics() {
         var response = userService.updateMyProfile(
                 USER_ID,
-                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
+                new UserProfileUpdateRequest(
+                        "새닉네임",
+                        "en",
+                        1995,
+                        "FEMALE",
+                        "KR",
+                        "http://localhost:8080/uploads/images/profiles/profile.jpg"
+                )
         );
 
         assertThat(response.nickname()).isEqualTo("새닉네임");
@@ -84,6 +91,7 @@ class UserServiceTest {
         assertThat(response.birthYear()).isEqualTo(1995);
         assertThat(response.gender()).isEqualTo("FEMALE");
         assertThat(response.nationalityCode()).isEqualTo("KR");
+        assertThat(response.profileImageUrl()).isEqualTo("http://localhost:8080/uploads/images/profiles/profile.jpg");
     }
 
     @Test
@@ -128,7 +136,7 @@ class UserServiceTest {
     void updateMyProfile_failsWhenUserNotFound() {
         assertThatThrownBy(() -> userService.updateMyProfile(
                 999L,
-                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
+                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR", null)
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.UNAUTHORIZED));
     }
@@ -161,7 +169,7 @@ class UserServiceTest {
 
         assertThatThrownBy(() -> userService.updateMyProfile(
                 2L,
-                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR")
+                new UserProfileUpdateRequest("새닉네임", "en", 1995, "FEMALE", "KR", null)
         )).isInstanceOfSatisfying(ApiException.class, exception ->
                 assertThat(exception.getErrorCode()).isEqualTo(ErrorCode.FORBIDDEN));
     }

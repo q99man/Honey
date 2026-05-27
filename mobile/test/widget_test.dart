@@ -29,7 +29,9 @@ void main() {
       expect(post.mine, true);
     });
 
-    test('Should parse CommunityPost from JSON with missing fields (null safety)', () {
+    test(
+        'Should parse CommunityPost from JSON with missing fields (null safety)',
+        () {
       final json = <String, dynamic>{};
 
       final post = CommunityPost.fromJson(json);

@@ -20,8 +20,12 @@ class Season {
       seasonCode: json['seasonCode'] ?? '',
       seasonName: json['seasonName'] ?? '',
       seasonType: json['seasonType'] ?? '',
-      startAt: json['startAt'] != null ? DateTime.parse(json['startAt']) : DateTime.now(),
-      endAt: json['endAt'] != null ? DateTime.parse(json['endAt']) : DateTime.now(),
+      startAt: json['startAt'] != null
+          ? DateTime.parse(json['startAt'])
+          : DateTime.now(),
+      endAt: json['endAt'] != null
+          ? DateTime.parse(json['endAt'])
+          : DateTime.now(),
       status: json['status'] ?? '',
     );
   }

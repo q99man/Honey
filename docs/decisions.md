@@ -1854,7 +1854,7 @@ Enforce place image URL length through `system_policies.place.image_url_max_leng
 
 Enforce visit verification image URL length through `system_policies.visit.image_url_max_length` in the visit service instead of DTO size constraints.
 
-The `place_images.image_url` and `visits.image_url` columns remain capped at 255 characters as storage constraints. Policy values above that physical limit are rejected as policy violations.
+The `place_images.image_url`, `visits.image_url`, and `users.profile_image_url` columns are capped at 2048 characters as storage constraints. Policy values above that physical limit are rejected as policy violations.
 
 ### Reason
 - image URL length is an operational storage/input policy that should remain adjustable
@@ -2130,6 +2130,25 @@ When creating or updating a place with a road or jibun address, the backend reso
 - **Edit Consistency**: The same mistake must not reappear when an owner edits a restaurant address.
 - **Server-Side Validation**: Address-to-coordinate and coordinate-to-region decisions must be enforced server-side rather than trusting mobile clients.
 - **Region-Aware Rules**: Registration scope must be evaluated against the actual address location, not only the user's currently verified dong or a client-provided `dongId`.
+
+---
+
+## 53. MVP Image Upload Storage Contract
+
+### Decision
+Implement a single authenticated image upload contract at `POST /api/uploads/images` for place, profile, and visit images.
+
+### Current Implementation
+- The API accepts multipart image files with a `target` value of `PLACE`, `PROFILE`, or `VISIT`.
+- The backend validates that uploaded files are non-empty jpg, png, or webp images and within the configured upload size limit.
+- The local MVP storage implementation writes files under the configured server filesystem upload path and exposes them through `/uploads/images/**`.
+- The API returns a public `imageUrl`; relational tables continue to store only URLs such as `place_images.image_url`, `visits.image_url`, and `users.profile_image_url`.
+- Mobile clients use the same upload endpoint before submitting place image URLs or profile image updates.
+
+### Reason
+- Image files are central to restaurant discovery, but binary data must not be stored in MySQL.
+- A stable URL-returning upload contract lets the mobile app support real gallery selection now while leaving room to replace local filesystem storage with object storage later.
+- Keeping upload validation server-side prevents clients from deciding what file types or sizes are acceptable.
 
 ---
 

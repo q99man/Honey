@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_login_required_state.dart';
 import '../../../models/community_post.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
@@ -38,7 +41,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
     });
 
     try {
-      final communityService = Provider.of<CommunityService>(context, listen: false);
+      final communityService =
+          Provider.of<CommunityService>(context, listen: false);
       List<CommunityPost> fetchedPosts;
       if (_isAllFilter) {
         fetchedPosts = await communityService.getPosts();
@@ -68,9 +72,15 @@ class _CommunityScreenState extends State<CommunityScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 13))),
           ],
         ),
         backgroundColor: Colors.redAccent,
@@ -106,7 +116,7 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   void _handleWriteAction() {
     final authProvider = Provider.of<AuthProvider>(context, listen: false);
-    
+
     // 휴대폰 인증 여부 확인
     final isVerified = authProvider.userProfile?.phoneVerified ?? false;
 
@@ -114,9 +124,12 @@ class _CommunityScreenState extends State<CommunityScreen> {
       showDialog(
         context: context,
         builder: (context) => AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('인증 필요', style: TextStyle(fontWeight: FontWeight.bold)),
-          content: const Text('게시글을 작성하려면 휴대폰 본인 인증이 필요합니다. 인증 화면(마이페이지)으로 이동하시겠습니까?'),
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: const Text('인증 필요',
+              style: TextStyle(fontWeight: FontWeight.bold)),
+          content: const Text(
+              '게시글을 작성하려면 휴대폰 본인 인증이 필요합니다. 인증 화면(마이페이지)으로 이동하시겠습니까?'),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
@@ -132,7 +145,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFB300),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('이동하기'),
             ),
@@ -143,9 +157,11 @@ class _CommunityScreenState extends State<CommunityScreen> {
     }
 
     // 작성 화면으로 이동
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(builder: (context) => const CommunityCreateScreen()),
-    ).then((reload) {
+    )
+        .then((reload) {
       if (reload == true) {
         _loadPosts();
       }
@@ -179,7 +195,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
           preferredSize: const Size.fromHeight(50.0),
           child: Container(
             color: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding:
+                const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Row(
               children: [
                 _buildFilterChip('전체 수다', _isAllFilter),
@@ -273,100 +290,37 @@ class _CommunityScreenState extends State<CommunityScreen> {
 
   Widget _buildGuestView() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8E1),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.forum_rounded,
-                    size: 52,
-                    color: Color(0xFFFFB300),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                '로그인이 필요합니다',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF263238),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '동네 주민들과 실시간으로 소통하고\n다양한 맛집 소식과 광장 이야기를 공유해보세요!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF78909C),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 36),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  ).then((_) {
-                    if (!mounted) return;
-                    if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
-                      _loadPosts();
-                    }
-                  });
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(27),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFC107), Color(0xFFFF8F00)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '로그인하러 가기',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      body: AppLoginRequiredState(
+        icon: Icons.forum_rounded,
+        title: '로그인이 필요합니다',
+        description: '동네 주민들과 실시간으로 소통하고\n다양한 맛집 소식과 광장 이야기를 공유해보세요.',
+        actionLabel: '로그인하러 가기',
+        eyebrow: '우리 동네 광장',
+        previewItems: const [
+          AppLoginPreviewItem(
+            icon: Icons.chat_bubble_rounded,
+            title: '동네 맛집 이야기',
+            description: '새로 찾은 장소와 방문 팁을 이웃과 나눕니다.',
           ),
-        ),
+          AppLoginPreviewItem(
+            icon: Icons.verified_user_rounded,
+            title: '인증 후 글쓰기',
+            description: '전화 인증 후 안전하게 글을 작성합니다.',
+          ),
+        ],
+        onActionPressed: () {
+          Navigator.of(context)
+              .push(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          )
+              .then((_) {
+            if (!mounted) return;
+            if (Provider.of<AuthProvider>(context, listen: false)
+                .isAuthenticated) {
+              _loadPosts();
+            }
+          });
+        },
       ),
     );
   }
@@ -423,50 +377,22 @@ class _CommunityScreenState extends State<CommunityScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F0E6),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.forum_outlined,
-                  size: 46,
-                  color: Color(0xFFD7CCC8),
-                ),
-              ),
+            AppEmptyState(
+              icon: Icons.forum_outlined,
+              title: _isAllFilter ? '등록된 게시글이 없습니다' : '작성한 게시글이 없습니다',
+              description: _isAllFilter
+                  ? '동네 광장의 첫 번째 글을 남기고\n다양한 이야기를 들려주세요.'
+                  : '동네 광장에 새로운 이야기를 쓰고\n이웃들과 첫 소통을 시작해보세요.',
             ),
-            const SizedBox(height: 24),
-            Text(
-              _isAllFilter ? '등록된 게시글이 없습니다' : '작성한 게시글이 없습니다',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF263238),
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _isAllFilter
-                  ? '동네 광장의 첫 번째 꿀벌이 되어\n다양한 이야기를 들려주세요! 🐝'
-                  : '동네 광장에 새로운 이야기를 쓰고\n이웃 꿀벌들과 첫 소통을 시작해보세요.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Color(0xFF90A4AE),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.sm),
             OutlinedButton(
               onPressed: _handleWriteAction,
               style: OutlinedButton.styleFrom(
                 side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(24)),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                 backgroundColor: Colors.white,
               ),
               child: const Text(
@@ -509,11 +435,14 @@ class _CommunityScreenState extends State<CommunityScreen> {
             color: Colors.transparent,
             child: InkWell(
               onTap: () {
-                Navigator.of(context).push(
+                Navigator.of(context)
+                    .push(
                   MaterialPageRoute(
-                    builder: (context) => CommunityDetailScreen(postId: post.postId),
+                    builder: (context) =>
+                        CommunityDetailScreen(postId: post.postId),
                   ),
-                ).then((reload) {
+                )
+                    .then((reload) {
                   if (reload == true) {
                     _loadPosts();
                   }
@@ -544,7 +473,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                         if (post.mine) ...[
                           const SizedBox(width: 8),
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 3),
                             decoration: BoxDecoration(
                               gradient: const LinearGradient(
                                 colors: [Color(0xFFFFB300), Color(0xFFFF8F00)],
@@ -582,7 +512,8 @@ class _CommunityScreenState extends State<CommunityScreen> {
                       children: [
                         Row(
                           children: [
-                            const Icon(Icons.account_circle_rounded, color: Color(0xFFFFB300), size: 18),
+                            const Icon(Icons.account_circle_rounded,
+                                color: Color(0xFFFFB300), size: 18),
                             const SizedBox(width: 4),
                             Text(
                               post.authorNickname,

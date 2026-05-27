@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_login_required_state.dart';
 import '../../../models/place.dart';
 import '../../../models/wishlist.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
 import '../../place/views/place_detail_screen.dart';
+import '../../place/widgets/place_thumbnail.dart';
 import '../services/wishlist_service.dart';
 
 class WishlistScreen extends StatefulWidget {
@@ -48,7 +52,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
     });
 
     try {
-      final wishlistService = Provider.of<WishlistService>(context, listen: false);
+      final wishlistService =
+          Provider.of<WishlistService>(context, listen: false);
       final saved = await wishlistService.getSavedPlaces();
       final details = await wishlistService.getSavedPlaceDetails(saved);
 
@@ -76,7 +81,11 @@ class _WishlistScreenState extends State<WishlistScreen> {
     final removedPlace = _detailedPlaces[index];
     final correspondingSavedPlace = _savedPlaces.firstWhere(
       (sp) => sp.placeId == place.id,
-      orElse: () => SavedPlace(recommendationId: 0, placeId: place.id, placeName: place.name, recommendedAt: DateTime.now()),
+      orElse: () => SavedPlace(
+          recommendationId: 0,
+          placeId: place.id,
+          placeName: place.name,
+          recommendedAt: DateTime.now()),
     );
     final savedIndex = _savedPlaces.indexOf(correspondingSavedPlace);
 
@@ -88,7 +97,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
       }
     });
 
-    final wishlistService = Provider.of<WishlistService>(context, listen: false);
+    final wishlistService =
+        Provider.of<WishlistService>(context, listen: false);
     final success = await wishlistService.unsavePlace(place.id);
 
     if (success) {
@@ -115,12 +125,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 13),
               ),
             ),
           ],
@@ -140,12 +154,16 @@ class _WishlistScreenState extends State<WishlistScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13),
+                style: const TextStyle(
+                    fontWeight: FontWeight.w600,
+                    color: Colors.white,
+                    fontSize: 13),
               ),
             ),
           ],
@@ -213,100 +231,37 @@ class _WishlistScreenState extends State<WishlistScreen> {
   // 1. Guest Screen for Non-logged-in Users
   Widget _buildGuestView() {
     return Scaffold(
-      backgroundColor: const Color(0xFFFDFBF7),
-      body: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32.0),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 110,
-                height: 110,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFF8E1),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: const Color(0xFFFFB300).withValues(alpha: 0.12),
-                      blurRadius: 24,
-                      offset: const Offset(0, 8),
-                    ),
-                  ],
-                ),
-                child: const Center(
-                  child: Icon(
-                    Icons.bookmark_add_rounded,
-                    size: 52,
-                    color: Color(0xFFFFB300),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 28),
-              const Text(
-                '로그인이 필요합니다',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF263238),
-                  letterSpacing: -0.5,
-                ),
-              ),
-              const SizedBox(height: 12),
-              const Text(
-                '자주 방문하고 싶거나 기억해 두고 싶은\n소중한 맛집을 저장하고 편리하게 찾아보세요!',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Color(0xFF78909C),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 36),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(builder: (context) => const LoginScreen()),
-                  ).then((_) {
-                    if (!mounted) return;
-                    if (Provider.of<AuthProvider>(context, listen: false).isAuthenticated) {
-                      _loadWishlist();
-                    }
-                  });
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 54,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(27),
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFFFC107), Color(0xFFFF8F00)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
-                        blurRadius: 16,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
-                  ),
-                  child: const Center(
-                    child: Text(
-                      '로그인하러 가기',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      body: AppLoginRequiredState(
+        icon: Icons.bookmark_add_rounded,
+        title: '로그인이 필요합니다',
+        description: '자주 방문하고 싶거나 기억해 두고 싶은\n소중한 맛집을 저장하고 편리하게 찾아보세요.',
+        actionLabel: '로그인하러 가기',
+        eyebrow: '나만의 맛집 보관함',
+        previewItems: const [
+          AppLoginPreviewItem(
+            icon: Icons.bookmark_rounded,
+            title: '추천한 맛집 자동 저장',
+            description: '다시 가고 싶은 장소를 한 화면에서 확인합니다.',
           ),
-        ),
+          AppLoginPreviewItem(
+            icon: Icons.swipe_left_rounded,
+            title: '스와이프로 빠른 정리',
+            description: '저장한 맛집을 필요할 때 바로 정리할 수 있습니다.',
+          ),
+        ],
+        onActionPressed: () {
+          Navigator.of(context)
+              .push(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          )
+              .then((_) {
+            if (!mounted) return;
+            if (Provider.of<AuthProvider>(context, listen: false)
+                .isAuthenticated) {
+              _loadWishlist();
+            }
+          });
+        },
       ),
     );
   }
@@ -375,49 +330,21 @@ class _WishlistScreenState extends State<WishlistScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Container(
-              width: 100,
-              height: 100,
-              decoration: const BoxDecoration(
-                color: Color(0xFFF5F0E6),
-                shape: BoxShape.circle,
-              ),
-              child: const Center(
-                child: Icon(
-                  Icons.favorite_border_rounded,
-                  size: 46,
-                  color: Color(0xFFD7CCC8),
-                ),
-              ),
+            const AppEmptyState(
+              icon: Icons.favorite_border_rounded,
+              title: '저장한 맛집이 없습니다',
+              description: '지도나 랭킹 화면에서 꿀맛집을 탐색하고\n추천 버튼을 눌러 목록을 채워보세요.',
             ),
-            const SizedBox(height: 24),
-            const Text(
-              '저장한 맛집이 없습니다',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF263238),
-                letterSpacing: -0.5,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              '지도나 랭킹 화면에서 꿀맛집을 탐색하고\n추천 버튼을 눌러 목록을 채워보세요.',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                color: Color(0xFF90A4AE),
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 32),
+            const SizedBox(height: AppSpacing.sm),
             if (widget.onExploreTap != null)
               OutlinedButton(
                 onPressed: widget.onExploreTap,
                 style: OutlinedButton.styleFrom(
                   side: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-                  padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(24)),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 28, vertical: 14),
                   backgroundColor: Colors.white,
                 ),
                 child: const Text(
@@ -442,7 +369,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
       itemCount: _detailedPlaces.length,
       itemBuilder: (context, index) {
         final place = _detailedPlaces[index];
-        final categoryName = _categoryMap[place.categoryCode] ?? place.categoryCode;
+        final categoryName =
+            _categoryMap[place.categoryCode] ?? place.categoryCode;
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -475,7 +403,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                     ),
                   ),
                   SizedBox(width: 8),
-                  Icon(Icons.delete_outline_rounded, color: Colors.white, size: 26),
+                  Icon(Icons.delete_outline_rounded,
+                      color: Colors.white, size: 26),
                 ],
               ),
             ),
@@ -496,11 +425,14 @@ class _WishlistScreenState extends State<WishlistScreen> {
                 color: Colors.transparent,
                 child: InkWell(
                   onTap: () {
-                    Navigator.of(context).push(
+                    Navigator.of(context)
+                        .push(
                       MaterialPageRoute(
-                        builder: (context) => PlaceDetailScreen(placeId: place.id),
+                        builder: (context) =>
+                            PlaceDetailScreen(placeId: place.id),
                       ),
-                    ).then((_) {
+                    )
+                        .then((_) {
                       _loadWishlist();
                     });
                   },
@@ -512,16 +444,12 @@ class _WishlistScreenState extends State<WishlistScreen> {
                         // Place Thumbnail
                         ClipRRect(
                           borderRadius: BorderRadius.circular(14),
-                          child: place.imageUrls.isNotEmpty
-                              ? Image.network(
-                                  place.imageUrls[0],
-                                  width: 88,
-                                  height: 88,
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (context, error, stackTrace) =>
-                                      _buildImagePlaceholder(),
-                                )
-                              : _buildImagePlaceholder(),
+                          child: PlaceThumbnail(
+                            imageUrl: place.imageUrls.isNotEmpty
+                                ? place.imageUrls.first
+                                : null,
+                            size: 88,
+                          ),
                         ),
                         const SizedBox(width: 16),
                         // Place Details
@@ -532,7 +460,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               Row(
                                 children: [
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 8, vertical: 3),
                                     decoration: BoxDecoration(
                                       color: const Color(0xFFFFF8E1),
                                       borderRadius: BorderRadius.circular(6),
@@ -555,7 +484,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                                   const SizedBox(width: 2),
                                   Text(
                                     place.stats != null
-                                        ? place.stats!.trustWeightedScore.toStringAsFixed(1)
+                                        ? place.stats!.trustWeightedScore
+                                            .toStringAsFixed(1)
                                         : '0.0',
                                     style: const TextStyle(
                                       fontSize: 13,
@@ -580,7 +510,8 @@ class _WishlistScreenState extends State<WishlistScreen> {
                               const SizedBox(height: 4),
                               Row(
                                 children: [
-                                  const Icon(Icons.location_on_rounded, color: Color(0xFFB0BEC5), size: 14),
+                                  const Icon(Icons.location_on_rounded,
+                                      color: Color(0xFFB0BEC5), size: 14),
                                   const SizedBox(width: 2),
                                   Expanded(
                                     child: Text(
@@ -634,20 +565,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
     );
   }
 
-  Widget _buildImagePlaceholder() {
-    return Container(
-      width: 88,
-      height: 88,
-      color: const Color(0xFFFFF8E1),
-      child: const Center(
-        child: Icon(
-          Icons.restaurant_rounded,
-          color: Color(0xFFFFD54F),
-          size: 32,
-        ),
-      ),
-    );
-  }
 }
 
 // Custom Pure Flutter Shimmer/Pulse Loading Animation Widget

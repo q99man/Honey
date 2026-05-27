@@ -21,7 +21,8 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
   @override
   void initState() {
     super.initState();
-    _communityService = CommunityService(Provider.of<ApiClient>(context, listen: false));
+    _communityService =
+        CommunityService(Provider.of<ApiClient>(context, listen: false));
   }
 
   @override
@@ -55,12 +56,15 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
               children: [
                 Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 10),
-                Text('게시글이 성공적으로 등록되었습니다! 🐝', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('게시글이 성공적으로 등록되었습니다! 🐝',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 2),
           ),
@@ -73,14 +77,18 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                Icon(Icons.error_outline_rounded,
+                    color: Colors.white, size: 20),
                 SizedBox(width: 10),
-                Text('글 등록에 실패했습니다. 정책 위반이거나 오류입니다.', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('글 등록에 실패했습니다. 정책 위반이거나 오류입니다.',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 2),
           ),
@@ -128,19 +136,23 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
                         hintText: '이웃들과 나누고 싶은 주제를 적어주세요',
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFFFB300), width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFECEFF1), width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFECEFF1), width: 1.2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.5),
                         ),
                         filled: true,
                         fillColor: Colors.white,
@@ -161,22 +173,27 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
                         labelText: '내용',
                         alignLabelWithHint: true,
                         labelStyle: const TextStyle(color: Color(0xFF78909C)),
-                        hintText: '광장에 따뜻한 이야기나 맛집 정보 등 동네 소식을 자유롭게 나누어주세요. 🐝\n(욕설이나 타인 비방글은 제한될 수 있습니다.)',
+                        hintText:
+                            '광장에 따뜻한 이야기나 맛집 정보 등 동네 소식을 자유롭게 나누어주세요. 🐝\n(욕설이나 타인 비방글은 제한될 수 있습니다.)',
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFFFB300), width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFECEFF1), width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFECEFF1), width: 1.2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.5),
                         ),
                         filled: true,
                         fillColor: Colors.white,
@@ -203,7 +220,8 @@ class _CommunityCreateScreenState extends State<CommunityCreateScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
+                              color: const Color(0xFFFF8F00)
+                                  .withValues(alpha: 0.25),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),

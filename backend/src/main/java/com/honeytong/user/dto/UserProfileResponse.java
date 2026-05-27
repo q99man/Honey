@@ -7,6 +7,7 @@ public record UserProfileResponse(
         String languagePreference,
         Integer birthYear,
         String gender,
-        String nationalityCode
+        String nationalityCode,
+        String profileImageUrl
 ) {
 }

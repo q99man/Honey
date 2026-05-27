@@ -176,6 +176,35 @@ class AuthService {
     }
   }
 
+  Future<UserProfile?> updateMyProfile({
+    required String nickname,
+    required String languagePreference,
+    int? birthYear,
+    String? gender,
+    String? nationalityCode,
+    String? profileImageUrl,
+  }) async {
+    try {
+      final response = await _apiClient.dio.patch(
+        ApiEndpoints.userProfile,
+        data: {
+          'nickname': nickname,
+          'languagePreference': languagePreference,
+          'birthYear': birthYear,
+          'gender': gender,
+          'nationalityCode': nationalityCode,
+          'profileImageUrl': profileImageUrl,
+        },
+      );
+      if (response.statusCode == 200 && response.data != null) {
+        return UserProfile.fromJson(response.data['data']);
+      }
+      return null;
+    } catch (_) {
+      return null;
+    }
+  }
+
   // Get My Status
   Future<UserStatus?> getMyStatus() async {
     try {

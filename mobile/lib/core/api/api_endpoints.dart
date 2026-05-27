@@ -8,8 +8,9 @@ class ApiEndpoints {
   static const String login = '/api/auth/login';
   static const String logout = '/api/auth/logout';
   static const String refresh = '/api/auth/refresh';
-  static const String oauthLogin = '/api/auth/oauth'; // e.g. /api/auth/oauth/kakao
-  
+  static const String oauthLogin =
+      '/api/auth/oauth'; // e.g. /api/auth/oauth/kakao
+
   // Phone Verification
   static const String sendPhoneCode = '/api/auth/phone/send-code';
   static const String verifyPhoneCode = '/api/auth/phone/verify-code';
@@ -22,11 +23,13 @@ class ApiEndpoints {
 
   // Place
   static const String places = '/api/places';
+  static const String imageUploads = '/api/uploads/images';
   static const String nearbyPlaces = '/api/places/nearby';
   static const String searchPlaces = '/api/places/search';
   static const String registrationPolicy = '/api/places/registration-policy';
   static String placeDetail(int id) => '/api/places/$id';
-  static String placeRankingHistory(int id) => '/api/places/$id/ranking-history';
+  static String placeRankingHistory(int id) =>
+      '/api/places/$id/ranking-history';
 
   // Recommendation
   static String recommendPlace(int id) => '/api/places/$id/recommend';

@@ -31,15 +31,15 @@ class ApiClient {
         },
         onError: (DioException error, handler) async {
           // If Unauthorized (401) and we have a refresh token, try to refresh it
-          if (error.response?.statusCode == 401 && 
+          if (error.response?.statusCode == 401 &&
               error.requestOptions.path != ApiEndpoints.login &&
               error.requestOptions.path != ApiEndpoints.refresh) {
-            
             final refreshToken = await TokenManager.getRefreshToken();
             if (refreshToken != null) {
               try {
                 // Try to refresh token using a separate Dio instance to avoid infinite loop
-                final refreshDio = Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
+                final refreshDio =
+                    Dio(BaseOptions(baseUrl: ApiEndpoints.baseUrl));
                 final response = await refreshDio.post(
                   ApiEndpoints.refresh,
                   data: {'refreshToken': refreshToken},
@@ -59,7 +59,7 @@ class ApiClient {
                   // Update header and retry the original request
                   final options = error.requestOptions;
                   options.headers['Authorization'] = 'Bearer $newAccessToken';
-                  
+
                   final retryResponse = await dio.request(
                     options.path,
                     options: Options(

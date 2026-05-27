@@ -1,4 +1,8 @@
 spring:
+  servlet:
+    multipart:
+      max-file-size: ${IMAGE_UPLOAD_MAX_FILE_SIZE:5MB}
+      max-request-size: ${IMAGE_UPLOAD_MAX_REQUEST_SIZE:6MB}
   config:
     import:
       - optional:file:.env[.properties]
@@ -127,6 +131,16 @@ app:
       phone: ${ADMIN_BOOTSTRAP_PHONE:}
       phone-verified: ${ADMIN_BOOTSTRAP_PHONE_VERIFIED:true}
       reset-password: ${ADMIN_BOOTSTRAP_RESET_PASSWORD:false}
+  upload:
+    images:
+      storage-path: ${IMAGE_UPLOAD_STORAGE_PATH:uploads/images}
+      public-base-url: ${IMAGE_UPLOAD_PUBLIC_BASE_URL:http://localhost:8080}
+      public-path: ${IMAGE_UPLOAD_PUBLIC_PATH:/uploads/images}
+      max-size-bytes: ${IMAGE_UPLOAD_MAX_SIZE_BYTES:5242880}
+      allowed-content-types:
+        - image/jpeg
+        - image/png
+        - image/webp
   redis:
     enabled: ${APP_REDIS_ENABLED:false}
     policy-cache-ttl: ${POLICY_CACHE_TTL:10m}

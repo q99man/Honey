@@ -54,6 +54,9 @@ public class User extends BaseTimeEntity {
     @Column(name = "nationality_code", length = 10)
     private String nationalityCode;
 
+    @Column(name = "profile_image_url", length = 2048)
+    private String profileImageUrl;
+
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
@@ -106,6 +109,10 @@ public class User extends BaseTimeEntity {
         return nationalityCode;
     }
 
+    public String getProfileImageUrl() {
+        return profileImageUrl;
+    }
+
     public LocalDateTime getDeletedAt() {
         return deletedAt;
     }
@@ -114,12 +121,20 @@ public class User extends BaseTimeEntity {
         return phoneVerified;
     }
 
-    public void updateProfile(String nickname, String languagePreference, Integer birthYear, String gender, String nationalityCode) {
+    public void updateProfile(
+            String nickname,
+            String languagePreference,
+            Integer birthYear,
+            String gender,
+            String nationalityCode,
+            String profileImageUrl
+    ) {
         this.nickname = nickname;
         this.languagePreference = languagePreference;
         this.birthYear = birthYear;
         this.gender = gender;
         this.nationalityCode = nationalityCode;
+        this.profileImageUrl = profileImageUrl;
     }
 
     public void verifyPhone(String phone) {

@@ -340,6 +340,36 @@ class PlaceServiceTest {
     }
 
     @Test
+    void createPlace_acceptsLongImageUrlWithinPolicyAndColumnLimit() {
+        UserRegion userRegion = new UserRegion(user, userDong);
+        String longImageUrl = "https://image.example.com/" + "a".repeat(480) + ".jpg";
+        when(policyService.getRequiredInteger("place", "image_url_max_length")).thenReturn(2048);
+        when(userRepository.findById(USER_ID)).thenReturn(Optional.of(user));
+        when(userRegionRepository.findByUserIdAndPrimaryRegionTrueAndStatus(USER_ID, UserRegionStatus.ACTIVE))
+                .thenReturn(Optional.of(userRegion));
+        when(regionDongRepository.findById(31L)).thenReturn(Optional.of(targetDong));
+        when(policyService.getRequiredInteger("place", "registration_limit")).thenReturn(5);
+        org.mockito.Mockito.lenient()
+                .when(policyService.getRequiredString("region", "registration_scope"))
+                .thenReturn("DISTRICT");
+        stubPlaceTextPolicies(255, 255, 500);
+        when(placeRepository.countByCreatedByIdAndDeletedAtIsNull(USER_ID)).thenReturn(1L);
+        when(placeRepository.save(any(Place.class))).thenAnswer(invocation -> {
+            Place place = invocation.getArgument(0);
+            ReflectionTestUtils.setField(place, "id", 100L);
+            return place;
+        });
+
+        placeService.createPlace(
+                USER_ID,
+                createRequestWithImages(List.of(longImageUrl)),
+                "127.0.0.1"
+        );
+
+        verify(placeImageRepository).save(any(PlaceImage.class));
+    }
+
+    @Test
     void createPlace_rejectsAddressLongerThanPolicyLimit() {
         UserRegion userRegion = new UserRegion(user, userDong);
         when(policyService.getRequiredInteger("place", "address_max_length")).thenReturn(5);

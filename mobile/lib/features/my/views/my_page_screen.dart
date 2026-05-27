@@ -2,10 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 
+import '../../../core/theme/app_theme.dart';
+import '../../../core/utils/image_url_resolver.dart';
+import '../../../core/widgets/app_login_required_state.dart';
+import '../../../core/widgets/app_surface_card.dart';
 import '../../../utils/localization.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
 import '../../place/views/my_places_screen.dart';
+import 'profile_edit_screen.dart';
 
 class MyPageScreen extends StatefulWidget {
   const MyPageScreen({super.key});
@@ -75,7 +80,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 ? '동네 인증이 완료되었습니다.'
                 : authProvider.errorMessage ?? '동네 인증에 실패했습니다.',
           ),
-          backgroundColor: success ? Colors.green : Colors.redAccent,
+          backgroundColor: success ? AppColors.leaf : AppColors.berry,
         ),
       );
     } finally {
@@ -126,7 +131,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         ? '인증번호를 전송했습니다.'
                         : authProvider.errorMessage ?? '인증번호 전송에 실패했습니다.',
                   ),
-                  backgroundColor: success ? Colors.green : Colors.redAccent,
+                  backgroundColor: success ? AppColors.leaf : AppColors.berry,
                 ),
               );
             }
@@ -151,7 +156,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 scaffoldMessenger.showSnackBar(
                   const SnackBar(
                     content: Text('휴대폰 본인 인증이 완료되었습니다.'),
-                    backgroundColor: Colors.green,
+                    backgroundColor: AppColors.leaf,
                   ),
                 );
               } else {
@@ -160,7 +165,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                     content: Text(
                       authProvider.errorMessage ?? '인증번호 확인에 실패했습니다.',
                     ),
-                    backgroundColor: Colors.redAccent,
+                    backgroundColor: AppColors.berry,
                   ),
                 );
               }
@@ -172,11 +177,11 @@ class _MyPageScreenState extends State<MyPageScreen> {
               ),
               title: const Row(
                 children: [
-                  Icon(Icons.verified_user_outlined, color: Color(0xFFFFB300)),
+                  Icon(Icons.verified_user_outlined, color: AppColors.honey),
                   SizedBox(width: 8),
                   Text(
                     '휴대폰 본인 인증',
-                    style: TextStyle(fontWeight: FontWeight.bold),
+                    style: TextStyle(fontWeight: FontWeight.w800),
                   ),
                 ],
               ),
@@ -186,7 +191,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 children: [
                   const Text(
                     '맛집 등록, 평가 작성, 추천 활동을 위해 본인 인증이 필요합니다.',
-                    style: TextStyle(fontSize: 13, color: Colors.black54),
+                    style: TextStyle(fontSize: 13, color: AppColors.muted),
                   ),
                   const SizedBox(height: 16),
                   TextFormField(
@@ -200,7 +205,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       suffixIcon: _codeSent
-                          ? const Icon(Icons.check_circle, color: Colors.green)
+                          ? const Icon(Icons.check_circle,
+                              color: AppColors.leaf)
                           : null,
                     ),
                   ),
@@ -230,20 +236,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       : () => Navigator.of(dialogContext).pop(),
                   child: const Text(
                     '취소',
-                    style: TextStyle(color: Colors.black54),
+                    style: TextStyle(color: AppColors.muted),
                   ),
                 ),
-                ElevatedButton(
+                FilledButton(
                   onPressed: _isVerifyingPhone
                       ? null
                       : (_codeSent ? verifyCode : sendCode),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFFFB300),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
                   child: _isVerifyingPhone
                       ? const SizedBox(
                           height: 16,
@@ -272,61 +271,29 @@ class _MyPageScreenState extends State<MyPageScreen> {
     final summary = authProvider.userSummary;
 
     if (!authProvider.isAuthenticated || user == null) {
-      return Container(
-        color: const Color(0xFFFAFAFA),
-        padding: const EdgeInsets.symmetric(horizontal: 24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            const Icon(
-              Icons.account_circle_outlined,
-              size: 80,
-              color: Colors.black12,
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'auth.loginRequired'.tr,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              'auth.phoneVerificationRequired'.tr,
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 14,
-                color: Colors.black45,
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 40),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(builder: (context) => const LoginScreen()),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                foregroundColor: Colors.white,
-                padding: const EdgeInsets.symmetric(vertical: 16),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                elevation: 0,
-              ),
-              child: const Text(
-                '로그인 / 회원가입',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-          ],
-        ),
+      return AppLoginRequiredState(
+        icon: Icons.account_circle_outlined,
+        title: 'auth.loginRequired'.tr,
+        description: 'auth.phoneVerificationRequired'.tr,
+        actionLabel: '로그인 / 회원가입',
+        eyebrow: '허니통 활동 여권',
+        previewItems: const [
+          AppLoginPreviewItem(
+            icon: Icons.verified_rounded,
+            title: '전화 인증과 동네 인증',
+            description: '신뢰 기반 참여에 필요한 인증을 관리합니다.',
+          ),
+          AppLoginPreviewItem(
+            icon: Icons.emoji_events_rounded,
+            title: '레벨과 활동 기록',
+            description: '추천, 방문, 평가 기록을 한곳에서 확인합니다.',
+          ),
+        ],
+        onActionPressed: () {
+          Navigator.of(context).push(
+            MaterialPageRoute(builder: (context) => const LoginScreen()),
+          );
+        },
       );
     }
 
@@ -336,7 +303,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
         : 0.0;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       body: RefreshIndicator(
         onRefresh: () => authProvider.refreshUserProfile(),
         child: SingleChildScrollView(
@@ -345,26 +312,28 @@ class _MyPageScreenState extends State<MyPageScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Card(
-                elevation: 0,
-                color: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                  side: const BorderSide(color: Colors.black12),
-                ),
+              AppSurfaceCard(
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: EdgeInsets.zero,
                   child: Row(
                     children: [
                       CircleAvatar(
                         radius: 30,
-                        backgroundColor:
-                            const Color(0xFFFFB300).withValues(alpha: 0.1),
-                        child: const Icon(
-                          Icons.emoji_nature,
-                          color: Color(0xFFFFB300),
-                          size: 32,
-                        ),
+                        backgroundColor: AppColors.surfaceWarm,
+                        backgroundImage: user.profileImageUrl == null ||
+                                user.profileImageUrl!.isEmpty
+                            ? null
+                            : NetworkImage(
+                                ImageUrlResolver.resolve(user.profileImageUrl!),
+                              ),
+                        child: user.profileImageUrl == null ||
+                                user.profileImageUrl!.isEmpty
+                            ? const Icon(
+                                Icons.emoji_nature,
+                                color: AppColors.honey,
+                                size: 32,
+                              )
+                            : null,
                       ),
                       const SizedBox(width: 16),
                       Expanded(
@@ -375,8 +344,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                               user.nickname,
                               style: const TextStyle(
                                 fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.black87,
+                                fontWeight: FontWeight.w800,
+                                color: AppColors.ink,
                               ),
                             ),
                             const SizedBox(height: 4),
@@ -384,7 +353,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                               user.displayName,
                               style: const TextStyle(
                                 fontSize: 12,
-                                color: Colors.black45,
+                                color: AppColors.muted,
                               ),
                             ),
                           ],
@@ -393,6 +362,18 @@ class _MyPageScreenState extends State<MyPageScreen> {
                       _buildStatusChip(
                         label: user.phoneVerified ? '본인 인증' : '본인 미인증',
                         verified: user.phoneVerified,
+                      ),
+                      IconButton(
+                        tooltip: '내 정보 수정',
+                        icon: const Icon(Icons.edit_outlined),
+                        onPressed: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (context) =>
+                                  ProfileEditScreen(profile: user),
+                            ),
+                          );
+                        },
                       ),
                     ],
                   ),
@@ -427,14 +408,6 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 },
                 icon: const Icon(Icons.storefront_outlined),
                 label: const Text('내 등록 맛집 관리'),
-                style: OutlinedButton.styleFrom(
-                  foregroundColor: const Color(0xFFFF8F00),
-                  side: const BorderSide(color: Color(0xFFFFB300), width: 1.2),
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
               ),
               const SizedBox(height: 16),
               if (!user.phoneVerified)
@@ -465,8 +438,8 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 icon: const Icon(Icons.logout),
                 label: const Text('로그아웃'),
                 style: OutlinedButton.styleFrom(
-                  foregroundColor: Colors.redAccent,
-                  side: const BorderSide(color: Colors.redAccent, width: 1.2),
+                  foregroundColor: AppColors.berry,
+                  side: const BorderSide(color: AppColors.berry, width: 1.2),
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12),
@@ -482,90 +455,81 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Widget _buildGrowthCard(dynamic status, double expPercent) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.black12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'mypage.level'.tr,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'mypage.level'.tr,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.ink,
                 ),
-                Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFFF8F00).withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    '${'mypage.trust'.tr}: ${status?.trustGrade ?? 'Seed Bee'}',
-                    style: const TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFFFF8F00),
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'Level ${status?.level ?? 1}',
-                  style: const TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w900,
-                    color: Color(0xFFFFB300),
-                  ),
-                ),
-                Text(
-                  '${status?.exp ?? 0} / ${status?.nextLevelExp ?? 0} EXP',
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.black54,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 8),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(10),
-              child: LinearProgressIndicator(
-                value: expPercent,
-                minHeight: 10,
-                backgroundColor: Colors.black12,
-                valueColor:
-                    const AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
               ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              '추천 반영 가중치: x${(status?.recommendWeight ?? 1.0).toStringAsFixed(2)}',
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.black54,
-                fontStyle: FontStyle.italic,
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                decoration: BoxDecoration(
+                  color: AppColors.surfaceWarm,
+                  borderRadius: BorderRadius.circular(AppRadius.pill),
+                ),
+                child: Text(
+                  '${'mypage.trust'.tr}: ${status?.trustGrade ?? 'Seed Bee'}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: AppColors.nectar,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Level ${status?.level ?? 1}',
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w900,
+                  color: AppColors.honey,
+                ),
+              ),
+              Text(
+                '${status?.exp ?? 0} / ${status?.nextLevelExp ?? 0} EXP',
+                style: const TextStyle(
+                  fontSize: 13,
+                  color: AppColors.muted,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(10),
+            child: LinearProgressIndicator(
+              value: expPercent,
+              minHeight: 10,
+              backgroundColor: AppColors.outline,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.honey),
             ),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            '추천 반영 가중치: x${(status?.recommendWeight ?? 1.0).toStringAsFixed(2)}',
+            style: const TextStyle(
+              fontSize: 12,
+              color: AppColors.muted,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -579,47 +543,41 @@ class _MyPageScreenState extends State<MyPageScreen> {
       avatar: Icon(
         verified ? Icons.verified : Icons.error_outline,
         size: 14,
-        color: verified ? Colors.green : Colors.orange,
+        color: verified ? AppColors.leaf : AppColors.nectar,
       ),
       backgroundColor: verified
-          ? Colors.green.withValues(alpha: 0.1)
-          : Colors.orange.withValues(alpha: 0.1),
+          ? AppColors.leaf.withValues(alpha: 0.1)
+          : AppColors.surfaceWarm,
       label: Text(
         label,
         style: TextStyle(
           fontSize: 11,
-          color: verified ? Colors.green : Colors.orange,
-          fontWeight: FontWeight.bold,
+          color: verified ? AppColors.leaf : AppColors.nectar,
+          fontWeight: FontWeight.w800,
         ),
       ),
     );
   }
 
   Widget _buildStatCard(String title, String count) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.black12),
-      ),
+    return AppSurfaceCard(
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: EdgeInsets.zero,
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
               title,
-              style: const TextStyle(fontSize: 12, color: Colors.black54),
+              style: const TextStyle(fontSize: 12, color: AppColors.muted),
             ),
             const SizedBox(height: 8),
             Text(
               count,
               style: const TextStyle(
                 fontSize: 20,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
+                fontWeight: FontWeight.w800,
+                color: AppColors.ink,
               ),
             ),
           ],
@@ -641,13 +599,13 @@ class _MyPageScreenState extends State<MyPageScreen> {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         decoration: BoxDecoration(
-          color: Colors.orange.withValues(alpha: 0.08),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.orange.withValues(alpha: 0.3)),
+          color: AppColors.surfaceWarm,
+          borderRadius: BorderRadius.circular(AppRadius.md),
+          border: Border.all(color: AppColors.outline),
         ),
         child: Row(
           children: [
-            Icon(icon, color: Colors.orange),
+            Icon(icon, color: AppColors.nectar),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
@@ -656,15 +614,16 @@ class _MyPageScreenState extends State<MyPageScreen> {
                   Text(
                     title,
                     style: const TextStyle(
-                      fontWeight: FontWeight.bold,
+                      fontWeight: FontWeight.w800,
                       fontSize: 14,
-                      color: Colors.black87,
+                      color: AppColors.ink,
                     ),
                   ),
                   const SizedBox(height: 2),
                   Text(
                     description,
-                    style: const TextStyle(fontSize: 12, color: Colors.black54),
+                    style:
+                        const TextStyle(fontSize: 12, color: AppColors.muted),
                   ),
                 ],
               ),
@@ -676,7 +635,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
             else
-              const Icon(Icons.chevron_right, color: Colors.orange),
+              const Icon(Icons.chevron_right, color: AppColors.nectar),
           ],
         ),
       ),
@@ -684,13 +643,7 @@ class _MyPageScreenState extends State<MyPageScreen> {
   }
 
   Widget _buildLanguageCard() {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-        side: const BorderSide(color: Colors.black12),
-      ),
+    return AppSurfaceCard(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Row(
@@ -698,14 +651,14 @@ class _MyPageScreenState extends State<MyPageScreen> {
           children: [
             Row(
               children: [
-                const Icon(Icons.language, color: Color(0xFFFFB300)),
+                const Icon(Icons.language, color: AppColors.honey),
                 const SizedBox(width: 12),
                 Text(
                   'mypage.language'.tr,
                   style: const TextStyle(
                     fontSize: 14,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.ink,
                   ),
                 ),
               ],

@@ -2,11 +2,16 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
 import '../../../core/api/api_client.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_empty_state.dart';
+import '../../../core/widgets/app_section_title.dart';
+import '../../../core/widgets/app_surface_card.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
 import '../../visit/services/visit_service.dart';
 import '../models/place_detail_address.dart';
 import '../services/place_service.dart';
+import '../widgets/place_image_gallery.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
   final int placeId;
@@ -24,7 +29,7 @@ class _HomeDetailActivityIndicator extends StatelessWidget {
   Widget build(BuildContext context) {
     return const Center(
       child: CircularProgressIndicator(
-        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
+        valueColor: AlwaysStoppedAnimation<Color>(AppColors.honey),
       ),
     );
   }
@@ -121,7 +126,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final widgets = <Widget>[
       Text(
         address.primary,
-        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+        style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w800),
       ),
     ];
 
@@ -131,7 +136,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       widgets.add(
         Text(
           jibunLabel,
-          style: const TextStyle(fontSize: 11, color: Colors.black45),
+          style: const TextStyle(fontSize: 11, color: AppColors.muted),
         ),
       );
     }
@@ -160,13 +165,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       }
     } else {
       // Check policy
-      if (_recommendationPolicy != null && _recommendationPolicy!['canRecommend'] == false) {
+      if (_recommendationPolicy != null &&
+          _recommendationPolicy!['canRecommend'] == false) {
         final reason = _recommendationPolicy!['reason'];
         if (reason == 'DAILY_LIMIT_EXCEEDED') {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
               content: Text('일일 추천 한도를 초과했습니다.'),
-              backgroundColor: Colors.redAccent,
+              backgroundColor: AppColors.berry,
             ),
           );
           setState(() => _isActionInProgress = false);
@@ -186,7 +192,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (success) {
       // Reload details and recommendation status
       final details = await _placeService.getPlace(widget.placeId);
-      final policy = await _placeService.getRecommendationPolicy(widget.placeId);
+      final policy =
+          await _placeService.getRecommendationPolicy(widget.placeId);
       if (!mounted) return;
       setState(() {
         _placeDetails = details;
@@ -209,7 +216,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('방문 인증을 위해서는 휴대폰 인증이 필요합니다.'),
-          backgroundColor: Colors.orangeAccent,
+          backgroundColor: AppColors.nectar,
         ),
       );
       return;
@@ -234,7 +241,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
       if (result['success'] == true) {
         _showVisitSuccessDialog(result);
-        
+
         // Reload details to update stats
         final details = await _placeService.getPlace(widget.placeId);
         if (!mounted) return;
@@ -245,7 +252,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(result['message']),
-            backgroundColor: Colors.redAccent,
+            backgroundColor: AppColors.berry,
           ),
         );
       }
@@ -255,7 +262,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('GPS 위치정보 획득에 실패했습니다: $e'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
     }
@@ -291,7 +298,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(result['message'] ?? '평가 등록 실패'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
     }
@@ -301,16 +308,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     final confirm = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('평가 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('평가 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text('이 평가를 정말 삭제하시겠습니까?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('취소', style: TextStyle(color: Colors.black54)),
+            child: const Text('취소'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent, foregroundColor: Colors.white),
             child: const Text('삭제'),
           ),
         ],
@@ -337,7 +344,7 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('평가 삭제에 실패했습니다.'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
     }
@@ -347,10 +354,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         title: const Row(
           children: [
-            Icon(Icons.stars, color: Color(0xFFFFB300), size: 28),
+            Icon(Icons.stars, color: AppColors.honey, size: 28),
             SizedBox(width: 8),
             Text('방문 인증 성공!', style: TextStyle(fontWeight: FontWeight.bold)),
           ],
@@ -367,16 +376,13 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           ],
         ),
         actions: [
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
               // Refresh user profile/status so XP updates in MyPage
-              Provider.of<AuthProvider>(context, listen: false).refreshUserProfile();
+              Provider.of<AuthProvider>(context, listen: false)
+                  .refreshUserProfile();
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('확인'),
           ),
         ],
@@ -388,27 +394,28 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('로그인 필요', style: TextStyle(fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
+        title:
+            const Text('로그인 필요', style: TextStyle(fontWeight: FontWeight.w800)),
         content: const Text('이 기능은 로그인 후 사용할 수 있습니다.\n로그인 화면으로 이동할까요?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소', style: TextStyle(color: Colors.black54)),
+            child: const Text('취소'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
-              Navigator.of(context).push(
+              Navigator.of(context)
+                  .push(
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
-              ).then((_) {
+              )
+                  .then((_) {
                 _loadAllData();
               });
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('로그인하기'),
           ),
         ],
@@ -427,15 +434,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     if (_placeDetails == null) {
       return Scaffold(
         appBar: AppBar(title: const Text('오류')),
-        body: const Center(child: Text('장소 정보를 불러올 수 없습니다.')),
+        body: const AppEmptyState(
+          icon: Icons.error_outline_rounded,
+          title: '장소 정보를 불러올 수 없습니다',
+          description: '잠시 후 다시 시도해주세요.',
+        ),
       );
     }
 
-    final String catKo = _categoryMap[_placeDetails!['categoryCode']] ?? _placeDetails!['categoryCode'];
-    final bool hasImages = _placeDetails!['imageUrls'] != null && (_placeDetails!['imageUrls'] as List).isNotEmpty;
+    final String catKo = _categoryMap[_placeDetails!['categoryCode']] ??
+        _placeDetails!['categoryCode'];
+    final imageUrls = _extractImageUrls(_placeDetails!['imageUrls']);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       body: PopScope(
         canPop: false,
         onPopInvokedWithResult: (didPop, result) {
@@ -450,31 +462,31 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                 SliverAppBar(
                   expandedHeight: 220,
                   pinned: true,
-                  backgroundColor: Colors.white,
-                  foregroundColor: Colors.black87,
+                  backgroundColor: AppColors.surface,
+                  foregroundColor: AppColors.ink,
                   elevation: 0.5,
-                  leading: IconButton(
-                    icon: const Icon(Icons.arrow_back),
-                    onPressed: () => Navigator.of(context).pop(true),
+                  leading: Padding(
+                    padding: const EdgeInsets.only(left: AppSpacing.xs),
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.42),
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.45),
+                        ),
+                      ),
+                      child: IconButton(
+                        tooltip: '뒤로가기',
+                        icon: const Icon(
+                          Icons.arrow_back,
+                          color: Colors.white,
+                        ),
+                        onPressed: () => Navigator.of(context).pop(true),
+                      ),
+                    ),
                   ),
                   flexibleSpace: FlexibleSpaceBar(
-                    background: hasImages
-                        ? Image.network(
-                            (_placeDetails!['imageUrls'] as List).first,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
-                            decoration: const BoxDecoration(
-                              gradient: LinearGradient(
-                                colors: [Color(0xFFFFE082), Color(0xFFFFB300)],
-                                begin: Alignment.topLeft,
-                                end: Alignment.bottomRight,
-                              ),
-                            ),
-                            child: const Center(
-                              child: Icon(Icons.restaurant, size: 70, color: Colors.white),
-                            ),
-                          ),
+                    background: PlaceImageGallery(imageUrls: imageUrls),
                   ),
                 ),
 
@@ -491,52 +503,61 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                             Flexible(
                               child: Text(
                                 _placeDetails!['name'],
-                                style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 22, fontWeight: FontWeight.bold),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
                             ),
                             const SizedBox(width: 10),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 8, vertical: 4),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFFB300).withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(6),
+                                color: AppColors.surfaceWarm,
+                                borderRadius:
+                                    BorderRadius.circular(AppRadius.sm),
                               ),
                               child: Text(
                                 catKo,
                                 style: const TextStyle(
                                   fontSize: 11,
-                                  color: Color(0xFFFF8F00),
-                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.nectar,
+                                  fontWeight: FontWeight.w800,
                                 ),
                               ),
                             ),
                           ],
                         ),
-                        if (_placeDetails!['aiTags'] != null && (_placeDetails!['aiTags'] as List).isNotEmpty) ...[
+                        if (_placeDetails!['aiTags'] != null &&
+                            (_placeDetails!['aiTags'] as List).isNotEmpty) ...[
                           const SizedBox(height: 8),
                           Wrap(
                             spacing: 6.0,
                             runSpacing: 6.0,
-                            children: (_placeDetails!['aiTags'] as List).map<Widget>((tag) {
+                            children: (_placeDetails!['aiTags'] as List)
+                                .map<Widget>((tag) {
                               return Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 10, vertical: 5),
                                 decoration: BoxDecoration(
-                                  color: const Color(0xFFF3E5F5),
-                                  borderRadius: BorderRadius.circular(20),
-                                  border: Border.all(color: const Color(0xFFE1BEE7), width: 0.8),
+                                  color: AppColors.surfaceWarm,
+                                  borderRadius:
+                                      BorderRadius.circular(AppRadius.pill),
+                                  border: Border.all(
+                                      color: AppColors.outline, width: 0.8),
                                 ),
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    const Icon(Icons.auto_awesome, size: 12, color: Color(0xFF8E24AA)),
+                                    const Icon(Icons.auto_awesome,
+                                        size: 12, color: AppColors.nectar),
                                     const SizedBox(width: 4),
                                     Text(
                                       '#$tag',
                                       style: const TextStyle(
                                         fontSize: 11,
-                                        color: Color(0xFF8E24AA),
+                                        color: AppColors.nectar,
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
@@ -551,72 +572,81 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         // Stats Summary Row
                         Row(
                           children: [
-                            const Icon(Icons.star, color: Color(0xFFFFB300), size: 18),
+                            const Icon(Icons.star,
+                                color: AppColors.honey, size: 18),
                             const SizedBox(width: 4),
                             Text(
                               '별점 ${_placeDetails!['starLevel'] ?? 0}개',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                              style: const TextStyle(
+                                  fontWeight: FontWeight.bold, fontSize: 13),
                             ),
                             const SizedBox(width: 14),
-                            const Icon(Icons.thumb_up, color: Colors.black38, size: 16),
+                            const Icon(Icons.thumb_up,
+                                color: AppColors.muted, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               '추천 ${_placeDetails!['recommendCount'] ?? 0}명',
-                              style: const TextStyle(fontSize: 13, color: Colors.black54),
+                              style: const TextStyle(
+                                  fontSize: 13, color: AppColors.muted),
                             ),
                             const SizedBox(width: 14),
-                            const Icon(Icons.check_circle_outline, color: Colors.black38, size: 16),
+                            const Icon(Icons.check_circle_outline,
+                                color: AppColors.muted, size: 16),
                             const SizedBox(width: 4),
                             Text(
                               '방문 ${_placeDetails!['visitCount'] ?? 0}회',
-                              style: const TextStyle(fontSize: 13, color: Colors.black54),
+                              style: const TextStyle(
+                                  fontSize: 13, color: AppColors.muted),
                             ),
                           ],
                         ),
                         const Divider(height: 32),
 
                         // Highlight box for recommended menu & reason
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black12),
-                          ),
+                        AppSurfaceCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               const Row(
                                 children: [
-                                  Icon(Icons.restaurant_menu, color: Color(0xFFFFB300), size: 20),
+                                  Icon(Icons.restaurant_menu,
+                                      color: AppColors.honey, size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     '추천 메뉴',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 _placeDetails!['recommendedMenu'],
-                                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                                style: const TextStyle(
+                                    fontSize: 15, fontWeight: FontWeight.bold),
                               ),
                               const SizedBox(height: 12),
                               const Row(
                                 children: [
-                                  Icon(Icons.chat_bubble_outline_rounded, color: Color(0xFFFFB300), size: 20),
+                                  Icon(Icons.chat_bubble_outline_rounded,
+                                      color: AppColors.honey, size: 20),
                                   SizedBox(width: 8),
                                   Text(
                                     '등록인이 준 추천',
-                                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 14),
                                   ),
                                 ],
                               ),
                               const SizedBox(height: 6),
                               Text(
                                 _placeDetails!['shortRecommendation'],
-                                style: const TextStyle(fontSize: 13, color: Colors.black87, height: 1.4),
+                                style: const TextStyle(
+                                    fontSize: 13,
+                                    color: AppColors.ink,
+                                    height: 1.4),
                               ),
                             ],
                           ),
@@ -624,27 +654,22 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         const SizedBox(height: 20),
 
                         // Map / Address Section
-                        _buildSectionHeader('위치 정보'),
+                        const AppSectionTitle('위치 정보'),
                         const SizedBox(height: 8),
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: Colors.black12),
-                          ),
+                        AppSurfaceCard(
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Row(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  const Icon(Icons.location_on, color: Colors.black54, size: 20),
+                                  const Icon(Icons.location_on,
+                                      color: AppColors.muted, size: 20),
                                   const SizedBox(width: 8),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children:
                                           _buildAddressTexts(_placeDetails!),
                                     ),
@@ -660,9 +685,11 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            _buildSectionHeader('실시간 피드백 및 평가 (${_comments.length})'),
+                            AppSectionTitle(
+                                '실시간 피드백 및 평가 (${_comments.length})'),
                             IconButton(
-                              icon: const Icon(Icons.refresh, size: 20, color: Colors.black54),
+                              icon: const Icon(Icons.refresh,
+                                  size: 20, color: AppColors.muted),
                               onPressed: _refreshComments,
                             ),
                           ],
@@ -671,7 +698,8 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
                         _buildCommentInput(),
                         const SizedBox(height: 12),
                         _buildCommentsList(),
-                        const SizedBox(height: 100), // padding for bottom action buttons
+                        const SizedBox(
+                            height: 100), // padding for bottom action buttons
                       ],
                     ),
                   ),
@@ -689,8 +717,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
             if (_isActionInProgress)
               Container(
-                color: Colors.black26,
-                child: const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)))),
+                color: AppColors.ink.withValues(alpha: 0.28),
+                child: const Center(
+                  child: CircularProgressIndicator(
+                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
+                  ),
+                ),
               ),
           ],
         ),
@@ -698,24 +730,18 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
     );
   }
 
-  Widget _buildSectionHeader(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 15,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
-    );
+  List<String> _extractImageUrls(dynamic value) {
+    if (value is! List) return [];
+    return value
+        .whereType<String>()
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toList();
   }
 
   Widget _buildCommentInput() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
+    return AppSurfaceCard(
+      padding: EdgeInsets.zero,
       child: Row(
         children: [
           Expanded(
@@ -723,14 +749,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               controller: _commentController,
               decoration: const InputDecoration(
                 hintText: '맛집에 대한 생생한 피드백을 남겨주세요.',
-                hintStyle: TextStyle(fontSize: 12, color: Colors.black38),
-                contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                hintStyle: TextStyle(fontSize: 12, color: AppColors.muted),
+                contentPadding:
+                    EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                 border: InputBorder.none,
               ),
             ),
           ),
           IconButton(
-            icon: const Icon(Icons.send, color: Color(0xFFFFB300)),
+            icon: const Icon(Icons.send, color: AppColors.honey),
             onPressed: _submitComment,
           ),
         ],
@@ -743,26 +770,20 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       return const Center(
         child: Padding(
           padding: EdgeInsets.symmetric(vertical: 20.0),
-          child: CircularProgressIndicator(strokeWidth: 2, valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300))),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            valueColor: AlwaysStoppedAnimation(AppColors.honey),
+          ),
         ),
       );
     }
 
     if (_comments.isEmpty) {
-      return Container(
-        width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 40),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: Colors.black12),
-        ),
-        child: const Column(
-          children: [
-            Icon(Icons.chat_bubble_outline_rounded, size: 36, color: Colors.black26),
-            SizedBox(height: 8),
-            Text('첫 피드백과 평가를 남겨보세요.', style: TextStyle(color: Colors.black38, fontSize: 12)),
-          ],
+      return const AppSurfaceCard(
+        child: AppEmptyState(
+          icon: Icons.chat_bubble_outline_rounded,
+          title: '아직 피드백이 없습니다',
+          description: '첫 피드백과 평가를 남겨보세요.',
         ),
       );
     }
@@ -776,14 +797,16 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       itemCount: _comments.length,
       itemBuilder: (context, index) {
         final comment = _comments[index];
-        final isMine = currentUserId != null && comment['userId'] == currentUserId;
+        final isMine =
+            currentUserId != null && comment['userId'] == currentUserId;
 
         // Extract creation time
         String timeStr = '';
         if (comment['createdAt'] != null) {
           try {
             final parsed = DateTime.parse(comment['createdAt']);
-            timeStr = '${parsed.month}/${parsed.day} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
+            timeStr =
+                '${parsed.month}/${parsed.day} ${parsed.hour.toString().padLeft(2, '0')}:${parsed.minute.toString().padLeft(2, '0')}';
           } catch (_) {
             timeStr = comment['createdAt'].toString().substring(0, 10);
           }
@@ -791,22 +814,28 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
 
         return Card(
           elevation: 0,
-          color: Colors.white,
+          color: AppColors.surface,
           margin: const EdgeInsets.only(bottom: 8),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
-            side: const BorderSide(color: Colors.black12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            side: const BorderSide(color: AppColors.outline),
           ),
           child: ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
             leading: CircleAvatar(
-              backgroundColor: const Color(0xFFFFB300).withValues(alpha: 0.15),
+              backgroundColor: AppColors.surfaceWarm,
               radius: 18,
               child: Text(
-                comment['nickname'] != null && comment['nickname'].toString().isNotEmpty
+                comment['nickname'] != null &&
+                        comment['nickname'].toString().isNotEmpty
                     ? comment['nickname'].toString().substring(0, 1)
                     : 'U',
-                style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFFFF8F00), fontSize: 13),
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.nectar,
+                  fontSize: 13,
+                ),
               ),
             ),
             title: Row(
@@ -814,11 +843,12 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               children: [
                 Text(
                   comment['nickname'] ?? '익명',
-                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  style: const TextStyle(
+                      fontWeight: FontWeight.w800, fontSize: 13),
                 ),
                 Text(
                   timeStr,
-                  style: const TextStyle(fontSize: 10, color: Colors.black38),
+                  style: const TextStyle(fontSize: 10, color: AppColors.muted),
                 ),
               ],
             ),
@@ -826,12 +856,14 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
               padding: const EdgeInsets.only(top: 4.0),
               child: Text(
                 comment['content'] ?? '',
-                style: const TextStyle(color: Colors.black87, fontSize: 12, height: 1.3),
+                style: const TextStyle(
+                    color: AppColors.ink, fontSize: 12, height: 1.3),
               ),
             ),
             trailing: isMine
                 ? IconButton(
-                    icon: const Icon(Icons.delete_outline, size: 18, color: Colors.redAccent),
+                    icon: const Icon(Icons.delete_outline,
+                        size: 18, color: AppColors.berry),
                     onPressed: () => _deleteComment(comment['commentId']),
                   )
                 : null,
@@ -849,27 +881,27 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           flex: 1,
           child: SizedBox(
             height: 52,
-            child: ElevatedButton.icon(
+            child: OutlinedButton.icon(
               onPressed: _handleRecommendation,
               icon: Icon(
                 _isRecommended ? Icons.thumb_up : Icons.thumb_up_outlined,
-                color: _isRecommended ? Colors.white : const Color(0xFFFF8F00),
+                color: _isRecommended ? Colors.white : AppColors.nectar,
                 size: 20,
               ),
               label: Text(
                 _isRecommended ? '추천 중' : '추천하기',
                 style: TextStyle(
                   fontSize: 14,
-                  fontWeight: FontWeight.bold,
-                  color: _isRecommended ? Colors.white : const Color(0xFFFF8F00),
+                  fontWeight: FontWeight.w800,
+                  color: _isRecommended ? Colors.white : AppColors.nectar,
                 ),
               ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: _isRecommended ? const Color(0xFFFF8F00) : Colors.white,
-                elevation: 0,
-                side: const BorderSide(color: Color(0xFFFF8F00), width: 1.5),
+              style: OutlinedButton.styleFrom(
+                backgroundColor:
+                    _isRecommended ? AppColors.nectar : AppColors.surface,
+                side: const BorderSide(color: AppColors.nectar, width: 1.5),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(AppRadius.md),
                 ),
               ),
             ),
@@ -882,19 +914,15 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
           flex: 2,
           child: SizedBox(
             height: 52,
-            child: ElevatedButton.icon(
+            child: FilledButton.icon(
               onPressed: _handleVisitVerification,
               icon: const Icon(Icons.gps_fixed, color: Colors.white, size: 20),
               label: const Text(
                 '방문 인증하기 (GPS)',
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                elevation: 1,
-                shadowColor: Colors.black26,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                  color: Colors.white,
                 ),
               ),
             ),

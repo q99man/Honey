@@ -189,6 +189,35 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
+  Future<bool> updateMyProfile({
+    required String nickname,
+    required String languagePreference,
+    int? birthYear,
+    String? gender,
+    String? nationalityCode,
+    String? profileImageUrl,
+  }) async {
+    _setLoading(true);
+    _clearError();
+    final profile = await _authService.updateMyProfile(
+      nickname: nickname,
+      languagePreference: languagePreference,
+      birthYear: birthYear,
+      gender: gender,
+      nationalityCode: nationalityCode,
+      profileImageUrl: profileImageUrl,
+    );
+    if (profile == null) {
+      _setError('프로필 수정에 실패했습니다.');
+      _setLoading(false);
+      return false;
+    }
+    _userProfile = profile;
+    _setLoading(false);
+    notifyListeners();
+    return true;
+  }
+
   Future<bool> _fetchUserData() async {
     final profile = await _authService.getMyProfile();
     if (profile == null) return false;

@@ -32,7 +32,8 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
     super.initState();
     _titleController = TextEditingController(text: widget.initialTitle);
     _contentController = TextEditingController(text: widget.initialContent);
-    _communityService = CommunityService(Provider.of<ApiClient>(context, listen: false));
+    _communityService =
+        CommunityService(Provider.of<ApiClient>(context, listen: false));
   }
 
   @override
@@ -67,12 +68,15 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
               children: [
                 Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
                 SizedBox(width: 10),
-                Text('게시글이 성공적으로 수정되었습니다! 🐝', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('게시글이 성공적으로 수정되었습니다! 🐝',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             backgroundColor: Colors.green,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 2),
           ),
@@ -85,14 +89,18 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
           SnackBar(
             content: const Row(
               children: [
-                Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+                Icon(Icons.error_outline_rounded,
+                    color: Colors.white, size: 20),
                 SizedBox(width: 10),
-                Text('글 수정에 실패했습니다. 정책 위반이거나 오류입니다.', style: TextStyle(fontWeight: FontWeight.w600, color: Colors.white)),
+                Text('글 수정에 실패했습니다. 정책 위반이거나 오류입니다.',
+                    style: TextStyle(
+                        fontWeight: FontWeight.w600, color: Colors.white)),
               ],
             ),
             backgroundColor: Colors.redAccent,
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
             margin: const EdgeInsets.all(16),
             duration: const Duration(seconds: 2),
           ),
@@ -140,19 +148,23 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
                         hintText: '이웃들과 나누고 싶은 주제를 적어주세요',
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFFFB300), width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFECEFF1), width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFECEFF1), width: 1.2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.5),
                         ),
                         filled: true,
                         fillColor: Colors.white,
@@ -176,19 +188,23 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
                         hintText: '광장에 따뜻한 이야기나 맛집 정보 등 동네 소식을 자유롭게 나누어주세요. 🐝',
                         focusedBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFFFB300), width: 1.5),
                         ),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Color(0xFFECEFF1), width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Color(0xFFECEFF1), width: 1.2),
                         ),
                         errorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.2),
                         ),
                         focusedErrorBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(12),
-                          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+                          borderSide: const BorderSide(
+                              color: Colors.redAccent, width: 1.5),
                         ),
                         filled: true,
                         fillColor: Colors.white,
@@ -215,7 +231,8 @@ class _CommunityEditScreenState extends State<CommunityEditScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF8F00).withValues(alpha: 0.25),
+                              color: const Color(0xFFFF8F00)
+                                  .withValues(alpha: 0.25),
                               blurRadius: 16,
                               offset: const Offset(0, 8),
                             ),

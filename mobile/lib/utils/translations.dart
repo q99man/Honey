@@ -53,14 +53,17 @@ class Translations {
       'common.search': 'Search',
       'common.filter': 'Filter',
       'auth.loginRequired': 'Login Required',
-      'auth.phoneVerificationRequired': 'Phone verification is required for activity.',
+      'auth.phoneVerificationRequired':
+          'Phone verification is required for activity.',
       'auth.goToVerify': 'Go to Verify',
       'mypage.title': 'My Page',
       'mypage.level': 'Bee Level',
       'mypage.trust': 'Trust Score',
       'mypage.language': 'Language Settings',
-      'error.phoneVerificationRequired': 'This action requires phone verification first.',
-      'error.regionVerificationRequired': 'This action requires local region verification first.',
+      'error.phoneVerificationRequired':
+          'This action requires phone verification first.',
+      'error.regionVerificationRequired':
+          'This action requires local region verification first.',
       'ranking.seasonRanking': 'Season Ranking',
       'ranking.liveRanking': 'Live Ranking',
       'ranking.seasonPreparing': 'Preparing Season',
@@ -71,7 +74,8 @@ class Translations {
       'ranking.tabDistrict': 'District',
       'ranking.tabCity': 'City',
       'ranking.emptyTitle': 'No Rankings Found',
-      'ranking.emptyDesc': 'No place data collected in this region yet\nor waiting for season ranking calculation.',
+      'ranking.emptyDesc':
+          'No place data collected in this region yet\nor waiting for season ranking calculation.',
       'ranking.retry': 'Retry',
       'ranking.changePopupTitle': 'Change Ranking Region',
       'ranking.selectCity': 'Select City/Province',

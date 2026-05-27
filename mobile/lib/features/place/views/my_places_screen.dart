@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_empty_state.dart';
 import '../../../models/place.dart';
 import '../services/place_service.dart';
 import 'place_detail_screen.dart';
 import 'place_register_screen.dart';
+import '../widgets/place_thumbnail.dart';
 
 class MyPlacesScreen extends StatefulWidget {
   const MyPlacesScreen({super.key});
@@ -70,7 +73,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
             onPressed: () => Navigator.of(context).pop(true),
             icon: const Icon(Icons.delete_outline),
             label: const Text('삭제'),
-            style: FilledButton.styleFrom(backgroundColor: Colors.redAccent),
+            style: FilledButton.styleFrom(backgroundColor: AppColors.berry),
           ),
         ],
       ),
@@ -86,7 +89,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
       SnackBar(
         content: Text(result['message'] ?? '처리 결과를 확인할 수 없습니다.'),
         backgroundColor:
-            result['success'] == true ? Colors.green : Colors.redAccent,
+            result['success'] == true ? AppColors.leaf : AppColors.berry,
       ),
     );
     if (result['success'] == true) {
@@ -97,15 +100,12 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           '내 등록 맛집',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: Stack(
         children: [
@@ -115,7 +115,7 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
               if (snapshot.connectionState == ConnectionState.waiting) {
                 return const Center(
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
                   ),
                 );
               }
@@ -129,17 +129,10 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
                     padding: const EdgeInsets.all(24),
                     children: const [
                       SizedBox(height: 120),
-                      Icon(Icons.storefront_outlined,
-                          size: 56, color: Colors.black26),
-                      SizedBox(height: 16),
-                      Text(
-                        '아직 등록한 맛집이 없습니다.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black54,
-                        ),
+                      AppEmptyState(
+                        icon: Icons.storefront_outlined,
+                        title: '아직 등록한 맛집이 없습니다',
+                        description: '동네에서 다시 찾고 싶은 맛집을 등록해보세요.',
                       ),
                     ],
                   ),
@@ -165,10 +158,10 @@ class _MyPlacesScreenState extends State<MyPlacesScreen> {
           ),
           if (_isDeleting)
             Container(
-              color: Colors.black26,
+              color: AppColors.ink.withValues(alpha: 0.28),
               child: const Center(
                 child: CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                  valueColor: AlwaysStoppedAnimation(AppColors.honey),
                 ),
               ),
             ),
@@ -193,32 +186,27 @@ class _PlaceManageTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final address = place.addressRoad.isNotEmpty
-        ? place.addressRoad
-        : place.addressJibun;
+    final address =
+        place.addressRoad.isNotEmpty ? place.addressRoad : place.addressJibun;
 
     return Material(
-      color: Colors.white,
-      borderRadius: BorderRadius.circular(12),
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadius.md),
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(AppRadius.md),
         child: Container(
-          padding: const EdgeInsets.all(14),
+          padding: const EdgeInsets.all(AppSpacing.sm),
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.black12),
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.outline),
           ),
           child: Row(
             children: [
-              Container(
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFFFB300).withValues(alpha: 0.14),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: const Icon(Icons.store, color: Color(0xFFFFB300)),
+              PlaceThumbnail(
+                imageUrl:
+                    place.imageUrls.isNotEmpty ? place.imageUrls.first : null,
+                size: 52,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -231,8 +219,8 @@ class _PlaceManageTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 15,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        fontWeight: FontWeight.w800,
+                        color: AppColors.ink,
                       ),
                     ),
                     const SizedBox(height: 4),
@@ -242,7 +230,7 @@ class _PlaceManageTile extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontSize: 12,
-                        color: Colors.black54,
+                        color: AppColors.muted,
                       ),
                     ),
                   ],
@@ -252,13 +240,13 @@ class _PlaceManageTile extends StatelessWidget {
                 tooltip: '수정',
                 onPressed: onEdit,
                 icon: const Icon(Icons.edit_outlined),
-                color: Colors.black54,
+                color: AppColors.muted,
               ),
               IconButton(
                 tooltip: '삭제',
                 onPressed: onDelete,
                 icon: const Icon(Icons.delete_outline),
-                color: Colors.redAccent,
+                color: AppColors.berry,
               ),
             ],
           ),

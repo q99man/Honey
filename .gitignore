@@ -44,6 +44,7 @@ backend/.gradle-user-home/
 # Codex / temporary
 *.tmp
 tmp/
+uploads/
 
 # git
 .github/

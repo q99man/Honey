@@ -24,7 +24,7 @@ public class PlaceImage extends BaseTimeEntity {
     @JoinColumn(name = "place_id")
     private Place place;
 
-    @Column(name = "image_url", nullable = false, length = 255)
+    @Column(name = "image_url", nullable = false, length = 2048)
     private String imageUrl;
 
     @Column(name = "sort_order", nullable = false)

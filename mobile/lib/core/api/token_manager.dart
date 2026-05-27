@@ -2,7 +2,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class TokenManager {
   static const _storage = FlutterSecureStorage();
-  
+
   static const String _accessTokenKey = 'honeytong-access-token';
   static const String _refreshTokenKey = 'honeytong-refresh-token';
 

@@ -48,7 +48,8 @@ class Place {
       latitude: _asDouble(json['latitude']),
       longitude: _asDouble(json['longitude']),
       creatorNickname: json['creatorNickname'],
-      regionDongName: json['regionDongName'] ?? json['dongName'] ?? json['regionName'],
+      regionDongName:
+          json['regionDongName'] ?? json['dongName'] ?? json['regionName'],
       imageUrls: images,
       stats: _parseStats(json),
       currentStarLevel: _asInt(json['currentStarLevel'] ?? json['starLevel']),

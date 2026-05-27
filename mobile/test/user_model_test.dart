@@ -12,6 +12,8 @@ void main() {
         'birthYear': 1990,
         'gender': 'UNKNOWN',
         'nationalityCode': 'KR',
+        'profileImageUrl':
+            'http://localhost:8080/uploads/images/profiles/profile.jpg',
       });
 
       expect(profile.id, 28);
@@ -19,6 +21,8 @@ void main() {
       expect(profile.displayName, '허니테스터');
       expect(profile.phoneVerified, isTrue);
       expect(profile.languagePreference, 'ko');
+      expect(profile.profileImageUrl,
+          'http://localhost:8080/uploads/images/profiles/profile.jpg');
     });
 
     test('parses backend activity summary field names', () {

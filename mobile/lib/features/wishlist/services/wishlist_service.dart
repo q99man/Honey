@@ -29,7 +29,8 @@ class WishlistService {
       // Future.wait를 통해 병렬 비동기 요청 수행
       final List<Future<Place?>> futures = savedPlaces.map((sp) async {
         try {
-          final response = await _apiClient.dio.get(ApiEndpoints.placeDetail(sp.placeId));
+          final response =
+              await _apiClient.dio.get(ApiEndpoints.placeDetail(sp.placeId));
           if (response.statusCode == 200 && response.data != null) {
             final data = response.data['data'];
             if (data != null) {
@@ -52,7 +53,8 @@ class WishlistService {
   // 맛집 저장 해제 (추천 취소)
   Future<bool> unsavePlace(int placeId) async {
     try {
-      final response = await _apiClient.dio.delete(ApiEndpoints.recommendPlace(placeId));
+      final response =
+          await _apiClient.dio.delete(ApiEndpoints.recommendPlace(placeId));
       return response.statusCode == 200;
     } catch (e) {
       return false;

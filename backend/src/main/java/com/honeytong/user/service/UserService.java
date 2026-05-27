@@ -48,7 +48,14 @@ public class UserService {
     @Transactional
     public UserProfileResponse updateMyProfile(Long userId, UserProfileUpdateRequest request) {
         User user = getActiveUser(userId);
-        user.updateProfile(request.nickname(), request.languagePreference(), request.birthYear(), request.gender(), request.nationalityCode());
+        user.updateProfile(
+                request.nickname(),
+                request.languagePreference(),
+                request.birthYear(),
+                request.gender(),
+                request.nationalityCode(),
+                request.profileImageUrl()
+        );
         return toProfileResponse(user);
     }
 
@@ -96,7 +103,8 @@ public class UserService {
                 user.getLanguagePreference(),
                 user.getBirthYear(),
                 user.getGender(),
-                user.getNationalityCode()
+                user.getNationalityCode(),
+                user.getProfileImageUrl()
         );
     }
 

@@ -4,6 +4,8 @@ import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
 import '../../../core/config/app_config.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_empty_state.dart';
 import '../../../models/place.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
@@ -11,6 +13,7 @@ import '../../place/services/place_service.dart';
 import '../../place/views/place_detail_screen.dart';
 import '../../place/views/place_register_screen.dart';
 import '../widgets/kakao_place_map.dart';
+import '../widgets/home_place_card.dart';
 
 class HomeMapScreen extends StatefulWidget {
   const HomeMapScreen({super.key});
@@ -63,7 +66,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     super.initState();
     _placeService =
         PlaceService(Provider.of<ApiClient>(context, listen: false));
-    _determinePosition();
+    final fallbackPosition = _fallbackPosition();
+    _currentPosition = fallbackPosition;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        _loadNearbyPlaces(fallbackPosition);
+      }
+    });
   }
 
   @override
@@ -95,6 +104,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
       final position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 8),
       );
 
       if (!mounted) return;
@@ -108,18 +118,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       await _loadNearbyPlaces(position);
     } catch (error) {
       debugPrint('GPS Error: $error');
-      final fallbackPosition = Position(
-        latitude: 37.556456,
-        longitude: 126.924456,
-        timestamp: DateTime.now(),
-        accuracy: 0.0,
-        altitude: 0.0,
-        altitudeAccuracy: 0.0,
-        heading: 0.0,
-        headingAccuracy: 0.0,
-        speed: 0.0,
-        speedAccuracy: 0.0,
-      );
+      final fallbackPosition = _fallbackPosition();
 
       if (!mounted) return;
       setState(() {
@@ -131,6 +130,21 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
       await _loadNearbyPlaces(fallbackPosition);
     }
+  }
+
+  Position _fallbackPosition() {
+    return Position(
+      latitude: 37.556456,
+      longitude: 126.924456,
+      timestamp: DateTime.now(),
+      accuracy: 0.0,
+      altitude: 0.0,
+      altitudeAccuracy: 0.0,
+      heading: 0.0,
+      headingAccuracy: 0.0,
+      speed: 0.0,
+      speedAccuracy: 0.0,
+    );
   }
 
   Future<void> _loadNearbyPlaces(Position position) async {
@@ -199,7 +213,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     final selectedPlace = _selectedPlace;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       body: Stack(
         children: [
           Positioned.fill(
@@ -242,7 +256,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   height: 28,
                   child: CircularProgressIndicator(
                     strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
                   ),
                 ),
               ),
@@ -258,7 +272,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         FloatingActionButton(
           heroTag: 'register_btn',
           onPressed: _openRegister,
-          backgroundColor: const Color(0xFFFF8F00),
+          backgroundColor: AppColors.nectar,
           foregroundColor: Colors.white,
           tooltip: '맛집 등록',
           child: const Icon(Icons.add_location_alt_outlined),
@@ -267,8 +281,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         FloatingActionButton.small(
           heroTag: 'gps_btn',
           onPressed: _determinePosition,
-          backgroundColor: Colors.white,
-          foregroundColor: const Color(0xFFFFB300),
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.honey,
           tooltip: '내 위치',
           child: _isLoadingGps
               ? const SizedBox(
@@ -276,7 +290,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   width: 16,
                   child: CircularProgressIndicator(
                     strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
                   ),
                 )
               : const Icon(Icons.my_location),
@@ -290,7 +304,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               _selectedPlace = null;
             });
           },
-          backgroundColor: const Color(0xFFFFB300),
+          backgroundColor: AppColors.honey,
           foregroundColor: Colors.white,
           tooltip: _isMapView ? '리스트 보기' : '지도 보기',
           child: Icon(_isMapView ? Icons.list : Icons.map),
@@ -302,13 +316,13 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   Widget _buildSearchBar() {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(30),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadius.pill),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.06),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
+            color: AppColors.ink.withValues(alpha: 0.08),
+            blurRadius: 16,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -318,12 +332,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         onSubmitted: (_) => _search(),
         decoration: InputDecoration(
           hintText: '맛집 이름이나 메뉴를 검색해 보세요',
-          hintStyle: const TextStyle(fontSize: 14, color: Colors.black38),
-          prefixIcon: const Icon(Icons.search, color: Color(0xFFFFB300)),
+          hintStyle: const TextStyle(fontSize: 14, color: AppColors.muted),
+          prefixIcon: const Icon(Icons.search, color: AppColors.honey),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 20),
-                  color: Colors.black38,
+                  color: AppColors.muted,
                   onPressed: () {
                     _searchController.clear();
                     _search();
@@ -331,6 +345,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 )
               : null,
           border: InputBorder.none,
+          enabledBorder: InputBorder.none,
+          focusedBorder: InputBorder.none,
           contentPadding:
               const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
         ),
@@ -355,8 +371,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
               label: Text(
                 category.label,
                 style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  color: isSelected ? Colors.white : AppColors.ink,
+                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
                 ),
               ),
               selected: isSelected,
@@ -366,11 +382,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                   _syncSelectedPlace();
                 });
               },
-              selectedColor: const Color(0xFFFFB300),
-              backgroundColor: Colors.white,
+              selectedColor: AppColors.honey,
+              backgroundColor: AppColors.surface,
               elevation: 1,
-              shadowColor: Colors.black12,
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              shadowColor: AppColors.ink.withValues(alpha: 0.08),
+              side: const BorderSide(color: AppColors.outline),
+              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
             ),
           );
         },
@@ -394,32 +411,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   Widget _buildMapConfigurationState() {
-    return Container(
-      color: const Color(0xFFF9F7F2),
-      padding: const EdgeInsets.symmetric(horizontal: 32),
-      child: const Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.map_outlined, size: 56, color: Color(0xFFFFB300)),
-            SizedBox(height: 16),
-            Text(
-              '카카오맵 설정이 필요합니다.',
-              style: TextStyle(
-                fontSize: 17,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            SizedBox(height: 8),
-            Text(
-              'KAKAO_NATIVE_APP_KEY를 빌드 설정에 추가하면 실제 지도가 표시됩니다.',
-              style: TextStyle(fontSize: 13, color: Colors.black54),
-              textAlign: TextAlign.center,
-            ),
-          ],
-        ),
+    return const ColoredBox(
+      color: AppColors.background,
+      child: AppEmptyState(
+        icon: Icons.map_outlined,
+        title: '카카오맵 설정이 필요합니다',
+        description: 'KAKAO_NATIVE_APP_KEY를 빌드 설정에 추가하면 실제 지도가 표시됩니다.',
       ),
     );
   }
@@ -428,38 +425,21 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     if (_isLoadingPlaces) {
       return const Center(
         child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+          valueColor: AlwaysStoppedAnimation(AppColors.honey),
         ),
       );
     }
 
     if (places.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Icon(Icons.search_off, size: 60, color: Colors.black26),
-            const SizedBox(height: 16),
-            const Text(
-              '검색 결과나 가까운 맛집이 없습니다.',
-              style: TextStyle(color: Colors.black54),
-            ),
-            const SizedBox(height: 8),
-            TextButton(
-              onPressed: () {
-                _searchController.clear();
-                _determinePosition();
-              },
-              child: const Text(
-                '내 위치 기준으로 다시 찾기',
-                style: TextStyle(
-                  color: Color(0xFFFFB300),
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ],
-        ),
+      return AppEmptyState(
+        icon: Icons.search_off_rounded,
+        title: '검색 결과가 없습니다',
+        description: '검색어나 위치를 바꿔 가까운 꽃맛집을 다시 찾아보세요.',
+        actionLabel: '내 위치 기준으로 다시 찾기',
+        onActionPressed: () {
+          _searchController.clear();
+          _determinePosition();
+        },
       );
     }
 
@@ -471,160 +451,40 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   Widget _buildPlaceListItem(Place place) {
-    return Card(
-      elevation: 0,
-      color: Colors.white,
-      margin: const EdgeInsets.only(bottom: 12),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-        side: const BorderSide(color: Colors.black12),
-      ),
-      child: ListTile(
-        contentPadding: const EdgeInsets.all(12),
-        leading: _buildPlaceIcon(size: 60, iconSize: 28),
-        title: Row(
-          children: [
-            Expanded(
-              child: Text(
-                place.name,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            const SizedBox(width: 6),
-            _buildCategoryBadge(place.categoryCode),
-          ],
-        ),
-        subtitle: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const SizedBox(height: 4),
-            Text(
-              '추천 메뉴: ${place.recommendedMenu}',
-              style: const TextStyle(fontSize: 13, color: Colors.black87),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-            const SizedBox(height: 2),
-            Text(
-              place.addressRoad.isNotEmpty
-                  ? place.addressRoad
-                  : place.addressJibun,
-              style: const TextStyle(fontSize: 12, color: Colors.black45),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ],
-        ),
-        trailing: const Icon(Icons.chevron_right),
+    return Padding(
+      padding: const EdgeInsets.only(bottom: AppSpacing.sm),
+      child: HomePlaceCard(
+        place: place,
+        categoryLabel: _categoryLabel(place.categoryCode),
         onTap: () => _openPlaceDetail(place),
       ),
     );
   }
 
   Widget _buildSelectedPlaceCard(Place place) {
-    return Card(
-      elevation: 3,
-      shadowColor: Colors.black26,
-      margin: EdgeInsets.zero,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      color: Colors.white,
-      child: Padding(
-        padding: const EdgeInsets.all(12),
-        child: Row(
-          children: [
-            _buildPlaceIcon(size: 72, iconSize: 32),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Text(
-                          place.name,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                      _buildCategoryBadge(place.categoryCode),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    '추천 메뉴: ${place.recommendedMenu}',
-                    style: const TextStyle(fontSize: 12, color: Colors.black87),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    place.shortRecommendation,
-                    style: const TextStyle(fontSize: 11, color: Colors.black54),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 8),
-            Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                IconButton(
-                  tooltip: '닫기',
-                  onPressed: () => setState(() => _selectedPlace = null),
-                  icon: const Icon(Icons.close, size: 20),
-                ),
-                TextButton(
-                  onPressed: () => _openPlaceDetail(place),
-                  child: const Text('상세'),
-                ),
-              ],
-            ),
-          ],
-        ),
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(AppRadius.lg),
+        boxShadow: [
+          BoxShadow(
+            color: AppColors.ink.withValues(alpha: 0.14),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: HomePlaceCard(
+        place: place,
+        categoryLabel: _categoryLabel(place.categoryCode),
+        compact: true,
+        onTap: () => _openPlaceDetail(place),
+        onClose: () => setState(() => _selectedPlace = null),
       ),
     );
   }
 
-  Widget _buildPlaceIcon({required double size, required double iconSize}) {
-    return Container(
-      width: size,
-      height: size,
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFB300).withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(Icons.restaurant,
-          color: const Color(0xFFFFB300), size: iconSize),
-    );
-  }
-
-  Widget _buildCategoryBadge(String categoryCode) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFB300).withValues(alpha: 0.15),
-        borderRadius: BorderRadius.circular(4),
-      ),
-      child: Text(
-        _categoryLabels[categoryCode] ?? categoryCode,
-        style: const TextStyle(
-          fontSize: 10,
-          color: Color(0xFFFF8F00),
-          fontWeight: FontWeight.bold,
-        ),
-      ),
-    );
+  String _categoryLabel(String categoryCode) {
+    return _categoryLabels[categoryCode] ?? categoryCode;
   }
 
   Future<void> _openRegister() async {
@@ -657,10 +517,12 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(AppRadius.lg),
+        ),
         title: const Text(
           '로그인이 필요합니다',
-          style: TextStyle(fontWeight: FontWeight.bold),
+          style: TextStyle(fontWeight: FontWeight.w800),
         ),
         content: const Text(
           '맛집 등록은 로그인 후 사용할 수 있습니다.\n로그인 화면으로 이동할까요?',
@@ -668,19 +530,15 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소', style: TextStyle(color: Colors.black54)),
+            child: const Text('취소'),
           ),
-          ElevatedButton(
+          FilledButton(
             onPressed: () {
               Navigator.pop(context);
               Navigator.of(context).push(
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFFFB300),
-              foregroundColor: Colors.white,
-            ),
             child: const Text('로그인하기'),
           ),
         ],

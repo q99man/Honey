@@ -160,7 +160,7 @@ CREATE TABLE users (
   birth_year INT,
   gender VARCHAR(20),
   nationality_code VARCHAR(10),
-  profile_image_url VARCHAR(255),
+  profile_image_url VARCHAR(2048),
   language_preference VARCHAR(10) DEFAULT 'ko',
   marketing_agreed BOOLEAN NOT NULL DEFAULT FALSE,
   created_at DATETIME NOT NULL,
@@ -404,7 +404,7 @@ Stores images for a place.
 CREATE TABLE place_images (
   id BIGINT PRIMARY KEY AUTO_INCREMENT,
   place_id BIGINT NOT NULL,
-  image_url VARCHAR(255) NOT NULL,
+  image_url VARCHAR(2048) NOT NULL,
   sort_order INT NOT NULL DEFAULT 0,
   is_representative BOOLEAN NOT NULL DEFAULT FALSE,
   uploaded_by BIGINT,
@@ -550,7 +550,7 @@ CREATE TABLE visits (
   latitude DECIMAL(10,7) NOT NULL,
   longitude DECIMAL(10,7) NOT NULL,
   distance_meter INT,
-  image_url VARCHAR(255),
+  image_url VARCHAR(2048),
   is_valid BOOLEAN NOT NULL DEFAULT TRUE,
   valid_reason VARCHAR(100),
   created_at DATETIME NOT NULL,
@@ -864,14 +864,14 @@ Example Values
 recommend.daily_limit = 20
 visit.radius_meter = 70
 visit.cooldown_hour = 24
-visit.image_url_max_length = 255
+visit.image_url_max_length = 2048
 region.change_cooldown_day = 7
 region.registration_scope = DISTRICT
 place.registration_limit = 5
 place.recommended_menu_max_length = 255
 place.short_recommendation_max_length = 255
 place.feature_text_max_length = 500
-place.image_url_max_length = 255
+place.image_url_max_length = 2048
 place.address_max_length = 255
 growth.visit_exp = 2
 growth.level_exp_thresholds = 1:10;2:20;3:30

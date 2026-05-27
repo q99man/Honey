@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/theme/app_theme.dart';
+import '../../../../core/widgets/app_empty_state.dart';
 import '../../../../utils/localization.dart';
 import '../../../../models/ranking.dart';
 import '../../../../models/region.dart';
@@ -15,13 +17,14 @@ class RankingScreen extends StatefulWidget {
   State<RankingScreen> createState() => _RankingScreenState();
 }
 
-class _RankingScreenState extends State<RankingScreen> with SingleTickerProviderStateMixin {
+class _RankingScreenState extends State<RankingScreen>
+    with SingleTickerProviderStateMixin {
   late RankingService _rankingService;
   late PlaceService _placeService;
 
   Season? _currentSeason;
   PlaceRankingResponse? _rankingResponse;
-  
+
   bool _isLoadingSeason = true;
   bool _isLoadingRanking = true;
   String _regionType = 'dong'; // 'dong', 'district', 'city'
@@ -39,7 +42,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
     super.initState();
     _rankingService = Provider.of<RankingService>(context, listen: false);
     _placeService = Provider.of<PlaceService>(context, listen: false);
-    
+
     _initData();
   }
 
@@ -143,7 +146,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -178,7 +181,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
             : _cityName;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -186,7 +189,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
             // Season & Title Header
             Container(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 12),
-              color: Colors.white,
+              color: AppColors.surface,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
@@ -196,15 +199,17 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                       Expanded(
                         child: Row(
                           children: [
-                            const Icon(Icons.emoji_nature, color: Color(0xFFFFB300), size: 24),
+                            const Icon(Icons.emoji_nature,
+                                color: AppColors.honey, size: 24),
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                _currentSeason?.seasonName ?? 'ranking.seasonRanking'.tr,
+                                _currentSeason?.seasonName ??
+                                    'ranking.seasonRanking'.tr,
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.w900,
-                                  color: Colors.black87,
+                                  color: AppColors.ink,
                                 ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
@@ -215,17 +220,20 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                       ),
                       const SizedBox(width: 8),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 4),
                         decoration: BoxDecoration(
-                          color: const Color(0xFFFFB300).withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(12),
+                          color: AppColors.surfaceWarm,
+                          borderRadius: BorderRadius.circular(AppRadius.md),
                         ),
                         child: Text(
-                          _currentSeason != null ? 'ranking.liveRanking'.tr : 'ranking.seasonPreparing'.tr,
+                          _currentSeason != null
+                              ? 'ranking.liveRanking'.tr
+                              : 'ranking.seasonPreparing'.tr,
                           style: const TextStyle(
                             fontSize: 12,
-                            color: Color(0xFFFF8F00),
-                            fontWeight: FontWeight.bold,
+                            color: AppColors.nectar,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ),
@@ -238,7 +246,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                         : 'ranking.seasonLoading'.tr,
                     style: const TextStyle(
                       fontSize: 12,
-                      color: Colors.black45,
+                      color: AppColors.muted,
                     ),
                   ),
                 ],
@@ -249,25 +257,29 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
             InkWell(
               onTap: _showRegionSelectionBottomSheet,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: const BoxDecoration(
-                  color: Colors.white,
+                  color: AppColors.surface,
                   border: Border(
-                    top: BorderSide(color: Color(0xFFF0F0F0)),
-                    bottom: BorderSide(color: Color(0xFFE5E5E5)),
+                    top: BorderSide(color: AppColors.outline),
+                    bottom: BorderSide(color: AppColors.outline),
                   ),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.location_on, color: Color(0xFFFF8F00), size: 20),
+                    const Icon(Icons.location_on,
+                        color: AppColors.nectar, size: 20),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
-                        displayedRegionName.isEmpty ? 'ranking.loadingRegion'.tr : displayedRegionName,
+                        displayedRegionName.isEmpty
+                            ? 'ranking.loadingRegion'.tr
+                            : displayedRegionName,
                         style: const TextStyle(
                           fontSize: 15,
                           fontWeight: FontWeight.bold,
-                          color: Colors.black87,
+                          color: AppColors.ink,
                         ),
                       ),
                     ),
@@ -275,11 +287,12 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                       'ranking.changeRegion'.tr,
                       style: const TextStyle(
                         fontSize: 13,
-                        color: Color(0xFFFF8F00),
-                        fontWeight: FontWeight.w600,
+                        color: AppColors.nectar,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
-                    const Icon(Icons.chevron_right, color: Color(0xFFFF8F00), size: 16),
+                    const Icon(Icons.chevron_right,
+                        color: AppColors.nectar, size: 16),
                   ],
                 ),
               ),
@@ -287,7 +300,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
 
             // Region Type Selector Tabs (Dong / District / City)
             Container(
-              color: Colors.white,
+              color: AppColors.surface,
               padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
               child: Row(
                 children: [
@@ -307,14 +320,15 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
               child: _isLoadingRanking || _isLoadingSeason
                   ? const Center(
                       child: CircularProgressIndicator(
-                        valueColor: AlwaysStoppedAnimation<Color>(Color(0xFFFFB300)),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(AppColors.honey),
                       ),
                     )
                   : _rankingResponse == null || _rankingResponse!.items.isEmpty
                       ? _buildEmptyState()
                       : RefreshIndicator(
                           onRefresh: _loadRankings,
-                          color: const Color(0xFFFFB300),
+                          color: AppColors.honey,
                           child: ListView.builder(
                             physics: const AlwaysScrollableScrollPhysics(),
                             padding: const EdgeInsets.all(16),
@@ -347,16 +361,17 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
         child: Container(
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFFFFB300) : const Color(0xFFF5F5F5),
-            borderRadius: BorderRadius.circular(12),
+            color: isSelected ? AppColors.honey : AppColors.surface,
+            borderRadius: BorderRadius.circular(AppRadius.md),
+            border: Border.all(color: AppColors.outline),
           ),
           child: Text(
             label,
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 14,
-              fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              color: isSelected ? Colors.white : Colors.black54,
+              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+              color: isSelected ? Colors.white : AppColors.muted,
             ),
           ),
         ),
@@ -374,28 +389,16 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.leaderboard_outlined, size: 64, color: Colors.black12),
-            const SizedBox(height: 16),
-            Text(
-              'ranking.emptyTitle'.tr,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.black87),
+            AppEmptyState(
+              icon: Icons.leaderboard_outlined,
+              title: 'ranking.emptyTitle'.tr,
+              description: 'ranking.emptyDesc'.tr,
             ),
-            const SizedBox(height: 8),
-            Text(
-              'ranking.emptyDesc'.tr,
-              textAlign: TextAlign.center,
-              style: const TextStyle(fontSize: 13, color: Colors.black45, height: 1.4),
-            ),
-            const SizedBox(height: 24),
-            ElevatedButton.icon(
+            const SizedBox(height: AppSpacing.sm),
+            FilledButton.icon(
               onPressed: _initData,
               icon: const Icon(Icons.refresh),
               label: Text('ranking.retry'.tr),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFFFB300),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-              ),
             ),
           ],
         ),
@@ -405,7 +408,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
 
   Widget _buildRankingCard(PlaceRankingItem item) {
     // Rank styling config
-    Color rankBadgeColor = Colors.grey.shade400;
+    Color rankBadgeColor = AppColors.muted;
     Color rankTextColor = Colors.white;
     double cardElevation = 0;
 
@@ -423,11 +426,13 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
     return Card(
       elevation: cardElevation,
       margin: const EdgeInsets.only(bottom: 12),
-      color: Colors.white,
+      color: AppColors.surface,
       shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         side: BorderSide(
-          color: item.rank <= 3 ? rankBadgeColor.withValues(alpha: 0.5) : Colors.black12,
+          color: item.rank <= 3
+              ? rankBadgeColor.withValues(alpha: 0.5)
+              : AppColors.outline,
           width: item.rank <= 3 ? 1.5 : 1,
         ),
       ),
@@ -439,7 +444,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
             ),
           );
         },
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(AppRadius.lg),
         child: Padding(
           padding: const EdgeInsets.all(16.0),
           child: Row(
@@ -484,7 +489,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.bold,
-                        color: Colors.black87,
+                        color: AppColors.ink,
                       ),
                     ),
                     const SizedBox(height: 6),
@@ -496,7 +501,8 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                           Row(
                             children: List.generate(
                               item.starLevel,
-                              (i) => const Icon(Icons.star, color: Color(0xFFFFB300), size: 16),
+                              (i) => const Icon(Icons.star,
+                                  color: AppColors.honey, size: 16),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -505,8 +511,8 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                           '${item.totalScore.toStringAsFixed(1)}점',
                           style: const TextStyle(
                             fontSize: 13,
-                            color: Color(0xFFFF8F00),
-                            fontWeight: FontWeight.bold,
+                            color: AppColors.nectar,
+                            fontWeight: FontWeight.w800,
                           ),
                         ),
                       ],
@@ -520,17 +526,19 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
                         runSpacing: 4,
                         children: item.audienceTags.map((tag) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 8, vertical: 4),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFAFAFA),
-                              border: Border.all(color: Colors.black12),
-                              borderRadius: BorderRadius.circular(20),
+                              color: AppColors.background,
+                              border: Border.all(color: AppColors.outline),
+                              borderRadius:
+                                  BorderRadius.circular(AppRadius.pill),
                             ),
                             child: Text(
                               tag,
                               style: const TextStyle(
                                 fontSize: 11,
-                                color: Colors.black54,
+                                color: AppColors.muted,
                               ),
                             ),
                           );
@@ -543,7 +551,7 @@ class _RankingScreenState extends State<RankingScreen> with SingleTickerProvider
               // Arrow Icon
               const Align(
                 alignment: Alignment.center,
-                child: Icon(Icons.chevron_right, color: Colors.black26),
+                child: Icon(Icons.chevron_right, color: AppColors.muted),
               ),
             ],
           ),
@@ -570,10 +578,12 @@ class _RegionSelectorBottomSheet extends StatefulWidget {
   });
 
   @override
-  State<_RegionSelectorBottomSheet> createState() => _RegionSelectorBottomSheetState();
+  State<_RegionSelectorBottomSheet> createState() =>
+      _RegionSelectorBottomSheetState();
 }
 
-class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> {
+class _RegionSelectorBottomSheetState
+    extends State<_RegionSelectorBottomSheet> {
   List<RegionCity> _cities = [];
   List<RegionDistrict> _districts = [];
   List<RegionDong> _dongs = [];
@@ -604,7 +614,8 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
       // Select initial city if provided
       if (widget.initialCityId != null && _cities.isNotEmpty) {
         try {
-          _selectedCity = _cities.firstWhere((c) => c.id == widget.initialCityId);
+          _selectedCity =
+              _cities.firstWhere((c) => c.id == widget.initialCityId);
           _loadDistricts(_selectedCity!.id);
         } catch (_) {}
       }
@@ -630,7 +641,8 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
       // Select initial district if provided
       if (widget.initialDistrictId != null && _districts.isNotEmpty) {
         try {
-          _selectedDistrict = _districts.firstWhere((d) => d.id == widget.initialDistrictId);
+          _selectedDistrict =
+              _districts.firstWhere((d) => d.id == widget.initialDistrictId);
           _loadDongs(_selectedDistrict!.id);
         } catch (_) {}
       }
@@ -654,7 +666,8 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
       // Select initial dong if provided
       if (widget.initialDongId != null && _dongs.isNotEmpty) {
         try {
-          _selectedDong = _dongs.firstWhere((d) => d.id == widget.initialDongId);
+          _selectedDong =
+              _dongs.firstWhere((d) => d.id == widget.initialDongId);
         } catch (_) {}
       }
     });
@@ -694,12 +707,14 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
 
           // Dropdown 1: 시/도 (City)
           _isLoadingCities
-              ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
+              ? const Center(
+                  child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionCity>(
                   initialValue: _selectedCity,
                   decoration: InputDecoration(
                     labelText: 'ranking.selectCity'.tr,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _cities.map((city) {
                     return DropdownMenuItem<RegionCity>(
@@ -720,12 +735,14 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
 
           // Dropdown 2: 시/군/구 (District)
           _isLoadingDistricts
-              ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
+              ? const Center(
+                  child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionDistrict>(
                   initialValue: _selectedDistrict,
                   decoration: InputDecoration(
                     labelText: 'ranking.selectDistrict'.tr,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _districts.map((district) {
                     return DropdownMenuItem<RegionDistrict>(
@@ -748,12 +765,14 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
 
           // Dropdown 3: 읍/면/동 (Dong)
           _isLoadingDongs
-              ? const Center(child: LinearProgressIndicator(color: Color(0xFFFFB300)))
+              ? const Center(
+                  child: LinearProgressIndicator(color: Color(0xFFFFB300)))
               : DropdownButtonFormField<RegionDong>(
                   initialValue: _selectedDong,
                   decoration: InputDecoration(
                     labelText: 'ranking.selectDong'.tr,
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12)),
                   ),
                   items: _dongs.map((dong) {
                     return DropdownMenuItem<RegionDong>(
@@ -773,7 +792,9 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
 
           // Action Button: Confirm Selection
           ElevatedButton(
-            onPressed: _selectedCity != null && _selectedDistrict != null && _selectedDong != null
+            onPressed: _selectedCity != null &&
+                    _selectedDistrict != null &&
+                    _selectedDong != null
                 ? () {
                     widget.onRegionSelected(
                       _selectedCity!,
@@ -787,10 +808,13 @@ class _RegionSelectorBottomSheetState extends State<_RegionSelectorBottomSheet> 
               backgroundColor: const Color(0xFFFFB300),
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12)),
               elevation: 0,
             ),
-            child: Text('common.confirm'.tr, style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+            child: Text('common.confirm'.tr,
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
           ),
         ],
       ),

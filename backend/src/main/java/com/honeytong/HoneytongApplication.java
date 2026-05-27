@@ -13,6 +13,7 @@ import com.honeytong.ranking.scheduler.RankingSchedulerProperties;
 import com.honeytong.region.seed.RegionSeedProperties;
 import com.honeytong.mission.cache.MissionRedisProperties;
 import com.honeytong.analytics.cache.AnalyticsRedisProperties;
+import com.honeytong.common.upload.ImageUploadProperties;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -33,7 +34,8 @@ import org.springframework.scheduling.annotation.EnableScheduling;
         AdminBootstrapProperties.class,
         MissionRedisProperties.class,
         SeasonRedisProperties.class,
-        AnalyticsRedisProperties.class
+        AnalyticsRedisProperties.class,
+        ImageUploadProperties.class
 })
 public class HoneytongApplication {
 

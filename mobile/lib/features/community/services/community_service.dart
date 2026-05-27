@@ -24,7 +24,8 @@ class CommunityService {
   // 단일 게시글 상세 조회
   Future<CommunityPost?> getPost(int id) async {
     try {
-      final response = await _apiClient.dio.get(ApiEndpoints.communityPostDetail(id));
+      final response =
+          await _apiClient.dio.get(ApiEndpoints.communityPostDetail(id));
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data['data'];
         if (data != null) {
@@ -60,7 +61,8 @@ class CommunityService {
   }
 
   // 게시글 수정
-  Future<CommunityPost?> updatePost(int id, String title, String content) async {
+  Future<CommunityPost?> updatePost(
+      int id, String title, String content) async {
     try {
       final response = await _apiClient.dio.patch(
         ApiEndpoints.updateCommunityPost(id),
@@ -84,7 +86,8 @@ class CommunityService {
   // 게시글 삭제
   Future<bool> deletePost(int id) async {
     try {
-      final response = await _apiClient.dio.delete(ApiEndpoints.deleteCommunityPost(id));
+      final response =
+          await _apiClient.dio.delete(ApiEndpoints.deleteCommunityPost(id));
       if (response.statusCode == 200 && response.data != null) {
         final data = response.data['data'];
         return data != null && data['deleted'] == true;

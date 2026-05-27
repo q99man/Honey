@@ -24,6 +24,9 @@ public record UserProfileUpdateRequest(
         String gender,
 
         @Size(max = 10, message = "국가코드는 10자 이하여야 합니다.")
-        String nationalityCode
+        String nationalityCode,
+
+        @Size(max = 2048, message = "프로필 이미지 URL은 2048자 이하여야 합니다.")
+        String profileImageUrl
 ) {
 }

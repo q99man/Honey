@@ -251,7 +251,11 @@ Response:
     "id": 1,
     "nickname": "bee_user",
     "phoneVerified": true,
-    "languagePreference": "ko"
+    "languagePreference": "ko",
+    "birthYear": 1995,
+    "gender": "FEMALE",
+    "nationalityCode": "KR",
+    "profileImageUrl": "https://api.example.com/uploads/images/profiles/profile.jpg"
   },
   "message": "OK"
 }
@@ -262,8 +266,60 @@ Request:
 
 {
   "nickname": "new_bee_user",
-  "languagePreference": "en"
+  "languagePreference": "en",
+  "birthYear": 1995,
+  "gender": "FEMALE",
+  "nationalityCode": "KR",
+  "profileImageUrl": "https://api.example.com/uploads/images/profiles/profile.jpg"
 }
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "id": 1,
+    "nickname": "new_bee_user",
+    "phoneVerified": true,
+    "languagePreference": "en",
+    "birthYear": 1995,
+    "gender": "FEMALE",
+    "nationalityCode": "KR",
+    "profileImageUrl": "https://api.example.com/uploads/images/profiles/profile.jpg"
+  },
+  "message": "Profile updated"
+}
+
+4.2.1 Upload Image
+POST /api/uploads/images
+
+Requires:
+- authenticated user
+- multipart form data
+- jpg, png, or webp image file
+- file size within the configured backend upload limit
+
+Request:
+
+multipart/form-data fields:
+- file: image file
+- target: PLACE, PROFILE, or VISIT
+
+Response:
+
+{
+  "success": true,
+  "data": {
+    "imageUrl": "https://api.example.com/uploads/images/places/abc123.jpg",
+    "originalFilename": "menu.jpg",
+    "contentType": "image/jpeg",
+    "size": 12345
+  },
+  "message": "이미지가 업로드되었습니다."
+}
+
+MVP note:
+The backend stores binary image files in the configured upload storage path and stores only returned URLs in relational rows such as `place_images`, `visits.image_url`, and `users.profile_image_url`. Image URL storage supports up to 2048 characters. The default local implementation uses a server-local filesystem path and can be replaced by object storage later without changing the mobile upload contract.
 4.3 Get My Status
 GET /api/users/me/status
 

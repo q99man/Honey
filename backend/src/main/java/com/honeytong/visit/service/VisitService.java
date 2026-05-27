@@ -42,7 +42,7 @@ public class VisitService {
     private static final String RADIUS_METER_KEY = "radius_meter";
     private static final String COOLDOWN_HOUR_KEY = "cooldown_hour";
     private static final String IMAGE_URL_MAX_LENGTH_KEY = "image_url_max_length";
-    private static final int IMAGE_URL_COLUMN_LIMIT = 255;
+    private static final int IMAGE_URL_COLUMN_LIMIT = 2048;
     private static final String RANKING_POLICY_GROUP = "ranking";
     private static final String VISIT_WEIGHT_KEY = "visit_weight";
     private static final String VALID_REASON = "VALID";

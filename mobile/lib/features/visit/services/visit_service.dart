@@ -8,7 +8,8 @@ class VisitService {
   VisitService(this._apiClient);
 
   // Send request to verify visit
-  Future<Map<String, dynamic>> verifyVisit(int placeId, double lat, double lng) async {
+  Future<Map<String, dynamic>> verifyVisit(
+      int placeId, double lat, double lng) async {
     try {
       final response = await _apiClient.dio.post(
         ApiEndpoints.verifyVisit(placeId),
@@ -57,7 +58,8 @@ class VisitService {
   // Fetch visit policy for a place
   Future<Map<String, dynamic>?> getVisitPolicy(int placeId) async {
     try {
-      final response = await _apiClient.dio.get(ApiEndpoints.visitPolicy(placeId));
+      final response =
+          await _apiClient.dio.get(ApiEndpoints.visitPolicy(placeId));
       if (response.statusCode == 200 && response.data != null) {
         return response.data['data'];
       }
@@ -70,7 +72,8 @@ class VisitService {
   // Fetch visit summary for a place
   Future<Map<String, dynamic>?> getVisitSummary(int placeId) async {
     try {
-      final response = await _apiClient.dio.get(ApiEndpoints.visitSummary(placeId));
+      final response =
+          await _apiClient.dio.get(ApiEndpoints.visitSummary(placeId));
       if (response.statusCode == 200 && response.data != null) {
         return response.data['data'];
       }

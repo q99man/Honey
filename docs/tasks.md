@@ -377,6 +377,7 @@ The goal is:
 - [x] Run release build script and verify output release APK and App Bundle (AAB)
 - [x] Replace Flutter Home simulated map with Kakao native map integration foundation and dart-define-driven `KAKAO_NATIVE_APP_KEY` setup
 - [x] Add repeatable Flutter Kakao native map device smoke script and checklist
+- [x] Add authenticated image upload API and connect Flutter place/profile image upload UI
 
 
 ---

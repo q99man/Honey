@@ -73,7 +73,8 @@ class RankingService {
   // 행정구역: 특정 시도의 시군구 목록 가져오기 (공개 API)
   Future<List<RegionDistrict>> getDistricts(int cityId) async {
     try {
-      final response = await _apiClient.dio.get('/api/regions/cities/$cityId/districts');
+      final response =
+          await _apiClient.dio.get('/api/regions/cities/$cityId/districts');
       if (response.statusCode == 200 && response.data != null) {
         final List dataList = response.data['data'] ?? [];
         return dataList.map((json) => RegionDistrict.fromJson(json)).toList();
@@ -87,7 +88,8 @@ class RankingService {
   // 행정구역: 특정 시군구의 읍면동 목록 가져오기 (공개 API)
   Future<List<RegionDong>> getDongs(int districtId) async {
     try {
-      final response = await _apiClient.dio.get('/api/regions/districts/$districtId/dongs');
+      final response =
+          await _apiClient.dio.get('/api/regions/districts/$districtId/dongs');
       if (response.statusCode == 200 && response.data != null) {
         final List dataList = response.data['data'] ?? [];
         return dataList.map((json) => RegionDong.fromJson(json)).toList();

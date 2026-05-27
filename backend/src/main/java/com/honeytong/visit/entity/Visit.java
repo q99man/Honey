@@ -39,7 +39,7 @@ public class Visit extends BaseTimeEntity {
     @Column(name = "distance_meter")
     private Integer distanceMeter;
 
-    @Column(name = "image_url", length = 255)
+    @Column(name = "image_url", length = 2048)
     private String imageUrl;
 
     @Column(name = "is_valid", nullable = false)

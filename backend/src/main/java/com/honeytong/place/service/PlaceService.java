@@ -70,7 +70,7 @@ public class PlaceService {
     private static final int RECOMMENDED_MENU_COLUMN_LIMIT = 255;
     private static final int SHORT_RECOMMENDATION_COLUMN_LIMIT = 255;
     private static final int FEATURE_TEXT_COLUMN_LIMIT = 500;
-    private static final int IMAGE_URL_COLUMN_LIMIT = 255;
+    private static final int IMAGE_URL_COLUMN_LIMIT = 2048;
     private static final int ADDRESS_COLUMN_LIMIT = 255;
     private static final String REGION_POLICY_GROUP = "region";
     private static final String REGISTRATION_SCOPE_KEY = "registration_scope";

@@ -4,6 +4,8 @@ import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
 import 'package:provider/provider.dart';
 import 'core/api/api_client.dart';
 import 'core/config/app_config.dart';
+import 'core/theme/app_theme.dart';
+import 'core/widgets/app_scroll_behavior.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/services/auth_service.dart';
 import 'features/home/views/home_map_screen.dart';
@@ -90,16 +92,8 @@ class HoneytongApp extends StatelessWidget {
         builder: (context, localization, child) {
           return MaterialApp(
             title: '허니통 (Honeytong)',
-            theme: ThemeData(
-              useMaterial3: true,
-              colorScheme: ColorScheme.fromSeed(
-                seedColor: const Color(0xFFFFB300), // Honey/Amber brand color
-                primary: const Color(0xFFFFB300),
-                secondary: const Color(0xFFFF8F00),
-                surface: const Color(0xFFFAFAFA),
-              ),
-              fontFamily: 'NanumSquare',
-            ),
+            theme: AppTheme.light(),
+            scrollBehavior: const AppScrollBehavior(),
             home: const MainNavigationScreen(),
             debugShowCheckedModeBanner: false,
           );
@@ -119,7 +113,7 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  // Screens list matching the BottomNavigationBar tabs
+  // Screens list matching the main NavigationBar tabs.
   late final List<Widget> _screens;
 
   @override
@@ -152,8 +146,6 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
     });
   }
 
-
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -163,38 +155,33 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           children: _screens,
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        currentIndex: _currentIndex,
-        onTap: _onTabTapped,
-        type: BottomNavigationBarType.fixed,
-        selectedItemColor: Theme.of(context).colorScheme.secondary,
-        unselectedItemColor: Colors.grey,
-        backgroundColor: Colors.white,
-        elevation: 8,
-        items: [
-          BottomNavigationBarItem(
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: _onTabTapped,
+        destinations: [
+          NavigationDestination(
             icon: const Icon(Icons.map_outlined),
-            activeIcon: const Icon(Icons.map),
+            selectedIcon: const Icon(Icons.map),
             label: 'nav.home'.tr,
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: const Icon(Icons.leaderboard_outlined),
-            activeIcon: const Icon(Icons.leaderboard),
+            selectedIcon: const Icon(Icons.leaderboard),
             label: 'nav.ranking'.tr,
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: const Icon(Icons.bookmark_outline),
-            activeIcon: const Icon(Icons.bookmark),
+            selectedIcon: const Icon(Icons.bookmark),
             label: 'nav.save'.tr,
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: const Icon(Icons.forum_outlined),
-            activeIcon: const Icon(Icons.forum),
+            selectedIcon: const Icon(Icons.forum),
             label: 'nav.community'.tr,
           ),
-          BottomNavigationBarItem(
+          NavigationDestination(
             icon: const Icon(Icons.person_outline),
-            activeIcon: const Icon(Icons.person),
+            selectedIcon: const Icon(Icons.person),
             label: 'nav.my'.tr,
           ),
         ],

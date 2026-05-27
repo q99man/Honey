@@ -23,7 +23,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
   @override
   void initState() {
     super.initState();
-    _communityService = CommunityService(Provider.of<ApiClient>(context, listen: false));
+    _communityService =
+        CommunityService(Provider.of<ApiClient>(context, listen: false));
     _loadPost();
   }
 
@@ -56,9 +57,15 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.error_outline_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.error_outline_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 13))),
           ],
         ),
         backgroundColor: Colors.redAccent,
@@ -76,9 +83,15 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const Icon(Icons.check_circle_rounded,
+                color: Colors.white, size: 20),
             const SizedBox(width: 10),
-            Expanded(child: Text(message, style: const TextStyle(fontWeight: FontWeight.w600, color: Colors.white, fontSize: 13))),
+            Expanded(
+                child: Text(message,
+                    style: const TextStyle(
+                        fontWeight: FontWeight.w600,
+                        color: Colors.white,
+                        fontSize: 13))),
           ],
         ),
         backgroundColor: Colors.green,
@@ -95,7 +108,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
       context: context,
       builder: (context) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: const Text('이야기 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
+        title:
+            const Text('이야기 삭제', style: TextStyle(fontWeight: FontWeight.bold)),
         content: const Text('작성하신 이야기를 정말 삭제하시겠습니까?\n삭제 후에는 복구할 수 없습니다.'),
         actions: [
           TextButton(
@@ -111,7 +125,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               });
 
               final success = await _communityService.deletePost(widget.postId);
-              
+
               if (success) {
                 if (mounted) {
                   _showSuccessSnackBar('이야기가 성공적으로 삭제되었습니다.');
@@ -129,7 +143,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.redAccent,
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8)),
             ),
             child: const Text('삭제하기'),
           ),
@@ -140,7 +155,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
 
   void _navigateToEdit() {
     if (_post == null) return;
-    Navigator.of(context).push(
+    Navigator.of(context)
+        .push(
       MaterialPageRoute(
         builder: (context) => CommunityEditScreen(
           postId: _post!.postId,
@@ -148,7 +164,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
           initialContent: _post!.content,
         ),
       ),
-    ).then((reload) {
+    )
+        .then((reload) {
       if (reload == true) {
         _anyChangesMade = true;
         _loadPost();
@@ -187,7 +204,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                 onPressed: _isLoading ? null : _navigateToEdit,
               ),
               IconButton(
-                icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent),
+                icon: const Icon(Icons.delete_outline_rounded,
+                    color: Colors.redAccent),
                 tooltip: '삭제',
                 onPressed: _isLoading ? null : _deletePost,
               ),
@@ -214,11 +232,15 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.error_outline_rounded, size: 64, color: Colors.redAccent),
+            const Icon(Icons.error_outline_rounded,
+                size: 64, color: Colors.redAccent),
             const SizedBox(height: 16),
             const Text(
               '게시글을 찾을 수 없습니다',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF263238)),
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF263238)),
             ),
             const SizedBox(height: 8),
             const Text(
@@ -232,7 +254,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFFFFB300),
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(8)),
               ),
               child: const Text('목록으로 돌아가기'),
             )
@@ -268,7 +291,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                     shape: BoxShape.circle,
                   ),
                   child: const Center(
-                    child: Icon(Icons.account_circle_rounded, color: Color(0xFFFFB300), size: 30),
+                    child: Icon(Icons.account_circle_rounded,
+                        color: Color(0xFFFFB300), size: 30),
                   ),
                 ),
                 const SizedBox(width: 12),
@@ -289,7 +313,8 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
                           const SizedBox(width: 6),
                           if (post.mine)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
                                 color: const Color(0xFFFFF8E1),
                                 borderRadius: BorderRadius.circular(4),
@@ -320,7 +345,7 @@ class _CommunityDetailScreenState extends State<CommunityDetailScreen> {
             ),
           ),
           const SizedBox(height: 24),
-          
+
           // Post Title
           Text(
             post.title,

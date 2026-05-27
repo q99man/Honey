@@ -27,6 +27,9 @@ dependencies:
   # GPS Geolocation for location verification and nearby place searches
   geolocator: ^10.1.0
 
+  # Device gallery/camera image selection for uploads
+  image_picker: ^1.1.2
+
   # Kakao Login SDK for native OAuth authentication
   kakao_flutter_sdk_user: ^1.9.0
 

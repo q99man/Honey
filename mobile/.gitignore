@@ -33,6 +33,19 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Local QA captures and command logs
+/screen.png
+/ranking.png
+/save.png
+/community.png
+/mypage.png
+/window_dump*.xml
+/analyze_*.txt
+/build_log.txt
+/devices_log.txt
+/doctor_log.txt
+/run_log.txt
+
 # Symbolication related
 app.*.symbols
 

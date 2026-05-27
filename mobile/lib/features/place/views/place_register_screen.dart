@@ -1,11 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 
 import '../../../core/api/api_client.dart';
+import '../../../core/services/image_upload_service.dart';
+import '../../../core/theme/app_theme.dart';
+import '../../../core/widgets/app_section_title.dart';
+import '../../../core/widgets/app_surface_card.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/place_registration_eligibility.dart';
 import '../services/place_service.dart';
+import '../widgets/place_image_url_editor.dart';
 
 class PlaceRegisterScreen extends StatefulWidget {
   const PlaceRegisterScreen({super.key, this.placeId});
@@ -26,17 +32,22 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   final _latController = TextEditingController();
   final _lngController = TextEditingController();
   final _featureController = TextEditingController();
+  final _imageUrlController = TextEditingController();
 
   late final PlaceService _placeService;
+  late final ImageUploadService _imageUploadService;
+  final ImagePicker _imagePicker = ImagePicker();
 
   String _selectedCategory = 'KOREAN';
   bool _isFranchise = false;
   bool _isLoading = false;
   bool _isLocating = false;
+  bool _isUploadingImage = false;
   bool _isLoadingRegion = true;
   bool _isLoadingPlace = false;
   Map<String, dynamic>? _myRegion;
   Map<String, dynamic>? _editingPlace;
+  final List<String> _imageUrls = [];
 
   bool get _isEditMode => widget.placeId != null;
 
@@ -54,6 +65,8 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     super.initState();
     _placeService =
         PlaceService(Provider.of<ApiClient>(context, listen: false));
+    _imageUploadService =
+        ImageUploadService(Provider.of<ApiClient>(context, listen: false));
     _loadUserRegion();
     if (_isEditMode) {
       _loadPlaceForEdit();
@@ -72,6 +85,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     _latController.dispose();
     _lngController.dispose();
     _featureController.dispose();
+    _imageUrlController.dispose();
     super.dispose();
   }
 
@@ -118,7 +132,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('수정할 맛집 정보를 불러오지 못했습니다.'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
       return;
@@ -133,6 +147,9 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     _featureController.text = (details['featureText'] ?? '').toString();
     _latController.text = (details['latitude'] ?? '').toString();
     _lngController.text = (details['longitude'] ?? '').toString();
+    _imageUrls
+      ..clear()
+      ..addAll(_extractImageUrls(details['imageUrls']));
 
     final categoryCode = details['categoryCode']?.toString();
     setState(() {
@@ -160,7 +177,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(eligibility.message!),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
       return;
@@ -172,7 +189,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('현재 위치를 다시 잡거나 위도/경도를 숫자로 입력해주세요.'),
-          backgroundColor: Colors.redAccent,
+          backgroundColor: AppColors.berry,
         ),
       );
       return;
@@ -197,7 +214,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       'shortRecommendation': _reasonController.text.trim(),
       'featureText': _nullableText(_featureController),
       'franchise': _isFranchise,
-      'imageUrls': <String>[],
+      'imageUrls': List<String>.from(_imageUrls),
     };
 
     final result = _isEditMode
@@ -211,7 +228,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       SnackBar(
         content: Text(result['message'] ?? '처리 결과를 확인할 수 없습니다.'),
         backgroundColor:
-            result['success'] == true ? Colors.green : Colors.redAccent,
+            result['success'] == true ? AppColors.leaf : AppColors.berry,
       ),
     );
 
@@ -225,24 +242,111 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
     return value.isEmpty ? null : value;
   }
 
+  List<String> _extractImageUrls(dynamic value) {
+    if (value is! List) return [];
+    return value
+        .whereType<String>()
+        .map((url) => url.trim())
+        .where((url) => url.isNotEmpty)
+        .toList();
+  }
+
+  void _addImageUrl() {
+    final value = _imageUrlController.text.trim();
+    if (value.isEmpty) return;
+
+    final uri = Uri.tryParse(value);
+    final isHttpImageUrl = uri != null &&
+        uri.hasScheme &&
+        (uri.scheme == 'http' || uri.scheme == 'https') &&
+        uri.host.isNotEmpty;
+    if (!isHttpImageUrl) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('http 또는 https로 시작하는 이미지 URL을 입력해주세요.'),
+          backgroundColor: AppColors.berry,
+        ),
+      );
+      return;
+    }
+
+    if (_imageUrls.contains(value)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('이미 추가한 사진 URL입니다.'),
+          backgroundColor: AppColors.berry,
+        ),
+      );
+      return;
+    }
+
+    setState(() {
+      _imageUrls.add(value);
+      _imageUrlController.clear();
+    });
+  }
+
+  void _removeImageUrl(int index) {
+    if (index < 0 || index >= _imageUrls.length) return;
+    setState(() => _imageUrls.removeAt(index));
+  }
+
+  void _moveImageUrl(int index, int offset) {
+    final newIndex = index + offset;
+    if (index < 0 || index >= _imageUrls.length) return;
+    if (newIndex < 0 || newIndex >= _imageUrls.length) return;
+    setState(() {
+      final url = _imageUrls.removeAt(index);
+      _imageUrls.insert(newIndex, url);
+    });
+  }
+
+  Future<void> _pickAndUploadPlaceImage() async {
+    final image = await _imagePicker.pickImage(
+      source: ImageSource.gallery,
+      imageQuality: 85,
+      maxWidth: 1600,
+    );
+    if (image == null) return;
+
+    setState(() => _isUploadingImage = true);
+    final imageUrl = await _imageUploadService.uploadImageFile(
+      path: image.path,
+      filename: image.name,
+      target: ImageUploadTarget.place,
+    );
+    if (!mounted) return;
+
+    setState(() => _isUploadingImage = false);
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('사진 업로드에 실패했습니다. 다시 시도해주세요.'),
+          backgroundColor: AppColors.berry,
+        ),
+      );
+      return;
+    }
+
+    if (_imageUrls.contains(imageUrl)) return;
+    setState(() => _imageUrls.add(imageUrl));
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFAFAFA),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: Text(
           _isEditMode ? '맛집 수정' : '새 맛집 등록',
-          style: const TextStyle(
-              fontWeight: FontWeight.bold, color: Colors.black87),
+          style: const TextStyle(fontWeight: FontWeight.w800),
         ),
-        backgroundColor: Colors.white,
-        elevation: 0.5,
-        iconTheme: const IconThemeData(color: Colors.black87),
       ),
       body: _isLoadingRegion || _isLoadingPlace
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                valueColor: AlwaysStoppedAnimation(AppColors.honey),
               ),
             )
           : SingleChildScrollView(
@@ -254,7 +358,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                   children: [
                     _buildRegionInfoCard(),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('기본 정보'),
+                    const AppSectionTitle('기본 정보'),
                     const SizedBox(height: 8),
                     _buildTextField(
                       controller: _nameController,
@@ -274,7 +378,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                       validator: _required('대표 추천 메뉴를 입력해주세요.'),
                     ),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('추천 정보'),
+                    const AppSectionTitle('추천 정보'),
                     const SizedBox(height: 8),
                     _buildTextField(
                       controller: _reasonController,
@@ -292,7 +396,20 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                       icon: Icons.info_outline,
                     ),
                     const SizedBox(height: 20),
-                    _buildSectionTitle('위치 정보'),
+                    const AppSectionTitle('사진'),
+                    const SizedBox(height: 8),
+                    PlaceImageUrlEditor(
+                      imageUrls: _imageUrls,
+                      controller: _imageUrlController,
+                      onAdd: _addImageUrl,
+                      onRemove: _removeImageUrl,
+                      onMoveUp: (index) => _moveImageUrl(index, -1),
+                      onMoveDown: (index) => _moveImageUrl(index, 1),
+                      onPickImage: _pickAndUploadPlaceImage,
+                      isPickingImage: _isUploadingImage,
+                    ),
+                    const SizedBox(height: 20),
+                    const AppSectionTitle('위치 정보'),
                     const SizedBox(height: 8),
                     _buildLocationPicker(),
                     const SizedBox(height: 12),
@@ -314,7 +431,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                     const SizedBox(height: 6),
                     const Text(
                       '도로명 주소와 지번 주소 중 하나만 입력해도 됩니다.',
-                      style: TextStyle(fontSize: 12, color: Colors.black45),
+                      style: TextStyle(fontSize: 12, color: AppColors.muted),
                     ),
                     const SizedBox(height: 20),
                     _buildFranchiseSwitch(),
@@ -333,17 +450,6 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       return null;
     }
     return '도로명 주소와 지번 주소 중 하나를 입력해주세요.';
-  }
-
-  Widget _buildSectionTitle(String title) {
-    return Text(
-      title,
-      style: const TextStyle(
-        fontSize: 16,
-        fontWeight: FontWeight.bold,
-        color: Colors.black87,
-      ),
-    );
   }
 
   Widget _buildRegionInfoCard() {
@@ -366,24 +472,15 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       description = '마이페이지에서 동네 인증을 먼저 완료해주세요.';
     }
 
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: ready ? const Color(0xFFFFFDE7) : const Color(0xFFFFEBEE),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: ready ? const Color(0xFFFFF59D) : const Color(0xFFFFCDD2),
-        ),
-      ),
+    return AppSurfaceCard(
       child: Row(
         children: [
           Icon(
             ready ? Icons.verified_user : Icons.warning_amber_rounded,
-            color: ready ? const Color(0xFFFF8F00) : Colors.red,
+            color: ready ? AppColors.nectar : AppColors.berry,
             size: 28,
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: AppSpacing.sm),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -391,16 +488,16 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                 Text(
                   title,
                   style: TextStyle(
-                    fontWeight: FontWeight.bold,
-                    color: ready ? const Color(0xFFE65100) : Colors.red[900],
+                    fontWeight: FontWeight.w800,
+                    color: ready ? AppColors.ink : AppColors.berry,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: AppSpacing.xxs),
                 Text(
                   description,
-                  style: TextStyle(
+                  style: const TextStyle(
                     fontSize: 12,
-                    color: ready ? Colors.black87 : Colors.red[800],
+                    color: AppColors.muted,
                   ),
                 ),
               ],
@@ -431,23 +528,10 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       },
       decoration: InputDecoration(
         labelText: label,
-        labelStyle: const TextStyle(color: Colors.black54, fontSize: 13),
+        labelStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
         hintText: hint,
-        hintStyle: const TextStyle(color: Colors.black26, fontSize: 13),
-        prefixIcon: Icon(icon, color: const Color(0xFFFFB300), size: 20),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Colors.black12),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: const BorderSide(color: Color(0xFFFFB300), width: 1.5),
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        hintStyle: const TextStyle(color: AppColors.muted, fontSize: 13),
+        prefixIcon: Icon(icon, color: AppColors.honey, size: 20),
       ),
     );
   }
@@ -455,13 +539,9 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   Widget _buildCategoryDropdown() {
     return DropdownButtonFormField<String>(
       initialValue: _selectedCategory,
-      decoration: InputDecoration(
+      decoration: const InputDecoration(
         labelText: '카테고리',
-        prefixIcon:
-            const Icon(Icons.category, color: Color(0xFFFFB300), size: 20),
-        filled: true,
-        fillColor: Colors.white,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        prefixIcon: Icon(Icons.category, color: AppColors.honey, size: 20),
       ),
       items: _categoryMap.entries.map((entry) {
         return DropdownMenuItem<String>(
@@ -478,13 +558,8 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   }
 
   Widget _buildLocationPicker() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
-      ),
+    return AppSurfaceCard(
+      padding: const EdgeInsets.all(AppSpacing.sm),
       child: Column(
         children: [
           Row(
@@ -495,7 +570,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                   style: TextStyle(
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
-                    color: Colors.black87,
+                    color: AppColors.ink,
                   ),
                 ),
               ),
@@ -508,10 +583,10 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                         height: 16,
                         child: CircularProgressIndicator(
                           strokeWidth: 2,
-                          valueColor: AlwaysStoppedAnimation(Color(0xFFFFB300)),
+                          valueColor: AlwaysStoppedAnimation(AppColors.honey),
                         ),
                       )
-                    : const Icon(Icons.gps_fixed, color: Color(0xFFFFB300)),
+                    : const Icon(Icons.gps_fixed, color: AppColors.honey),
               ),
             ],
           ),
@@ -555,12 +630,10 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   }
 
   Widget _buildFranchiseSwitch() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.black12),
+    return AppSurfaceCard(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.md,
+        vertical: AppSpacing.xs,
       ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -576,14 +649,14 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
                 SizedBox(height: 2),
                 Text(
                   '대형 체인 또는 프랜차이즈 매장이라면 체크해주세요.',
-                  style: TextStyle(fontSize: 11, color: Colors.black45),
+                  style: TextStyle(fontSize: 11, color: AppColors.muted),
                 ),
               ],
             ),
           ),
           Switch(
             value: _isFranchise,
-            activeThumbColor: const Color(0xFFFFB300),
+            activeThumbColor: AppColors.honey,
             onChanged: (value) => setState(() => _isFranchise = value),
           ),
         ],
@@ -597,14 +670,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
       height: 52,
       child: ElevatedButton(
         onPressed: _isLoading ? null : _submit,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: const Color(0xFFFFB300),
-          foregroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
+        style: FilledButton.styleFrom(),
         child: _isLoading
             ? const CircularProgressIndicator(
                 valueColor: AlwaysStoppedAnimation(Colors.white),

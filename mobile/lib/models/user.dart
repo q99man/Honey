@@ -7,6 +7,7 @@ class UserProfile {
     this.birthYear,
     this.gender,
     this.nationalityCode,
+    this.profileImageUrl,
   });
 
   final int id;
@@ -16,6 +17,7 @@ class UserProfile {
   final int? birthYear;
   final String? gender;
   final String? nationalityCode;
+  final String? profileImageUrl;
 
   String get displayName => nickname;
 
@@ -28,6 +30,7 @@ class UserProfile {
       birthYear: json['birthYear'],
       gender: json['gender'],
       nationalityCode: json['nationalityCode'],
+      profileImageUrl: json['profileImageUrl'],
     );
   }
 }
