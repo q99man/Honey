@@ -12,8 +12,8 @@ import '../../auth/views/login_screen.dart';
 import '../../place/services/place_service.dart';
 import '../../place/views/place_detail_screen.dart';
 import '../../place/views/place_register_screen.dart';
-import '../widgets/kakao_place_map.dart';
 import '../widgets/home_place_card.dart';
+import '../widgets/kakao_place_map.dart';
 
 class HomeMapScreen extends StatefulWidget {
   const HomeMapScreen({super.key});
@@ -66,11 +66,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     super.initState();
     _placeService =
         PlaceService(Provider.of<ApiClient>(context, listen: false));
-    final fallbackPosition = _fallbackPosition();
-    _currentPosition = fallbackPosition;
+    _currentPosition = _fallbackPosition();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadNearbyPlaces(fallbackPosition);
+        _determinePosition();
       }
     });
   }
@@ -434,7 +433,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       return AppEmptyState(
         icon: Icons.search_off_rounded,
         title: '검색 결과가 없습니다',
-        description: '검색어나 위치를 바꿔 가까운 꽃맛집을 다시 찾아보세요.',
+        description: '검색어를 바꾸거나 내 위치 기준으로 가까운 맛집을 다시 찾아보세요.',
         actionLabel: '내 위치 기준으로 다시 찾기',
         onActionPressed: () {
           _searchController.clear();

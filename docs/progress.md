@@ -25,6 +25,9 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 - The updated dev APK was rebuilt, installed on the connected Android phone, launched, and `adb reverse tcp:8080 tcp:8080` was restored.
 - Real-device login/signup smoke passed on the connected phone.
 - `mobile/lib` Korean mojibake scan found no remaining common broken-text patterns, and the full Flutter mobile test suite passed.
+- Kakao native map rendering was restored on the physical phone after adding the current development key hash in Kakao Developers.
+- Home map startup now requests the real device location automatically instead of staying on the Hongdae fallback until the location button is pressed.
+- Nearby place API no longer depends on the optional generated `places.location` column, so local schemas without the Flyway spatial migration still return nearby places from latitude/longitude.
 
 ## Active Risks
 
@@ -35,6 +38,6 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 
 ## Next Task
 
-Create a clean checkpoint for the current workflow cleanup, mobile dev scripts, auth error handling, and verification updates so the large working-tree change set is easier to review.
+Run a short physical-phone home map smoke: open Home fresh, confirm it recenters to the real location without pressing the location button, and confirm nearby registered places appear as markers/list items.
 
-Recommended reasoning level: low
+Recommended reasoning level: medium
