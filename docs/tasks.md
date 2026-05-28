@@ -1,4 +1,4 @@
-# 🧾 Development Tasks
+# Development Tasks
 
 This document defines the implementation roadmap for Honeytong.
 
@@ -373,11 +373,15 @@ The goal is:
 - [x] Implement Flutter mobile saved places (wishlist) screen (Tab 2 integration)
 - [x] Implement Flutter mobile community screen (Tab 3 integration)
 - [x] Configure Flutter mobile release configuration & packaging (internet permission, package namespace, MainActivity, keystore dynamic loading)
-- [x] Create build script `scripts/build-mobile-release.ps1` and release guide `docs/mobile-release-guide.md`
+- [x] Create build script `scripts/build-mobile-release.ps1` and document mobile release basics in `mobile/README.md`
 - [x] Run release build script and verify output release APK and App Bundle (AAB)
 - [x] Replace Flutter Home simulated map with Kakao native map integration foundation and dart-define-driven `KAKAO_NATIVE_APP_KEY` setup
 - [x] Add repeatable Flutter Kakao native map device smoke script and checklist
 - [x] Add authenticated image upload API and connect Flutter place/profile image upload UI
+- [x] Add home/academy-safe mobile dev scripts for USB reverse and LAN API builds
+- [x] Remove obsolete harness docs, local skills, git hooks, and one-off smoke artifacts
+- [x] Restore mobile auth screen Korean text and expose backend login/signup error messages
+- [x] Verify mobile login/signup on a physical phone after the auth error-handling fix
 
 
 ---
@@ -416,7 +420,7 @@ MVP is complete when:
 
 When implementing:
 
-1. Follow agent.md instructions
+1. Follow AGENTS.md instructions
 2. Apply rules.md constraints
 3. Use db-schema.md structure
 4. Implement api-spec.md endpoints

@@ -49,8 +49,8 @@ class AuthProvider extends ChangeNotifier {
   Future<bool> login(String email, String password) async {
     _setLoading(true);
     _clearError();
-    final success = await _authService.login(email, password);
-    if (success) {
+    final result = await _authService.login(email, password);
+    if (result.success) {
       final fetched = await _fetchUserData();
       if (fetched) {
         _isAuthenticated = true;
@@ -58,8 +58,14 @@ class AuthProvider extends ChangeNotifier {
         notifyListeners();
         return true;
       }
+
+      await TokenManager.clearTokens();
+      _setError('로그인은 되었지만 내 정보를 불러오지 못했습니다. 다시 시도해주세요.');
+      _setLoading(false);
+      return false;
     }
-    _setError('로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
+
+    _setError(result.errorMessage ?? '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.');
     _setLoading(false);
     return false;
   }
@@ -72,12 +78,15 @@ class AuthProvider extends ChangeNotifier {
   ) async {
     _setLoading(true);
     _clearError();
-    final success = await _authService.signup(email, password, nickname, phone);
+    final result = await _authService.signup(email, password, nickname, phone);
     _setLoading(false);
-    if (success) {
+    if (result.success) {
       return true;
     }
-    _setError('회원가입에 실패했습니다. 이미 사용 중인 이메일이거나 입력값이 올바르지 않습니다.');
+
+    _setError(
+      result.errorMessage ?? '회원가입에 실패했습니다. 이미 사용 중인 이메일이거나 입력값이 올바르지 않습니다.',
+    );
     return false;
   }
 

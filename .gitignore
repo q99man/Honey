@@ -30,11 +30,6 @@ backend/local.properties
 .DS_Store
 Thumbs.db
 
-# MarkDown
-*.md
-!README.md
-!docs/**/*.md
-
 # Java / Gradle
 .gradle/
 backend/.gradle/
@@ -46,12 +41,5 @@ backend/.gradle-user-home/
 tmp/
 uploads/
 
-# git
-.github/
-.githooks/
-
-# Scripts
-scripts/
-
-# skills
+# Local agent/plugin artifacts
 skills/

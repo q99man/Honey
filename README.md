@@ -1,19 +1,49 @@
-# Honeytong (진행중..)
+# Honeytong
 
-## 프로젝트 소개
+Honeytong is a mobile-first, location-based local restaurant discovery platform.
 
-Honeytong은 모바일(웹에서도 동작 가능) 위치 기반의 로컬 맛집 탐험 플랫폼입니다.
-사용자는 지역을 인증하고 주변 맛집을 발견하며, 추천, 방문 인증, 댓글 같은 신뢰 기반 활동으로 지역 랭킹에 기여합니다.
+The project is currently focused on Flutter mobile stabilization, real-device QA, backend policy correctness, and keeping development workflow lightweight.
 
-이 서비스의 핵심 방향은 다음과 같습니다.
+## Key Docs
 
-- 지도 중심 탐색 경험
-- 전화 인증과 지역 인증 기반의 신뢰 참여
-- 추천, 방문, 댓글을 집계한 지역 랭킹
-- 운영자가 조정할 수 있는 정책 기반 시스템
-- 모바일 앱 감각의 Home 지도 UI와 보조 웹/관리자 화면
+- `AGENTS.md`: working rules for Codex and contributors
+- `docs/tasks.md`: roadmap and implementation order
+- `docs/progress.md`: compact current status and next task
+- `docs/prd.md`: product direction
+- `docs/rules.md`: business rules
+- `docs/architecture.md`: system structure
+- `docs/decisions.md`: active technical decisions
+- `docs/api-spec.md`: API contract, when API work needs it
+- `docs/db-schema.md`: schema contract, when DB work needs it
 
-## 현재 상태
+## Local Commands
 
-MVP 핵심 기능 범위는 구현 및 로컬 검증.
-UI UX 디테일 고도화 작업.
+Normalize Windows tool paths:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\dev-env.ps1
+```
+
+Run backend Gradle:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-backend-gradle.ps1 test
+```
+
+Run frontend npm:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run-frontend-npm.ps1 run build
+```
+
+Run mobile dev app on a USB-connected Android phone:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\mobile-dev-usb.ps1
+```
+
+Check only phone/backend USB forwarding:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\mobile-dev-usb.ps1 -CheckOnly
+```

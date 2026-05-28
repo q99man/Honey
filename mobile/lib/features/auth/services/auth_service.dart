@@ -1,7 +1,26 @@
+import 'package:dio/dio.dart';
+
 import '../../../core/api/api_client.dart';
 import '../../../core/api/api_endpoints.dart';
 import '../../../core/api/token_manager.dart';
 import '../../../models/user.dart';
+
+class AuthResult {
+  const AuthResult._({
+    required this.success,
+    this.errorMessage,
+  });
+
+  final bool success;
+  final String? errorMessage;
+
+  factory AuthResult.success() => const AuthResult._(success: true);
+
+  factory AuthResult.failure(String errorMessage) => AuthResult._(
+        success: false,
+        errorMessage: errorMessage,
+      );
+}
 
 class AuthService {
   final ApiClient _apiClient;
@@ -9,7 +28,7 @@ class AuthService {
   AuthService(this._apiClient);
 
   // Local login
-  Future<bool> login(String email, String password) async {
+  Future<AuthResult> login(String email, String password) async {
     try {
       final response = await _apiClient.dio.post(
         ApiEndpoints.login,
@@ -25,16 +44,21 @@ class AuthService {
           accessToken: data['accessToken'],
           refreshToken: data['refreshToken'],
         );
-        return true;
+        return AuthResult.success();
       }
-      return false;
-    } catch (e) {
-      return false;
+      return AuthResult.failure('로그인 응답을 확인할 수 없습니다. 다시 시도해주세요.');
+    } catch (error) {
+      return AuthResult.failure(
+        _messageFromError(
+          error,
+          fallback: '로그인에 실패했습니다. 이메일과 비밀번호를 확인해주세요.',
+        ),
+      );
     }
   }
 
   // Local signup
-  Future<bool> signup(
+  Future<AuthResult> signup(
     String email,
     String password,
     String nickname,
@@ -49,9 +73,17 @@ class AuthService {
           'nickname': nickname,
         },
       );
-      return response.statusCode == 200;
-    } catch (e) {
-      return false;
+      if (response.statusCode == 200) {
+        return AuthResult.success();
+      }
+      return AuthResult.failure('회원가입 응답을 확인할 수 없습니다. 다시 시도해주세요.');
+    } catch (error) {
+      return AuthResult.failure(
+        _messageFromError(
+          error,
+          fallback: '회원가입에 실패했습니다. 이미 사용 중인 이메일이거나 입력값이 올바르지 않습니다.',
+        ),
+      );
     }
   }
 
@@ -228,6 +260,33 @@ class AuthService {
       return null;
     } catch (e) {
       return null;
+    }
+  }
+
+  String _messageFromError(Object error, {required String fallback}) {
+    if (error is! DioException) {
+      return fallback;
+    }
+
+    final data = error.response?.data;
+    if (data is Map) {
+      final message = data['message'];
+      if (message is String && message.trim().isNotEmpty) {
+        return message.trim();
+      }
+    }
+
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+      case DioExceptionType.unknown:
+        return '서버에 연결하지 못했습니다. 네트워크와 개발 서버 연결을 확인해주세요.';
+      case DioExceptionType.badCertificate:
+      case DioExceptionType.badResponse:
+      case DioExceptionType.cancel:
+        return fallback;
     }
   }
 }
