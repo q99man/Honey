@@ -382,6 +382,8 @@ The goal is:
 - [x] Remove obsolete harness docs, local skills, git hooks, and one-off smoke artifacts
 - [x] Restore mobile auth screen Korean text and expose backend login/signup error messages
 - [x] Verify mobile login/signup on a physical phone after the auth error-handling fix
+- [x] Restore physical-phone Kakao map rendering with current development key hash
+- [x] Fix Home map startup recentering and nearby place lookup for local schemas without generated spatial columns
 
 
 ---

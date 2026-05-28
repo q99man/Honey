@@ -31,11 +31,14 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 - A follow-up login connection failure was traced to `adb reverse` disappearing when the sandboxed ADB daemon restarted; the reverse mapping was restored through the persistent host ADB session.
 - Kakao map blank state was traced through device logcat to Kakao Maps native auth returning `401 Unauthorized` for dev package `com.honeytong.app.dev` with debug key hash `vD2Lb2UbcQPb2KgglHUMJd+gDvU=`.
 - Touched mobile app label and Kakao initialization Korean text were restored from mojibake to UTF-8 Korean.
+- Kakao native map rendering was restored on the physical phone after adding the current development key hash in Kakao Developers.
 - Home map UI/UX cleanup started on the real-device path: broken Korean text in the home map was restored, Material 3 `FilterChip` usage replaced the older chip styling, and the app no longer treats a hardcoded fallback coordinate as the user's current location or calls nearby-place APIs before GPS succeeds.
 - A home map widget regression test now verifies Korean controls and ensures nearby-place lookup waits for a real GPS success.
 - The updated dev APK was rebuilt, installed on the connected Android phone, launched, and `adb reverse tcp:8080 tcp:8080` was restored.
 - Home map visible labels, category names, login prompt copy, empty states, and map setup messages now use the shared Flutter translation resource instead of screen-local Korean literals.
 - The Kakao home map fallback center is now a display-only `AppConfig` value (`HONEY_DEFAULT_MAP_LATITUDE` / `HONEY_DEFAULT_MAP_LONGITUDE`) and is not used as a current GPS location or nearby-place query input.
+- Home map startup now requests the real device location automatically instead of staying on the Hongdae fallback until the location button is pressed.
+- Nearby place API no longer depends on the optional generated `places.location` column, so local schemas without the Flyway spatial migration still return nearby places from latitude/longitude.
 - The updated dev APK was rebuilt through `scripts/mobile-dev-usb.ps1`, installed over the existing app without uninstalling, launched on the connected Android phone, and verified with `adb reverse tcp:8080 tcp:8080` plus a real-device screenshot.
 - Mobile place category display is now centralized through a shared Flutter `PlaceCategory` helper and reused by home, saved places, place detail, and place registration screens.
 - Kakao home map markers now use generated Honeytong-style PNG marker assets instead of one embedded base64 marker: category-colored place pins and a distinct current-location pin were verified on the connected Android phone.
