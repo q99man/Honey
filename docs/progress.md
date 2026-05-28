@@ -25,6 +25,31 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 - The updated dev APK was rebuilt, installed on the connected Android phone, launched, and `adb reverse tcp:8080 tcp:8080` was restored.
 - Real-device login/signup smoke passed on the connected phone.
 - `mobile/lib` Korean mojibake scan found no remaining common broken-text patterns, and the full Flutter mobile test suite passed.
+- Mobile auth initialization now uses a separate initializing state so stale-token session restore cannot disable the login/signup buttons while the backend is unreachable.
+- Login/signup/auth service Korean UI strings touched in the auth flow were restored from mojibake to UTF-8 Korean.
+- The updated dev APK was rebuilt, reinstalled on the connected Android phone after clearing the signature-mismatched old dev package, launched, and `adb reverse tcp:8080 tcp:8080` was restored.
+- A follow-up login connection failure was traced to `adb reverse` disappearing when the sandboxed ADB daemon restarted; the reverse mapping was restored through the persistent host ADB session.
+- Kakao map blank state was traced through device logcat to Kakao Maps native auth returning `401 Unauthorized` for dev package `com.honeytong.app.dev` with debug key hash `vD2Lb2UbcQPb2KgglHUMJd+gDvU=`.
+- Touched mobile app label and Kakao initialization Korean text were restored from mojibake to UTF-8 Korean.
+- Home map UI/UX cleanup started on the real-device path: broken Korean text in the home map was restored, Material 3 `FilterChip` usage replaced the older chip styling, and the app no longer treats a hardcoded fallback coordinate as the user's current location or calls nearby-place APIs before GPS succeeds.
+- A home map widget regression test now verifies Korean controls and ensures nearby-place lookup waits for a real GPS success.
+- The updated dev APK was rebuilt, installed on the connected Android phone, launched, and `adb reverse tcp:8080 tcp:8080` was restored.
+- Home map visible labels, category names, login prompt copy, empty states, and map setup messages now use the shared Flutter translation resource instead of screen-local Korean literals.
+- The Kakao home map fallback center is now a display-only `AppConfig` value (`HONEY_DEFAULT_MAP_LATITUDE` / `HONEY_DEFAULT_MAP_LONGITUDE`) and is not used as a current GPS location or nearby-place query input.
+- The updated dev APK was rebuilt through `scripts/mobile-dev-usb.ps1`, installed over the existing app without uninstalling, launched on the connected Android phone, and verified with `adb reverse tcp:8080 tcp:8080` plus a real-device screenshot.
+- Mobile place category display is now centralized through a shared Flutter `PlaceCategory` helper and reused by home, saved places, place detail, and place registration screens.
+- Kakao home map markers now use generated Honeytong-style PNG marker assets instead of one embedded base64 marker: category-colored place pins and a distinct current-location pin were verified on the connected Android phone.
+- Home map category markers now reuse the legacy web category emoji mapping (`KOREAN` rice, `CHINESE` chopsticks, `JAPANESE` sushi, `WESTERN` pasta, `SNACK` skewer, `CAFE` coffee) inside generated marker pins, and selected place markers use a larger highlighted style.
+- A follow-up login connection failure was traced again to a missing physical-device `adb reverse tcp:8080 tcp:8080` mapping; the backend was healthy and the reverse mapping was restored.
+- Home map first entry now starts the location permission/current-position flow after the first frame, so accepted location permissions recenter immediately and first-run denied permissions show the platform permission request instead of leaving the map on the display fallback.
+- The updated dev APK was rebuilt, installed on the connected Android phone, launched, and verified with `adb reverse tcp:8080 tcp:8080` plus a real-device screenshot showing the home map centered around the current device location.
+- Home map selected-marker camera behavior now follows the selected place instead of always recentering on the first place in the list; this fixes the two-place case where selecting Daedong Sikdang showed the correct card but moved the map to Viet Banh Mi.
+- Closing the selected home map place card now redraws marker state without moving the map camera back to the first place, so dismissing Daedong Sikdang's card leaves the map in place.
+- Home map overlay transitions now animate the selected place card in/out and move the floating actions smoothly when a card is present, reducing abrupt layout jumps around marker selection.
+- Home map nearby discovery states are now separated in Korean UI: locating, loading nearby places, location-permission blocked, no nearby places, no filter results, and no search results each show distinct guidance.
+- The selected home map place card now exposes a compact `상세 보기` action while ordinary list cards remain quiet with the existing chevron affordance.
+- Returning from place detail after a refresh-triggering action now keeps the selected home map card attached to the freshly reloaded place object, preserving map context while updating card content.
+- `scripts/mobile-dev-check.ps1` now provides a fast pre-login physical-device check for backend health and `adb reverse`, restoring the reverse mapping when it is missing without rebuilding the APK.
 
 ## Active Risks
 
@@ -35,6 +60,6 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 
 ## Next Task
 
-Create a clean checkpoint for the current workflow cleanup, mobile dev scripts, auth error handling, and verification updates so the large working-tree change set is easier to review.
+Continue home map UX polish by reviewing map/list mode switching so selected place, filters, and current location feel consistent when moving between exploration modes.
 
-Recommended reasoning level: low
+Recommended reasoning level: medium

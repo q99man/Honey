@@ -7,6 +7,7 @@ import '../../../models/place.dart';
 import '../../../models/wishlist.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
+import '../../place/utils/place_category.dart';
 import '../../place/views/place_detail_screen.dart';
 import '../../place/widgets/place_thumbnail.dart';
 import '../services/wishlist_service.dart';
@@ -24,16 +25,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
   bool _isLoading = false;
   List<SavedPlace> _savedPlaces = [];
   List<Place> _detailedPlaces = [];
-
-  // Category code to Korean display mapping
-  final Map<String, String> _categoryMap = {
-    'KOREAN': '한식',
-    'CHINESE': '중식',
-    'JAPANESE': '일식',
-    'WESTERN': '양식',
-    'SNACK': '분식',
-    'CAFE': '카페',
-  };
 
   @override
   void initState() {
@@ -369,8 +360,7 @@ class _WishlistScreenState extends State<WishlistScreen> {
       itemCount: _detailedPlaces.length,
       itemBuilder: (context, index) {
         final place = _detailedPlaces[index];
-        final categoryName =
-            _categoryMap[place.categoryCode] ?? place.categoryCode;
+        final categoryName = PlaceCategory.labelFor(place.categoryCode);
 
         return Container(
           margin: const EdgeInsets.only(bottom: 16),
@@ -564,7 +554,6 @@ class _WishlistScreenState extends State<WishlistScreen> {
       },
     );
   }
-
 }
 
 // Custom Pure Flutter Shimmer/Pulse Loading Animation Widget

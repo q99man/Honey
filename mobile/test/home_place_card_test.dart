@@ -67,4 +67,65 @@ void main() {
     expect(find.byType(Image), findsOneWidget);
     expect(find.byIcon(Icons.restaurant_rounded), findsNothing);
   });
+
+  testWidgets('HomePlaceCard shows an explicit detail action when compact',
+      (tester) async {
+    final place = Place.fromJson({
+      'id': 1,
+      'name': '대동식당',
+      'categoryCode': 'KOREAN',
+      'address': '경기 부천시 평천로',
+      'recommendedMenu': '순대국',
+      'shortRecommendation': '진한 국물이 좋은 동네 맛집입니다.',
+    });
+
+    var tapped = false;
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: HomePlaceCard(
+            place: place,
+            categoryLabel: '한식',
+            compact: true,
+            onTap: () => tapped = true,
+            onClose: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('상세 보기'), findsOneWidget);
+
+    await tester.tap(find.text('상세 보기'));
+    expect(tapped, isTrue);
+  });
+
+  testWidgets('HomePlaceCard keeps list cards visually quiet', (tester) async {
+    final place = Place.fromJson({
+      'id': 1,
+      'name': '대동식당',
+      'categoryCode': 'KOREAN',
+      'address': '경기 부천시 평천로',
+      'recommendedMenu': '순대국',
+      'shortRecommendation': '진한 국물이 좋은 동네 맛집입니다.',
+    });
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.light(),
+        home: Scaffold(
+          body: HomePlaceCard(
+            place: place,
+            categoryLabel: '한식',
+            onTap: () {},
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('상세 보기'), findsNothing);
+    expect(find.byIcon(Icons.chevron_right_rounded), findsOneWidget);
+  });
 }

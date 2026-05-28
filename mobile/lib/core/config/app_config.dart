@@ -9,12 +9,22 @@ class AppConfig {
       String.fromEnvironment('HONEY_PROD_API_BASE_URL');
   static const kakaoNativeAppKey =
       String.fromEnvironment('KAKAO_NATIVE_APP_KEY');
+  static const _configuredDefaultMapLatitude =
+      String.fromEnvironment('HONEY_DEFAULT_MAP_LATITUDE');
+  static const _configuredDefaultMapLongitude =
+      String.fromEnvironment('HONEY_DEFAULT_MAP_LONGITUDE');
   static const allowMockKakaoLogin = bool.fromEnvironment(
     'HONEY_ALLOW_MOCK_KAKAO_LOGIN',
     defaultValue: false,
   );
 
   static bool get isKakaoNativeConfigured => kakaoNativeAppKey.isNotEmpty;
+
+  static double get defaultMapLatitude =>
+      double.tryParse(_configuredDefaultMapLatitude) ?? 37.5665;
+
+  static double get defaultMapLongitude =>
+      double.tryParse(_configuredDefaultMapLongitude) ?? 126.9780;
 
   static String get apiBaseUrl {
     if (_configuredApiBaseUrl.isNotEmpty) {

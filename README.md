@@ -45,5 +45,5 @@ powershell -ExecutionPolicy Bypass -File .\scripts\mobile-dev-usb.ps1
 Check only phone/backend USB forwarding:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\mobile-dev-usb.ps1 -CheckOnly
+powershell -ExecutionPolicy Bypass -File .\scripts\mobile-dev-check.ps1
 ```

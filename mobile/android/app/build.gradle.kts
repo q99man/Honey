@@ -3,7 +3,6 @@ import java.util.Properties
 
 plugins {
     id("com.android.application")
-    // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
 
@@ -29,8 +28,6 @@ android {
 
     defaultConfig {
         applicationId = "com.honeytong.app"
-        // You can update the following values to match your application needs.
-        // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
@@ -43,7 +40,7 @@ android {
         create("dev") {
             dimension = "default"
             applicationIdSuffix = ".dev"
-            resValue("string", "app_name", "허니통 (개발)")
+            resValue("string", "app_name", "허니통(개발)")
         }
         create("prod") {
             dimension = "default"
@@ -56,7 +53,11 @@ android {
             keyAlias = keystoreProperties.getProperty("keyAlias")
             keyPassword = keystoreProperties.getProperty("keyPassword")
             val storeFilePath = keystoreProperties.getProperty("storeFile")
-            storeFile = if (storeFilePath != null) rootProject.file(storeFilePath) else null
+            storeFile = if (storeFilePath != null) {
+                rootProject.file(storeFilePath)
+            } else {
+                null
+            }
             storePassword = keystoreProperties.getProperty("storePassword")
         }
     }

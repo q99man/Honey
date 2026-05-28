@@ -69,6 +69,18 @@ This file keeps only active decisions that should guide future work. Historical 
 - `scripts/mobile-dev-usb.ps1` builds the dev APK with `HONEY_DEV_API_BASE_URL=http://127.0.0.1:8080`, installs it, launches it, and restores reverse forwarding.
 - `scripts/mobile-dev-lan.ps1` is a secondary option for networks where the phone can reach the PC directly.
 - If Android install reports signature mismatch, uninstall `com.honeytong.app.dev` and reinstall the dev APK.
+- The home map must not treat a hardcoded fallback coordinate as the user's current location. Nearby place lookup should wait for a real GPS success or an explicit keyword search.
+- The home map may use a configured display-only default center for the native map's initial empty render, but that center must live in mobile app configuration and must not drive GPS state, nearby-place lookup, or ranking/recommendation logic.
+- On first home map entry, the app should immediately start the platform location permission/current-position flow after the first frame. If permission is already granted, the map should recenter to GPS without user action; if permission is not decided, the platform permission request should be shown instead of leaving the fallback center as the apparent starting point.
+- Mobile place category labels and map marker style ids should be derived from a shared client-side display helper so home, saved places, place detail, and place registration stay visually consistent while preserving server-provided category codes.
+- Home map marker art should be generated from app design tokens at runtime instead of stored as a single embedded base64 blob, allowing category-colored place markers and a distinct current-location marker without scattering visual assets.
+- Mobile home map category markers should use the legacy web food-category emoji mapping rather than Korean initials, because Kakao base-map labels are also Korean and emoji markers have stronger visual contrast in dense map areas.
+- Home map camera movement after place selection should prefer the selected place coordinate; the first place in the result list is only a fallback when no selected place is available.
+- Closing the selected home map place card should not trigger camera movement; the map should stay where the user was looking while marker selection styling is cleared.
+- Home map place-card overlays and adjacent floating actions should use short, restrained motion so marker selection feels continuous without distracting from map exploration.
+- Home map discovery states should be explicit in the UI: location acquisition, nearby loading, permission blockage, nearby-empty, filter-empty, and search-empty states should not share one generic empty message.
+- Compact selected home map place cards should expose an explicit detail action, while list cards can keep the quieter full-card tap and chevron pattern.
+- When a place detail action causes the home map to reload nearby places, the selected card should rebind to the refreshed place object if the same place remains visible, rather than keeping stale card content or clearing selection.
 
 ## 11. Repository Hygiene
 

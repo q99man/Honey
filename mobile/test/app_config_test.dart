@@ -7,5 +7,10 @@ void main() {
       expect(AppConfig.kakaoNativeAppKey, isEmpty);
       expect(AppConfig.isKakaoNativeConfigured, isFalse);
     });
+
+    test('provides a display-only map center without treating it as GPS', () {
+      expect(AppConfig.defaultMapLatitude, isA<double>());
+      expect(AppConfig.defaultMapLongitude, isA<double>());
+    });
   });
 }

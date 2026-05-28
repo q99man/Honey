@@ -7,13 +7,16 @@ import '../../../models/user.dart';
 import '../services/auth_service.dart';
 
 class AuthProvider extends ChangeNotifier {
-  AuthProvider(this._authService) {
-    initialize();
+  AuthProvider(this._authService, {bool autoInitialize = true}) {
+    if (autoInitialize) {
+      initialize();
+    }
   }
 
   final AuthService _authService;
 
   bool _isAuthenticated = false;
+  bool _isInitializing = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -22,6 +25,7 @@ class AuthProvider extends ChangeNotifier {
   UserActivitySummary? _userSummary;
 
   bool get isAuthenticated => _isAuthenticated;
+  bool get isInitializing => _isInitializing;
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
   UserProfile? get userProfile => _userProfile;
@@ -29,7 +33,7 @@ class AuthProvider extends ChangeNotifier {
   UserActivitySummary? get userSummary => _userSummary;
 
   Future<void> initialize() async {
-    _setLoading(true);
+    _setInitializing(true);
     final hasToken = await TokenManager.isLoggedIn();
     if (hasToken) {
       final success = await _fetchUserData();
@@ -42,7 +46,7 @@ class AuthProvider extends ChangeNotifier {
     } else {
       _isAuthenticated = false;
     }
-    _setLoading(false);
+    _setInitializing(false);
     notifyListeners();
   }
 
@@ -235,6 +239,11 @@ class AuthProvider extends ChangeNotifier {
     _userStatus = await _authService.getMyStatus();
     _userSummary = await _authService.getMyActivitySummary();
     return true;
+  }
+
+  void _setInitializing(bool value) {
+    _isInitializing = value;
+    notifyListeners();
   }
 
   void _setLoading(bool value) {

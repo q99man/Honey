@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../../core/theme/app_theme.dart';
 import '../../../models/place.dart';
+import '../../../utils/localization.dart';
 import '../../place/widgets/place_thumbnail.dart';
 
 class HomePlaceCard extends StatelessWidget {
@@ -83,6 +84,30 @@ class HomePlaceCard extends StatelessWidget {
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                       ),
+                      if (onTap != null) ...[
+                        const SizedBox(height: AppSpacing.xxs),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: TextButton.icon(
+                            onPressed: onTap,
+                            icon: const Icon(
+                              Icons.arrow_forward_rounded,
+                              size: 16,
+                            ),
+                            label: Text('home.viewDetails'.tr),
+                            style: TextButton.styleFrom(
+                              foregroundColor: AppColors.honey,
+                              visualDensity: VisualDensity.compact,
+                              padding: EdgeInsets.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                              textStyle: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ] else ...[
                       const SizedBox(height: AppSpacing.xxs),
                       Text(

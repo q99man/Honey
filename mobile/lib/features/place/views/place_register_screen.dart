@@ -11,6 +11,7 @@ import '../../../core/widgets/app_surface_card.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../models/place_registration_eligibility.dart';
 import '../services/place_service.dart';
+import '../utils/place_category.dart';
 import '../widgets/place_image_url_editor.dart';
 
 class PlaceRegisterScreen extends StatefulWidget {
@@ -50,15 +51,6 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
   final List<String> _imageUrls = [];
 
   bool get _isEditMode => widget.placeId != null;
-
-  final Map<String, String> _categoryMap = const {
-    'KOREAN': '한식',
-    'CHINESE': '중식',
-    'JAPANESE': '일식',
-    'WESTERN': '양식',
-    'SNACK': '분식',
-    'CAFE': '카페',
-  };
 
   @override
   void initState() {
@@ -153,7 +145,7 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
 
     final categoryCode = details['categoryCode']?.toString();
     setState(() {
-      if (categoryCode != null && _categoryMap.containsKey(categoryCode)) {
+      if (categoryCode != null && PlaceCategory.contains(categoryCode)) {
         _selectedCategory = categoryCode;
       }
       _isFranchise = details['franchise'] == true;
@@ -543,10 +535,10 @@ class _PlaceRegisterScreenState extends State<PlaceRegisterScreen> {
         labelText: '카테고리',
         prefixIcon: Icon(Icons.category, color: AppColors.honey, size: 20),
       ),
-      items: _categoryMap.entries.map((entry) {
+      items: PlaceCategory.selectable.map((category) {
         return DropdownMenuItem<String>(
-          value: entry.key,
-          child: Text(entry.value),
+          value: category.code,
+          child: Text(category.label),
         );
       }).toList(),
       onChanged: (value) {

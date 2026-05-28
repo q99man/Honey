@@ -11,6 +11,7 @@ import '../../auth/views/login_screen.dart';
 import '../../visit/services/visit_service.dart';
 import '../models/place_detail_address.dart';
 import '../services/place_service.dart';
+import '../utils/place_category.dart';
 import '../widgets/place_image_gallery.dart';
 
 class PlaceDetailScreen extends StatefulWidget {
@@ -48,15 +49,6 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
   bool _isActionInProgress = false;
 
   final _commentController = TextEditingController();
-
-  final Map<String, String> _categoryMap = {
-    'KOREAN': '한식',
-    'CHINESE': '중식',
-    'JAPANESE': '일식',
-    'WESTERN': '양식',
-    'SNACK': '분식',
-    'CAFE': '카페',
-  };
 
   @override
   void initState() {
@@ -442,8 +434,9 @@ class _PlaceDetailScreenState extends State<PlaceDetailScreen> {
       );
     }
 
-    final String catKo = _categoryMap[_placeDetails!['categoryCode']] ??
-        _placeDetails!['categoryCode'];
+    final String catKo = PlaceCategory.labelFor(
+      _placeDetails!['categoryCode']?.toString() ?? '',
+    );
     final imageUrls = _extractImageUrls(_placeDetails!['imageUrls']);
 
     return Scaffold(

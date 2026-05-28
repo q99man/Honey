@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:provider/provider.dart';
@@ -7,47 +8,70 @@ import '../../../core/config/app_config.dart';
 import '../../../core/theme/app_theme.dart';
 import '../../../core/widgets/app_empty_state.dart';
 import '../../../models/place.dart';
+import '../../../utils/localization.dart';
 import '../../auth/providers/auth_provider.dart';
 import '../../auth/views/login_screen.dart';
+import '../../place/utils/place_category.dart';
 import '../../place/services/place_service.dart';
 import '../../place/views/place_detail_screen.dart';
 import '../../place/views/place_register_screen.dart';
-import '../widgets/kakao_place_map.dart';
 import '../widgets/home_place_card.dart';
+import '../widgets/kakao_place_map.dart';
 
 class HomeMapScreen extends StatefulWidget {
   const HomeMapScreen({super.key});
+
+  @visibleForTesting
+  static Place? syncSelectedPlaceForTesting({
+    required Place? selectedPlace,
+    required List<Place> visiblePlaces,
+  }) {
+    if (selectedPlace == null) {
+      return null;
+    }
+
+    return visiblePlaces
+        .where((place) => place.id == selectedPlace.id)
+        .firstOrNull;
+  }
 
   @override
   State<HomeMapScreen> createState() => _HomeMapScreenState();
 }
 
 class _CategoryFilter {
-  const _CategoryFilter(this.label, this.code);
+  const _CategoryFilter(this.labelKey, this.code);
 
-  final String label;
+  final String labelKey;
   final String? code;
 }
 
-class _HomeMapScreenState extends State<HomeMapScreen> {
-  static const _categories = [
-    _CategoryFilter('전체', null),
-    _CategoryFilter('한식', 'KOREAN'),
-    _CategoryFilter('중식', 'CHINESE'),
-    _CategoryFilter('일식', 'JAPANESE'),
-    _CategoryFilter('양식', 'WESTERN'),
-    _CategoryFilter('분식', 'SNACK'),
-    _CategoryFilter('카페', 'CAFE'),
-  ];
+class _HomeEmptyStateCopy {
+  const _HomeEmptyStateCopy({
+    required this.icon,
+    required this.titleKey,
+    required this.descriptionKey,
+    required this.actionKey,
+    required this.action,
+  });
 
-  static const _categoryLabels = {
-    'KOREAN': '한식',
-    'CHINESE': '중식',
-    'JAPANESE': '일식',
-    'WESTERN': '양식',
-    'SNACK': '분식',
-    'CAFE': '카페',
-  };
+  final IconData icon;
+  final String titleKey;
+  final String descriptionKey;
+  final String actionKey;
+  final VoidCallback action;
+}
+
+class _HomeMapScreenState extends State<HomeMapScreen> {
+  static const _mapOverlayAnimationDuration = Duration(milliseconds: 220);
+  static const _mapOverlayAnimationCurve = Curves.easeOutCubic;
+
+  static final _categories = [
+    const _CategoryFilter('home.category.all', null),
+    ...PlaceCategory.selectable.map(
+      (category) => _CategoryFilter(category.translationKey, category.code),
+    ),
+  ];
 
   late final PlaceService _placeService;
   final _searchController = TextEditingController();
@@ -59,6 +83,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   bool _isMapView = true;
   int _recenterRequestId = 0;
   String? _selectedCategoryCode;
+  String? _locationMessage;
   List<Place> _places = [];
 
   @override
@@ -66,11 +91,9 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     super.initState();
     _placeService =
         PlaceService(Provider.of<ApiClient>(context, listen: false));
-    final fallbackPosition = _fallbackPosition();
-    _currentPosition = fallbackPosition;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) {
-        _loadNearbyPlaces(fallbackPosition);
+        _determinePosition();
       }
     });
   }
@@ -82,7 +105,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   Future<void> _determinePosition() async {
-    setState(() => _isLoadingGps = true);
+    setState(() {
+      _isLoadingGps = true;
+      _locationMessage = null;
+    });
 
     try {
       final serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -118,33 +144,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       await _loadNearbyPlaces(position);
     } catch (error) {
       debugPrint('GPS Error: $error');
-      final fallbackPosition = _fallbackPosition();
-
       if (!mounted) return;
       setState(() {
-        _currentPosition = fallbackPosition;
+        _currentPosition = null;
         _selectedPlace = null;
-        _recenterRequestId++;
         _isLoadingGps = false;
+        _locationMessage = error.toString();
       });
-
-      await _loadNearbyPlaces(fallbackPosition);
     }
-  }
-
-  Position _fallbackPosition() {
-    return Position(
-      latitude: 37.556456,
-      longitude: 126.924456,
-      timestamp: DateTime.now(),
-      accuracy: 0.0,
-      altitude: 0.0,
-      altitudeAccuracy: 0.0,
-      heading: 0.0,
-      headingAccuracy: 0.0,
-      speed: 0.0,
-      speedAccuracy: 0.0,
-    );
   }
 
   Future<void> _loadNearbyPlaces(Position position) async {
@@ -166,8 +173,14 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   Future<void> _search() async {
     final keyword = _searchController.text.trim();
     if (keyword.isEmpty) {
-      if (_currentPosition != null) {
-        await _loadNearbyPlaces(_currentPosition!);
+      final position = _currentPosition;
+      if (position != null) {
+        await _loadNearbyPlaces(position);
+      } else {
+        setState(() {
+          _places = [];
+          _selectedPlace = null;
+        });
       }
       return;
     }
@@ -195,16 +208,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   void _syncSelectedPlace() {
-    final selectedPlace = _selectedPlace;
-    if (selectedPlace == null) {
-      return;
-    }
-
-    final places = _getFilteredPlaces();
-    final stillVisible = places.any((place) => place.id == selectedPlace.id);
-    if (!stillVisible) {
-      _selectedPlace = null;
-    }
+    _selectedPlace = HomeMapScreen.syncSelectedPlaceForTesting(
+      selectedPlace: _selectedPlace,
+      visiblePlaces: _getFilteredPlaces(),
+    );
   }
 
   @override
@@ -233,31 +240,61 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
             right: 0,
             child: _buildCategoryChips(),
           ),
-          Positioned(
+          if (_isMapView && _locationMessage != null)
+            Positioned(
+              top: 126,
+              left: 16,
+              right: 16,
+              child: _buildLocationNotice(_locationMessage!),
+            ),
+          AnimatedPositioned(
+            key: const ValueKey('home-map-floating-actions'),
+            duration: _mapOverlayAnimationDuration,
+            curve: _mapOverlayAnimationCurve,
             right: 16,
             bottom: _isMapView && selectedPlace != null ? 132 : 20,
             child: _buildFloatingActions(),
           ),
-          if (_isMapView && selectedPlace != null)
+          if (_isMapView)
             Positioned(
               left: 16,
               right: 16,
               bottom: 16,
-              child: _buildSelectedPlaceCard(selectedPlace),
+              child: AnimatedSwitcher(
+                key: const ValueKey('home-map-selected-card-switcher'),
+                duration: _mapOverlayAnimationDuration,
+                reverseDuration: const Duration(milliseconds: 160),
+                switchInCurve: _mapOverlayAnimationCurve,
+                switchOutCurve: Curves.easeInCubic,
+                transitionBuilder: (child, animation) {
+                  final offsetAnimation = Tween<Offset>(
+                    begin: const Offset(0, 0.08),
+                    end: Offset.zero,
+                  ).animate(animation);
+
+                  return FadeTransition(
+                    opacity: animation,
+                    child: SlideTransition(
+                      position: offsetAnimation,
+                      child: child,
+                    ),
+                  );
+                },
+                child: selectedPlace == null
+                    ? const SizedBox.shrink(key: ValueKey('empty-place-card'))
+                    : _buildSelectedPlaceCard(selectedPlace),
+              ),
             ),
-          if (_isMapView && _isLoadingPlaces)
-            const Positioned(
+          if (_isMapView && (_isLoadingGps || _isLoadingPlaces))
+            Positioned(
               left: 0,
               right: 0,
               bottom: 28,
               child: Center(
-                child: SizedBox(
-                  width: 28,
-                  height: 28,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 3,
-                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
-                  ),
+                child: _buildMapStatusPill(
+                  _isLoadingGps
+                      ? 'home.locatingTitle'.tr
+                      : 'home.loadingNearbyTitle'.tr,
                 ),
               ),
             ),
@@ -266,78 +303,25 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     );
   }
 
-  Widget _buildFloatingActions() {
-    return Column(
-      children: [
-        FloatingActionButton(
-          heroTag: 'register_btn',
-          onPressed: _openRegister,
-          backgroundColor: AppColors.nectar,
-          foregroundColor: Colors.white,
-          tooltip: '맛집 등록',
-          child: const Icon(Icons.add_location_alt_outlined),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton.small(
-          heroTag: 'gps_btn',
-          onPressed: _determinePosition,
-          backgroundColor: AppColors.surface,
-          foregroundColor: AppColors.honey,
-          tooltip: '내 위치',
-          child: _isLoadingGps
-              ? const SizedBox(
-                  height: 16,
-                  width: 16,
-                  child: CircularProgressIndicator(
-                    strokeWidth: 2,
-                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
-                  ),
-                )
-              : const Icon(Icons.my_location),
-        ),
-        const SizedBox(height: 10),
-        FloatingActionButton(
-          heroTag: 'view_toggle_btn',
-          onPressed: () {
-            setState(() {
-              _isMapView = !_isMapView;
-              _selectedPlace = null;
-            });
-          },
-          backgroundColor: AppColors.honey,
-          foregroundColor: Colors.white,
-          tooltip: _isMapView ? '리스트 보기' : '지도 보기',
-          child: Icon(_isMapView ? Icons.list : Icons.map),
-        ),
-      ],
-    );
-  }
-
   Widget _buildSearchBar() {
-    return Container(
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadius.pill),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.ink.withValues(alpha: 0.08),
-            blurRadius: 16,
-            offset: const Offset(0, 6),
-          ),
-        ],
-      ),
+    return Material(
+      color: AppColors.surface,
+      elevation: 3,
+      shadowColor: AppColors.ink.withValues(alpha: 0.10),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
       child: TextField(
         controller: _searchController,
         textInputAction: TextInputAction.search,
         onSubmitted: (_) => _search(),
         decoration: InputDecoration(
-          hintText: '맛집 이름이나 메뉴를 검색해 보세요',
+          hintText: 'home.searchHint'.tr,
           hintStyle: const TextStyle(fontSize: 14, color: AppColors.muted),
           prefixIcon: const Icon(Icons.search, color: AppColors.honey),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 20),
                   color: AppColors.muted,
+                  tooltip: 'home.clearSearch'.tr,
                   onPressed: () {
                     _searchController.clear();
                     _search();
@@ -367,14 +351,8 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
           return Padding(
             padding: const EdgeInsets.only(right: 8),
-            child: ChoiceChip(
-              label: Text(
-                category.label,
-                style: TextStyle(
-                  color: isSelected ? Colors.white : AppColors.ink,
-                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
-                ),
-              ),
+            child: FilterChip(
+              label: Text(category.labelKey.tr),
               selected: isSelected,
               onSelected: (_) {
                 setState(() {
@@ -383,15 +361,67 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 });
               },
               selectedColor: AppColors.honey,
+              checkmarkColor: Colors.white,
+              labelStyle: TextStyle(
+                color: isSelected ? Colors.white : AppColors.ink,
+                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w700,
+              ),
               backgroundColor: AppColors.surface,
-              elevation: 1,
-              shadowColor: AppColors.ink.withValues(alpha: 0.08),
               side: const BorderSide(color: AppColors.outline),
-              padding: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(AppRadius.pill),
+              ),
             ),
           );
         },
       ),
+    );
+  }
+
+  Widget _buildFloatingActions() {
+    return Column(
+      children: [
+        FloatingActionButton(
+          heroTag: 'register_btn',
+          onPressed: _openRegister,
+          backgroundColor: AppColors.nectar,
+          foregroundColor: Colors.white,
+          tooltip: 'home.registerPlace'.tr,
+          child: const Icon(Icons.add_location_alt_outlined),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton.small(
+          heroTag: 'gps_btn',
+          onPressed: _determinePosition,
+          backgroundColor: AppColors.surface,
+          foregroundColor: AppColors.honey,
+          tooltip: 'home.currentLocation'.tr,
+          child: _isLoadingGps
+              ? const SizedBox(
+                  height: 16,
+                  width: 16,
+                  child: CircularProgressIndicator(
+                    strokeWidth: 2,
+                    valueColor: AlwaysStoppedAnimation(AppColors.honey),
+                  ),
+                )
+              : const Icon(Icons.my_location),
+        ),
+        const SizedBox(height: 10),
+        FloatingActionButton(
+          heroTag: 'view_toggle_btn',
+          onPressed: () {
+            setState(() {
+              _isMapView = !_isMapView;
+              _selectedPlace = null;
+            });
+          },
+          backgroundColor: AppColors.honey,
+          foregroundColor: Colors.white,
+          tooltip: _isMapView ? 'home.listView'.tr : 'home.mapView'.tr,
+          child: Icon(_isMapView ? Icons.list : Icons.map),
+        ),
+      ],
     );
   }
 
@@ -403,6 +433,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
     return KakaoPlaceMap(
       places: places,
       currentPosition: _currentPosition,
+      selectedPlaceId: _selectedPlace?.id,
       recenterRequestId: _recenterRequestId,
       onPlaceSelected: (place) {
         setState(() => _selectedPlace = place);
@@ -411,35 +442,104 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   Widget _buildMapConfigurationState() {
-    return const ColoredBox(
+    return ColoredBox(
       color: AppColors.background,
       child: AppEmptyState(
         icon: Icons.map_outlined,
-        title: '카카오맵 설정이 필요합니다',
-        description: 'KAKAO_NATIVE_APP_KEY를 빌드 설정에 추가하면 실제 지도가 표시됩니다.',
+        title: 'home.mapConfigurationTitle'.tr,
+        description: 'home.mapConfigurationDescription'.tr,
+      ),
+    );
+  }
+
+  Widget _buildLocationNotice(String message) {
+    return Material(
+      color: AppColors.surface,
+      elevation: 2,
+      shadowColor: AppColors.ink.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppRadius.md),
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.sm),
+        child: Row(
+          children: [
+            const Icon(Icons.location_off_outlined, color: AppColors.nectar),
+            const SizedBox(width: AppSpacing.xs),
+            Expanded(
+              child: Text(
+                '$message\n${'home.locationRetryHint'.tr}',
+                style: const TextStyle(
+                  color: AppColors.ink,
+                  fontSize: 12,
+                  height: 1.35,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMapStatusPill(String label) {
+    return Material(
+      color: AppColors.surface,
+      elevation: 2,
+      shadowColor: AppColors.ink.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(AppRadius.pill),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.sm,
+          vertical: AppSpacing.xs,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(AppColors.honey),
+              ),
+            ),
+            const SizedBox(width: AppSpacing.xs),
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
   Widget _buildListView(List<Place> places) {
+    if (_isLoadingGps) {
+      return _buildProgressListState(
+        title: 'home.locatingTitle'.tr,
+        description: 'home.locatingDescription'.tr,
+      );
+    }
+
     if (_isLoadingPlaces) {
-      return const Center(
-        child: CircularProgressIndicator(
-          valueColor: AlwaysStoppedAnimation(AppColors.honey),
-        ),
+      return _buildProgressListState(
+        title: 'home.loadingNearbyTitle'.tr,
+        description: 'home.loadingNearbyDescription'.tr,
       );
     }
 
     if (places.isEmpty) {
+      final emptyState = _emptyStateCopy();
       return AppEmptyState(
-        icon: Icons.search_off_rounded,
-        title: '검색 결과가 없습니다',
-        description: '검색어나 위치를 바꿔 가까운 꽃맛집을 다시 찾아보세요.',
-        actionLabel: '내 위치 기준으로 다시 찾기',
-        onActionPressed: () {
-          _searchController.clear();
-          _determinePosition();
-        },
+        icon: emptyState.icon,
+        title: emptyState.titleKey.tr,
+        description: emptyState.descriptionKey.tr,
+        actionLabel: emptyState.actionKey.tr,
+        onActionPressed: emptyState.action,
       );
     }
 
@@ -447,6 +547,94 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
       padding: const EdgeInsets.only(top: 130, left: 16, right: 16, bottom: 20),
       itemCount: places.length,
       itemBuilder: (context, index) => _buildPlaceListItem(places[index]),
+    );
+  }
+
+  Widget _buildProgressListState({
+    required String title,
+    required String description,
+  }) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(AppSpacing.lg),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const CircularProgressIndicator(
+              valueColor: AlwaysStoppedAnimation(AppColors.honey),
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Text(
+              title,
+              style: const TextStyle(
+                color: AppColors.ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs),
+            Text(
+              description,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                color: AppColors.muted,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  _HomeEmptyStateCopy _emptyStateCopy() {
+    final currentPosition = _currentPosition;
+    if (_locationMessage != null && currentPosition == null) {
+      return _HomeEmptyStateCopy(
+        icon: Icons.location_off_outlined,
+        titleKey: 'home.permissionEmptyTitle',
+        descriptionKey: 'home.permissionEmptyDescription',
+        actionKey: 'home.findByLocation',
+        action: _determinePosition,
+      );
+    }
+
+    if (_searchController.text.trim().isNotEmpty) {
+      return _HomeEmptyStateCopy(
+        icon: Icons.search_off_rounded,
+        titleKey: 'home.searchEmptyTitle',
+        descriptionKey: 'home.searchEmptyDescription',
+        actionKey: 'home.reload',
+        action: _search,
+      );
+    }
+
+    if (_selectedCategoryCode != null && currentPosition != null) {
+      return _HomeEmptyStateCopy(
+        icon: Icons.filter_alt_off_outlined,
+        titleKey: 'home.filterEmptyTitle',
+        descriptionKey: 'home.filterEmptyDescription',
+        actionKey: 'home.reload',
+        action: () => _loadNearbyPlaces(currentPosition!),
+      );
+    }
+
+    if (currentPosition != null) {
+      return _HomeEmptyStateCopy(
+        icon: Icons.explore_off_outlined,
+        titleKey: 'home.nearbyEmptyTitle',
+        descriptionKey: 'home.nearbyEmptyDescription',
+        actionKey: 'home.reload',
+        action: () => _loadNearbyPlaces(currentPosition),
+      );
+    }
+
+    return _HomeEmptyStateCopy(
+      icon: Icons.my_location_outlined,
+      titleKey: 'home.emptyTitle',
+      descriptionKey: 'home.emptyNoLocation',
+      actionKey: 'home.findByLocation',
+      action: _determinePosition,
     );
   }
 
@@ -463,6 +651,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
 
   Widget _buildSelectedPlaceCard(Place place) {
     return DecoratedBox(
+      key: ValueKey('selected-place-card-${place.id}'),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(AppRadius.lg),
         boxShadow: [
@@ -484,7 +673,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
   }
 
   String _categoryLabel(String categoryCode) {
-    return _categoryLabels[categoryCode] ?? categoryCode;
+    return PlaceCategory.labelFor(categoryCode);
   }
 
   Future<void> _openRegister() async {
@@ -520,17 +709,17 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppRadius.lg),
         ),
-        title: const Text(
-          '로그인이 필요합니다',
+        title: Text(
+          'home.loginRequiredTitle'.tr,
           style: TextStyle(fontWeight: FontWeight.w800),
         ),
-        content: const Text(
-          '맛집 등록은 로그인 후 사용할 수 있습니다.\n로그인 화면으로 이동할까요?',
+        content: Text(
+          'home.loginRequiredDescription'.tr,
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('취소'),
+            child: Text('common.cancel'.tr),
           ),
           FilledButton(
             onPressed: () {
@@ -539,7 +728,7 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
                 MaterialPageRoute(builder: (context) => const LoginScreen()),
               );
             },
-            child: const Text('로그인하기'),
+            child: Text('home.login'.tr),
           ),
         ],
       ),

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as kakao_map;
 import 'package:kakao_flutter_sdk_user/kakao_flutter_sdk_user.dart' as kakao;
+import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as kakao_map;
 import 'package:provider/provider.dart';
+
 import 'core/api/api_client.dart';
 import 'core/config/app_config.dart';
 import 'core/theme/app_theme.dart';
 import 'core/widgets/app_scroll_behavior.dart';
 import 'features/auth/providers/auth_provider.dart';
 import 'features/auth/services/auth_service.dart';
+import 'features/community/services/community_service.dart';
+import 'features/community/views/community_screen.dart';
 import 'features/home/views/home_map_screen.dart';
 import 'features/my/views/my_page_screen.dart';
 import 'features/place/services/place_service.dart';
@@ -15,15 +18,11 @@ import 'features/ranking/services/ranking_service.dart';
 import 'features/ranking/views/ranking_screen.dart';
 import 'features/wishlist/services/wishlist_service.dart';
 import 'features/wishlist/views/wishlist_screen.dart';
-import 'features/community/services/community_service.dart';
-import 'features/community/views/community_screen.dart';
-
 import 'utils/localization.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Initialize Localization singleton.
   final localization = Localization();
   await localization.init();
 
@@ -53,35 +52,27 @@ class HoneytongApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MultiProvider(
       providers: [
-        // Inject Localization
         ChangeNotifierProvider<Localization>.value(
           value: Localization(),
         ),
-        // Inject ApiClient
         Provider<ApiClient>(
           create: (_) => ApiClient(),
         ),
-        // Inject AuthService
         ProxyProvider<ApiClient, AuthService>(
           update: (_, apiClient, __) => AuthService(apiClient),
         ),
-        // Inject PlaceService
         ProxyProvider<ApiClient, PlaceService>(
           update: (_, apiClient, __) => PlaceService(apiClient),
         ),
-        // Inject RankingService
         ProxyProvider<ApiClient, RankingService>(
           update: (_, apiClient, __) => RankingService(apiClient),
         ),
-        // Inject WishlistService
         ProxyProvider<ApiClient, WishlistService>(
           update: (_, apiClient, __) => WishlistService(apiClient),
         ),
-        // Inject CommunityService
         ProxyProvider<ApiClient, CommunityService>(
           update: (_, apiClient, __) => CommunityService(apiClient),
         ),
-        // Inject AuthProvider (ChangeNotifier)
         ChangeNotifierProvider<AuthProvider>(
           create: (context) => AuthProvider(
             Provider.of<AuthService>(context, listen: false),
@@ -91,7 +82,7 @@ class HoneytongApp extends StatelessWidget {
       child: Consumer<Localization>(
         builder: (context, localization, child) {
           return MaterialApp(
-            title: '허니통 (Honeytong)',
+            title: '허니통(Honeytong)',
             theme: AppTheme.light(),
             scrollBehavior: const AppScrollBehavior(),
             home: const MainNavigationScreen(),
@@ -113,15 +104,14 @@ class MainNavigationScreen extends StatefulWidget {
 class _MainNavigationScreenState extends State<MainNavigationScreen> {
   int _currentIndex = 0;
 
-  // Screens list matching the main NavigationBar tabs.
   late final List<Widget> _screens;
 
   @override
   void initState() {
     super.initState();
     _screens = [
-      const HomeMapScreen(), // 홈 (지도로 맛집 탐험)
-      const RankingScreen(), // 실시간 랭킹 화면
+      const HomeMapScreen(),
+      const RankingScreen(),
       WishlistScreen(
         onExploreTap: () {
           setState(() {
@@ -136,7 +126,7 @@ class _MainNavigationScreenState extends State<MainNavigationScreen> {
           });
         },
       ),
-      const MyPageScreen(), // 마이페이지 (성장 지표 및 휴대폰 인증)
+      const MyPageScreen(),
     ];
   }
 

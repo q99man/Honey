@@ -1,66 +1,113 @@
 import 'dart:async';
-import 'dart:convert';
+import 'dart:typed_data';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:kakao_maps_flutter/kakao_maps_flutter.dart' as kakao_map;
 
+import '../../../core/config/app_config.dart';
 import '../../../models/place.dart';
+import '../../../utils/localization.dart';
+import '../../place/utils/place_category.dart';
+import 'home_map_marker_asset.dart';
 
 class KakaoPlaceMap extends StatefulWidget {
   const KakaoPlaceMap({
     super.key,
     required this.places,
     required this.currentPosition,
+    required this.selectedPlaceId,
     required this.recenterRequestId,
     required this.onPlaceSelected,
   });
 
   final List<Place> places;
   final Position? currentPosition;
+  final int? selectedPlaceId;
   final int recenterRequestId;
   final ValueChanged<Place> onPlaceSelected;
+
+  @visibleForTesting
+  static kakao_map.LatLng bestCenterForTesting({
+    required List<Place> places,
+    required int? selectedPlaceId,
+    required Position? currentPosition,
+    required bool preferCurrentPosition,
+  }) {
+    if (preferCurrentPosition && currentPosition != null) {
+      return kakao_map.LatLng(
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+      );
+    }
+
+    final selectedPlace = places
+        .where(
+          (place) => place.id == selectedPlaceId && _hasValidCoordinate(place),
+        )
+        .firstOrNull;
+    if (selectedPlace != null) {
+      return kakao_map.LatLng(
+        latitude: selectedPlace.latitude,
+        longitude: selectedPlace.longitude,
+      );
+    }
+
+    final firstPlace = places.where(_hasValidCoordinate).firstOrNull;
+    if (firstPlace != null) {
+      return kakao_map.LatLng(
+        latitude: firstPlace.latitude,
+        longitude: firstPlace.longitude,
+      );
+    }
+
+    if (currentPosition != null) {
+      return kakao_map.LatLng(
+        latitude: currentPosition.latitude,
+        longitude: currentPosition.longitude,
+      );
+    }
+
+    return kakao_map.LatLng(
+      latitude: AppConfig.defaultMapLatitude,
+      longitude: AppConfig.defaultMapLongitude,
+    );
+  }
+
+  static bool _hasValidCoordinate(Place place) {
+    return place.latitude != 0.0 && place.longitude != 0.0;
+  }
+
+  @visibleForTesting
+  static bool shouldMoveCameraForTesting({
+    required bool placesChanged,
+    required bool recenterRequested,
+    required bool positionChanged,
+    required int? oldSelectedPlaceId,
+    required int? newSelectedPlaceId,
+  }) {
+    final selectedPlaceChanged = oldSelectedPlaceId != newSelectedPlaceId;
+    final selectedPlaceOpened =
+        selectedPlaceChanged && newSelectedPlaceId != null;
+
+    return placesChanged ||
+        recenterRequested ||
+        positionChanged ||
+        selectedPlaceOpened;
+  }
 
   @override
   State<KakaoPlaceMap> createState() => _KakaoPlaceMapState();
 }
 
 class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
-  static const _fallbackCenter = kakao_map.LatLng(
-    latitude: 37.556456,
-    longitude: 126.924456,
+  static final _fallbackCenter = kakao_map.LatLng(
+    latitude: AppConfig.defaultMapLatitude,
+    longitude: AppConfig.defaultMapLongitude,
   );
-  static const _placeMarkerStyleId = 'honey_place_marker';
   static const _currentMarkerStyleId = 'honey_current_marker';
   static const _markerLayerId = 'honey_marker_layer';
-  static const _markerPngBase64 =
-      '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';
 
   kakao_map.KakaoMapController? _controller;
   StreamSubscription<dynamic>? _labelClickSubscription;
@@ -80,15 +127,28 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
     final placesChanged = oldWidget.places != widget.places;
     final recenterRequested =
         oldWidget.recenterRequestId != widget.recenterRequestId;
+    final selectedPlaceChanged =
+        oldWidget.selectedPlaceId != widget.selectedPlaceId;
     final positionChanged = oldWidget.currentPosition?.latitude !=
             widget.currentPosition?.latitude ||
         oldWidget.currentPosition?.longitude !=
             widget.currentPosition?.longitude;
 
-    if (placesChanged || recenterRequested || positionChanged) {
+    if (placesChanged ||
+        recenterRequested ||
+        positionChanged ||
+        selectedPlaceChanged) {
+      final moveCamera = KakaoPlaceMap.shouldMoveCameraForTesting(
+        placesChanged: placesChanged,
+        recenterRequested: recenterRequested,
+        positionChanged: positionChanged,
+        oldSelectedPlaceId: oldWidget.selectedPlaceId,
+        newSelectedPlaceId: widget.selectedPlaceId,
+      );
       _requestSync(
         preferCurrentPosition:
             recenterRequested || (positionChanged && !placesChanged),
+        moveCamera: moveCamera,
       );
     }
   }
@@ -109,7 +169,7 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
         _controller = controller;
         _labelClickSubscription =
             controller.onLabelClickedStream.listen(_handleLabelClick);
-        _requestSync(preferCurrentPosition: true);
+        _requestSync(preferCurrentPosition: true, moveCamera: true);
       },
     );
   }
@@ -134,7 +194,10 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
     return _fallbackCenter;
   }
 
-  void _requestSync({bool preferCurrentPosition = false}) {
+  void _requestSync({
+    bool preferCurrentPosition = false,
+    bool moveCamera = true,
+  }) {
     if (!mounted) {
       return;
     }
@@ -153,6 +216,7 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
       _preferCurrentPositionOnNextSync = false;
       _syncMarkers(
         preferCurrentPosition: shouldPreferCurrentPosition,
+        moveCamera: moveCamera,
         generation: generation,
       );
     });
@@ -160,6 +224,7 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
 
   Future<void> _syncMarkers({
     bool preferCurrentPosition = false,
+    bool moveCamera = true,
     required int generation,
   }) async {
     final controller = _controller;
@@ -185,29 +250,36 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
           id: 'current_location',
           latitude: currentPosition.latitude,
           longitude: currentPosition.longitude,
-          text: '내 위치',
+          text: 'home.currentMarker'.tr,
           styleId: _currentMarkerStyleId,
           rank: 20000,
         );
       }
 
       for (final place in widget.places.where(_hasValidCoordinate)) {
+        final selected = place.id == widget.selectedPlaceId;
         await _addMarker(
           id: _markerIdForPlace(place),
           latitude: place.latitude,
           longitude: place.longitude,
           text: place.name,
-          styleId: _placeMarkerStyleId,
-          rank: 30000,
+          styleId: PlaceCategory.markerStyleIdFor(
+            place.categoryCode,
+            selected: selected,
+          ),
+          rank: selected ? 40000 : 30000,
         );
       }
 
-      await _moveToBestCenter(preferCurrentPosition: preferCurrentPosition);
+      if (moveCamera) {
+        await _moveToBestCenter(preferCurrentPosition: preferCurrentPosition);
+      }
       _syncRetryCount = 0;
     } catch (error) {
       _retrySyncAfterMapReady(
         error: error,
         preferCurrentPosition: preferCurrentPosition,
+        moveCamera: moveCamera,
         generation: generation,
       );
     }
@@ -256,10 +328,47 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
     kakao_map.KakaoMapController controller,
   ) async {
     if (!_markerStylesRegistered) {
+      final placeStyles = <kakao_map.MarkerStyle>[
+        _buildMarkerStyle(
+          PlaceCategory.defaultMarkerStyleId,
+          bytes: await HomeMapMarkerAsset.place(categoryCode: ''),
+          textColor: 0xFF111111,
+        ),
+        _buildMarkerStyle(
+          PlaceCategory.markerStyleIdFor('', selected: true),
+          bytes:
+              await HomeMapMarkerAsset.place(categoryCode: '', selected: true),
+          textColor: 0xFF111111,
+        ),
+      ];
+      for (final category in PlaceCategory.selectable) {
+        placeStyles.add(
+          _buildMarkerStyle(
+            PlaceCategory.markerStyleIdFor(category.code),
+            bytes: await HomeMapMarkerAsset.place(categoryCode: category.code),
+            textColor: 0xFF111111,
+          ),
+        );
+        placeStyles.add(
+          _buildMarkerStyle(
+            PlaceCategory.markerStyleIdFor(category.code, selected: true),
+            bytes: await HomeMapMarkerAsset.place(
+              categoryCode: category.code,
+              selected: true,
+            ),
+            textColor: 0xFF111111,
+          ),
+        );
+      }
+
       await controller.registerMarkerStyles(
         styles: [
-          _buildMarkerStyle(_placeMarkerStyleId, textColor: 0xFF111111),
-          _buildMarkerStyle(_currentMarkerStyleId, textColor: 0xFF1565C0),
+          ...placeStyles,
+          _buildMarkerStyle(
+            _currentMarkerStyleId,
+            bytes: await HomeMapMarkerAsset.currentLocation(),
+            textColor: 0xFF1565C0,
+          ),
         ],
       );
       _markerStylesRegistered = true;
@@ -274,13 +383,14 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
 
   kakao_map.MarkerStyle _buildMarkerStyle(
     String styleId, {
+    required Uint8List bytes,
     required int textColor,
   }) {
     return kakao_map.MarkerStyle(
       styleId: styleId,
       perLevels: [
         kakao_map.MarkerPerLevelStyle.fromBytes(
-          bytes: base64Decode(_markerPngBase64),
+          bytes: bytes,
           textStyle: kakao_map.MarkerTextStyle(
             fontSize: 22,
             fontColorArgb: textColor,
@@ -296,6 +406,7 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
   void _retrySyncAfterMapReady({
     required Object error,
     required bool preferCurrentPosition,
+    required bool moveCamera,
     required int generation,
   }) {
     if (!mounted || generation != _syncGeneration) {
@@ -320,36 +431,19 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
       _preferCurrentPositionOnNextSync = false;
       _syncMarkers(
         preferCurrentPosition: shouldPreferCurrentPosition,
+        moveCamera: moveCamera,
         generation: generation,
       );
     });
   }
 
   kakao_map.LatLng _bestCenter({required bool preferCurrentPosition}) {
-    final currentPosition = widget.currentPosition;
-    if (preferCurrentPosition && currentPosition != null) {
-      return kakao_map.LatLng(
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-      );
-    }
-
-    final firstPlace = widget.places.where(_hasValidCoordinate).firstOrNull;
-    if (firstPlace != null) {
-      return kakao_map.LatLng(
-        latitude: firstPlace.latitude,
-        longitude: firstPlace.longitude,
-      );
-    }
-
-    if (currentPosition != null) {
-      return kakao_map.LatLng(
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-      );
-    }
-
-    return _fallbackCenter;
+    return KakaoPlaceMap.bestCenterForTesting(
+      places: widget.places,
+      selectedPlaceId: widget.selectedPlaceId,
+      currentPosition: widget.currentPosition,
+      preferCurrentPosition: preferCurrentPosition,
+    );
   }
 
   void _handleLabelClick(dynamic event) {
