@@ -50,6 +50,58 @@ void main() {
     expect(center.longitude, currentPosition.longitude);
   });
 
+  test(
+      'best center prefers selected place over current position on map rebuild',
+      () {
+    final selectedPlace = _place(
+      id: 2,
+      name: 'Selected Place',
+      latitude: 37.5025,
+      longitude: 127.0410,
+    );
+    final currentPosition = _position(latitude: 37.5000, longitude: 127.0300);
+
+    final center = KakaoPlaceMap.bestInitialCenterForTesting(
+      places: [selectedPlace],
+      selectedPlaceId: selectedPlace.id,
+      currentPosition: currentPosition,
+    );
+
+    expect(center.latitude, selectedPlace.latitude);
+    expect(center.longitude, selectedPlace.longitude);
+  });
+
+  test('best center prefers places over current position on map rebuild', () {
+    final firstPlace = _place(
+      id: 1,
+      name: 'First Place',
+      latitude: 37.5010,
+      longitude: 127.0396,
+    );
+    final currentPosition = _position(latitude: 37.5000, longitude: 127.0300);
+
+    final center = KakaoPlaceMap.bestInitialCenterForTesting(
+      places: [firstPlace],
+      selectedPlaceId: null,
+      currentPosition: currentPosition,
+    );
+
+    expect(center.latitude, firstPlace.latitude);
+    expect(center.longitude, firstPlace.longitude);
+  });
+
+  test('map creation does not force current position when places are visible',
+      () {
+    final shouldPreferCurrentPosition =
+        KakaoPlaceMap.shouldPreferCurrentPositionOnMapCreatedForTesting(
+      hasVisiblePlaces: true,
+      hasSelectedPlace: false,
+      hasCurrentPosition: true,
+    );
+
+    expect(shouldPreferCurrentPosition, isFalse);
+  });
+
   test('closing the selected card does not move the camera', () {
     final shouldMoveCamera = KakaoPlaceMap.shouldMoveCameraForTesting(
       placesChanged: false,

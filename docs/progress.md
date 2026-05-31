@@ -53,6 +53,9 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 - The selected home map place card now exposes a compact `상세 보기` action while ordinary list cards remain quiet with the existing chevron affordance.
 - Returning from place detail after a refresh-triggering action now keeps the selected home map card attached to the freshly reloaded place object, preserving map context while updating card content.
 - `scripts/mobile-dev-check.ps1` now provides a fast pre-login physical-device check for backend health and `adb reverse`, restoring the reverse mapping when it is missing without rebuilding the APK.
+- Home map/list mode switching now preserves the selected place and no longer forces the map camera back to the current location when visible places or a selected place already provide exploration context. The current-location button and explicit GPS refresh still recenter to the user position.
+- The updated dev APK was rebuilt through `scripts/mobile-dev-usb.ps1`, installed on the connected Android phone, launched, and verified with backend health plus `adb reverse tcp:8080 tcp:8080`.
+- A dedicated web admin login route (`/admin/login`) was added, the admin shell now exposes an admin-login link, and `scripts/start-backend-local-admin.ps1` documents/automates the disabled-by-default local `SUPER_ADMIN` bootstrap flow without adding a public admin creation API.
 
 ## Active Risks
 
@@ -63,6 +66,6 @@ The backend MVP is broadly implemented. Current work is focused on making the mo
 
 ## Next Task
 
-Continue home map UX polish by reviewing map/list mode switching so selected place, filters, and current location feel consistent when moving between exploration modes.
+Create a local `SUPER_ADMIN` account with `scripts/start-backend-local-admin.ps1`, sign in through `/admin/login`, and use `/admin/policies` to widen development registration scope before continuing the real-device map/list UX pass.
 
 Recommended reasoning level: medium

@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Link } from "react-router-dom";
+import { hasStoredAccessToken } from "../api/http";
 import { useTranslation } from "../hooks/useTranslation";
 import { type LocaleType } from "../context/locale";
 
@@ -29,7 +30,9 @@ const navItemTranslations: Record<LocaleType, Record<string, string>> = {
     policies: "정책 관리",
     reports: "신고 관리",
     adminLabel: "관리자",
-    home: "사용자 홈"
+    home: "사용자 홈",
+    login: "관리자 로그인",
+    refreshLogin: "로그인 갱신"
   },
   en: {
     dashboard: "Dashboard",
@@ -40,7 +43,9 @@ const navItemTranslations: Record<LocaleType, Record<string, string>> = {
     policies: "Policies",
     reports: "Reports",
     adminLabel: "Admin",
-    home: "User Home"
+    home: "User Home",
+    login: "Admin Login",
+    refreshLogin: "Refresh Login"
   },
   ja: {
     dashboard: "ダッシュボード",
@@ -51,7 +56,9 @@ const navItemTranslations: Record<LocaleType, Record<string, string>> = {
     policies: "ポリシー管理",
     reports: "報告管理",
     adminLabel: "管理者",
-    home: "ユーザーホーム"
+    home: "ユーザーホーム",
+    login: "管理者ログイン",
+    refreshLogin: "ログイン更新"
   }
 };
 
@@ -93,6 +100,7 @@ function AdminHeader({
 }) {
   const { locale, changeLanguage } = useTranslation();
   const translations = navItemTranslations[locale] || navItemTranslations.ko;
+  const hasToken = hasStoredAccessToken();
 
   return (
     <header className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -108,6 +116,12 @@ function AdminHeader({
             <option value="en">English</option>
             <option value="ja">日本語</option>
           </select>
+          <Link
+            to="/admin/login"
+            className="inline-flex h-7 items-center rounded-m3-full border border-m3-outline-variant px-3 text-m3-label-sm text-m3-on-surface-variant transition hover:border-m3-primary hover:text-m3-primary"
+          >
+            {hasToken ? translations.refreshLogin : translations.login}
+          </Link>
         </div>
         <h1 className="mt-1 text-m3-title-lg text-m3-on-surface">{title}</h1>
         <p className="mt-2 max-w-2xl text-m3-body-md text-m3-on-surface-variant">

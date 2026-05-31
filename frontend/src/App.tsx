@@ -4,6 +4,7 @@ import { getPlaces, searchPlaces } from "./api/placeApi";
 import AdminActivitiesPage from "./pages/AdminActivitiesPage";
 import AdminAuditLogsPage from "./pages/AdminAuditLogsPage";
 import AdminDashboardPage from "./pages/AdminDashboardPage";
+import AdminLoginPage from "./pages/AdminLoginPage";
 import AdminPlacesPage from "./pages/AdminPlacesPage";
 import AdminPoliciesPage from "./pages/AdminPoliciesPage";
 import AdminReportsPage from "./pages/AdminReportsPage";
@@ -211,6 +212,7 @@ function App() {
         <Route path="/community" element={<CommunityPage />} />
 
         {/* Admin Routes */}
+        <Route path="/admin/login" element={<AdminLoginPage />} />
         <Route path="/admin" element={<AdminDashboardPage />} />
         <Route path="/admin/dashboard" element={<AdminDashboardPage />} />
         <Route path="/admin/activities" element={<AdminActivitiesPage />} />

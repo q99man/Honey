@@ -80,6 +80,29 @@ class KakaoPlaceMap extends StatefulWidget {
   }
 
   @visibleForTesting
+  static kakao_map.LatLng bestInitialCenterForTesting({
+    required List<Place> places,
+    required int? selectedPlaceId,
+    required Position? currentPosition,
+  }) {
+    return bestCenterForTesting(
+      places: places,
+      selectedPlaceId: selectedPlaceId,
+      currentPosition: currentPosition,
+      preferCurrentPosition: false,
+    );
+  }
+
+  @visibleForTesting
+  static bool shouldPreferCurrentPositionOnMapCreatedForTesting({
+    required bool hasVisiblePlaces,
+    required bool hasSelectedPlace,
+    required bool hasCurrentPosition,
+  }) {
+    return hasCurrentPosition && !hasVisiblePlaces && !hasSelectedPlace;
+  }
+
+  @visibleForTesting
   static bool shouldMoveCameraForTesting({
     required bool placesChanged,
     required bool recenterRequested,
@@ -102,10 +125,6 @@ class KakaoPlaceMap extends StatefulWidget {
 }
 
 class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
-  static final _fallbackCenter = kakao_map.LatLng(
-    latitude: AppConfig.defaultMapLatitude,
-    longitude: AppConfig.defaultMapLongitude,
-  );
   static const _currentMarkerStyleId = 'honey_current_marker';
   static const _markerLayerId = 'honey_marker_layer';
 
@@ -169,29 +188,28 @@ class _KakaoPlaceMapState extends State<KakaoPlaceMap> {
         _controller = controller;
         _labelClickSubscription =
             controller.onLabelClickedStream.listen(_handleLabelClick);
-        _requestSync(preferCurrentPosition: true, moveCamera: true);
+        _requestSync(
+          preferCurrentPosition: _shouldPreferCurrentPositionOnMapCreated,
+          moveCamera: true,
+        );
       },
     );
   }
 
   kakao_map.LatLng get _initialCenter {
-    final currentPosition = widget.currentPosition;
-    if (currentPosition != null) {
-      return kakao_map.LatLng(
-        latitude: currentPosition.latitude,
-        longitude: currentPosition.longitude,
-      );
-    }
+    return KakaoPlaceMap.bestInitialCenterForTesting(
+      places: widget.places,
+      selectedPlaceId: widget.selectedPlaceId,
+      currentPosition: widget.currentPosition,
+    );
+  }
 
-    final firstPlace = widget.places.where(_hasValidCoordinate).firstOrNull;
-    if (firstPlace != null) {
-      return kakao_map.LatLng(
-        latitude: firstPlace.latitude,
-        longitude: firstPlace.longitude,
-      );
-    }
-
-    return _fallbackCenter;
+  bool get _shouldPreferCurrentPositionOnMapCreated {
+    return KakaoPlaceMap.shouldPreferCurrentPositionOnMapCreatedForTesting(
+      hasVisiblePlaces: widget.places.any(_hasValidCoordinate),
+      hasSelectedPlace: widget.selectedPlaceId != null,
+      hasCurrentPosition: widget.currentPosition != null,
+    );
   }
 
   void _requestSync({

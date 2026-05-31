@@ -35,6 +35,13 @@ class HomeMapScreen extends StatefulWidget {
         .firstOrNull;
   }
 
+  @visibleForTesting
+  static Place? selectedPlaceAfterViewToggleForTesting({
+    required Place? selectedPlace,
+  }) {
+    return selectedPlace;
+  }
+
   @override
   State<HomeMapScreen> createState() => _HomeMapScreenState();
 }
@@ -413,7 +420,10 @@ class _HomeMapScreenState extends State<HomeMapScreen> {
           onPressed: () {
             setState(() {
               _isMapView = !_isMapView;
-              _selectedPlace = null;
+              _selectedPlace =
+                  HomeMapScreen.selectedPlaceAfterViewToggleForTesting(
+                selectedPlace: _selectedPlace,
+              );
             });
           },
           backgroundColor: AppColors.honey,

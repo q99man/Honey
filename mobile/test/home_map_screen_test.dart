@@ -290,6 +290,24 @@ void main() {
     expect(synced, same(reloadedPlace));
     expect(synced?.recommendedMenu, '얼큰 순대국');
   });
+
+  test('HomeMapScreen preserves selected place when toggling view modes', () {
+    final selectedPlace = Place.fromJson({
+      'id': 1,
+      'name': 'Daedong Sikdang',
+      'categoryCode': 'KOREAN',
+      'recommendedMenu': 'Soup',
+      'shortRecommendation': 'A local favorite.',
+      'latitude': 37.5010,
+      'longitude': 127.0396,
+    });
+
+    final nextSelection = HomeMapScreen.selectedPlaceAfterViewToggleForTesting(
+      selectedPlace: selectedPlace,
+    );
+
+    expect(nextSelection, same(selectedPlace));
+  });
 }
 
 class _EmptyPlacesAdapter implements HttpClientAdapter {
